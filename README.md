@@ -11,14 +11,15 @@
     - COMMENT: white
     - DEFINE: red
     - COMPILE: cyan
-    - ASM: yellow
-    - INTERPRET: green
+    - IMMEDIATE: yellow
+    - ASM: green
 - A marker, by itself or as the first character of a word, puts cf in that mode.
 - The markers are as follows:
     - COMMENT: '('
     - DEFINE: ':'
     - COMPILE: '^'
-    - INTERPRET: '_'
+    - IMMEDIATE: '['
+    - ASM: '~'
 
 ## Notes:
 - Words like IF/THEN and BEGIN/WHILE are defined in block 0.

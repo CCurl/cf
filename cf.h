@@ -40,14 +40,16 @@ typedef struct {
 #define COMMENT  '('
 #define COMPILE  '^'
 #define DEFINE   ':'
-#define INTERP   '_'
+#define IMMED    '['
 #define ASM      '~'
 #define INPUT    5
 
-#define INLINE  0x01
+#define INLINE     0x01
+#define IMMEDIATE  0x02
 
-#define STK_SZ     15
+#define STK_SZ     31
 #define USER_SZ    1024*1024
+#define VARS_SZ    1024*1024
 #define CELL_SZ    sizeof(CELL)
 #define DICT_SZ    sizeof(DICT_T)
 

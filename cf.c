@@ -8,13 +8,12 @@ int qKey() { return _kbhit(); }
 #include "linux.inc"
 #endif
 
-char *pc, *toIn, mode;
-byte user[USER_SZ];
-CELL stk[STK_SZ+1];
+byte user[USER_SZ], vars[VARS_SZ];
+byte *pc, *toIn, mode;
+CELL sp, rsp, stk[STK_SZ+1];
 byte *rstk[STK_SZ+1];
-CELL lstk[STK_SZ+1];
-CELL regs[100];
-char sp = 0, rsp = 0, lsp = 0, rb = 0;
+CELL lsp, lstk[STK_SZ+1];
+CELL rb, regs[100];
 byte *here;
 DICT_T *last;
 
@@ -110,9 +109,9 @@ Next:
     case LIT4: push(CF(pc)); pc += CELL_SZ;                             NEXT;
     case CALL: if (*(pc+CELL_SZ)!=';') { rpush(pc+CELL_SZ); }        // fall-thru
     case JMP: pc=AFA(pc);                                               NEXT;
-    case JMPn: if (pop()) { pc=AFA(pc); } else { pc+=CELL_SZ; }         NEXT;
     case JMPz: if (pop()==0) { pc=AFA(pc); } else { pc+=CELL_SZ; }      NEXT;
-    case ' ':                                                           NEXT;
+    case JMPn: if (pop()!=0) { pc=AFA(pc); } else { pc+=CELL_SZ; }      NEXT;
+    case ' ': while (*pc==' ') { pc++; }                                NEXT;
     case '"': pc=doQuote(pc);                                           NEXT;
     case '%': t1 = NOS; push(t1);                                       NEXT;
     case '#': t1 = TOS; push(t1);                                       NEXT;
@@ -130,7 +129,6 @@ Next:
     case '>': t1 = pop(); TOS = (TOS > t1) ? 1 : 0;                     NEXT;
     case '.': printStringF("%d ", pop());                               NEXT;
     case 'e': printChar(pop());                                         NEXT;
-    case ',': COMMA(pop());                                             NEXT;
     case 'c': t1=*(pc++); if (t1=='!') { BS(TOS,NOS); sp-=2; }
         else if (t1=='@') { TOS=BF(TOS); }
         else if (t1==',') { CCOMMA(pop()); }                            NEXT;
@@ -152,7 +150,7 @@ Next:
     case '[': lsp+=3; L0=pop(); L1=pop(); L2=(CELL)pc;                  NEXT;
     case ']': if (++L0 < L1) { pc=(byte*)L2; } else { lsp-=3; }         NEXT;
     case '{': lsp+=2; L0=pop()-1; L1=(CELL)pc;                          NEXT;
-    case '}': if (0 < --L0) { pc=(byte*)L1; } else { lsp-=2; }          NEXT;
+    case '}': if (0 <= --L0) { pc=(byte*)L1; } else { lsp-=2; }         NEXT;
     case 'I': push(L0);                                                 NEXT;
     default: ERR("-ir-");                                              return;
     }
@@ -241,7 +239,9 @@ void doCompile(const char* wd) {
     doFind(wd);
     if (pop()) {
         DICT_T* dp = (DICT_T*)pop();
-        if (dp->fl & INLINE) {
+        if (dp->fl & IMMEDIATE) {
+            run(dp->xt);
+        } else if (dp->fl & INLINE) {
             byte *x = dp->xt;
             CCOMMA(*(x++));
             while (*x && (*x != ';')) { CCOMMA(*(x++)); }
@@ -278,7 +278,7 @@ int setMode(char c) {
     if (c==COMMENT) { mode=c; return 1; }
     if (c==COMPILE) { mode=c; return 1; }
     if (c==DEFINE) { mode=c; return 1; }
-    if (c==INTERP) { mode=c; return 1; }
+    if (c==IMMED) { mode=c; return 1; }
     if (c==ASM) { mode=c; return 1; }
     return 0;
 }
@@ -297,7 +297,7 @@ void doOuter(char* cp) {
         case DEFINE:  doDefine(buf, 0);                 break;
         case COMPILE: doCompile(buf);                   break;
         case ASM:     doAsm(buf);                       break;
-        case INTERP:  doInterpret(buf);                 break;
+        case IMMED:  doInterpret(buf);                 break;
         default: break;
         }
     }
@@ -318,7 +318,7 @@ void defNum(char *name, CELL val, byte fl) {
 }
 
 struct { char *nm; char *code; } ops[] = {
-    {"EXIT", ";"}, {"TIMER", "t"}, {"ELAPSED", "t$-"},
+    {"EXIT", ";"}, {"TIMER", "t"},
     {"DUP", "#"},  {"SWAP", "$"},  {"OVER", "%"},  {"DROP", "\\"},
     {"DO", "[" },  {"LOOP", "]"},  {"I", "I"},
     {"FOR", "{" }, {"NEXT", "}"},
@@ -336,32 +336,42 @@ void initVM() {
     last = (DICT_T*)&user[USER_SZ];
     here = &user[0];
     sp = rsp = lsp = rb = 0;
-    mode = INTERP;
-    defNum("cell",CELL_SZ, INLINE);
-    defNum("(here)",(CELL)&here, 0);
-    defNum("(last)",(CELL)&last, 0);
-    defNum("user",(CELL)&user[0], 0);
-    defNum("user-end",(CELL)&user[USER_SZ], 0);
+    mode = IMMED;
     for (int i = 0; ops[i].code; i++) {
         doDefine(ops[i].nm, INLINE);
         for (int j=0; ops[i].code[j]; j++) { CCOMMA(ops[i].code[j]); }
         CCOMMA(';');
     }
+    defNum("cell",CELL_SZ, INLINE);
+    defNum("(here)",(CELL)&here, 0);
+    defNum("(last)",(CELL)&last, 0);
+    defNum("user",(CELL)&user[0], 0);
+    defNum("user-sz",USER_SZ, 0);
+    defNum("vars",(CELL)&vars[0], 0);
+    defNum("vars-sz",VARS_SZ, 0);
+    doOuter(": here ^(here) @ ;");
+    doOuter(": last ^(last) @ ;");
+    doOuter(": if ^3 c, here 0 , ;");
+    doOuter(": then ^here swap ! ;");
+    doOuter(": begin ^here ;");
+    doOuter(": again ^2 c, , ;");
+    doOuter(": until ^3 c, , ;");
+    doOuter(": while ^4 c, , ;");
 }
 
 void cfColor(int md) {
-    if (md == INTERP) { Color(GREEN,0); }
+    if (md == IMMED) { Color(YELLOW,0); }
     else if (md == DEFINE) { Color(RED,0); }
     else if (md == COMPILE) { Color(CYAN,0); }
     else if (md == COMMENT) { Color(WHITE,0); }
-    else if (md == INPUT) { Color(YELLOW,0); }
+    else if (md == INPUT) { Color(GREEN,0); }
 }
 
 int loop() {
     char buf[96];
     sp = (sp<1) ? 0 : sp;
     lsp = (lsp<1) ? 0 : lsp;
-    mode = INTERP;
+    mode = IMMED;
     cfColor(mode);
     printf(" ok\r\n");
     cfColor(INPUT);

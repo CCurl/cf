@@ -38,7 +38,7 @@ int edColor(int ch, int prev) {
     if (ch == DEFINE) { return DEFINE; }
     if (ch == COMMENT) { return COMMAND; }
     if (ch == COMPILE) { return COMPILE; }
-    if (ch == INTERP) { return INTERP; }
+    if (ch == IMMED) { return IMMED; }
     return 0;
 }
 
