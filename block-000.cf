@@ -1,0 +1,20 @@
+: here ^(here) c@ ;           : last ^(last) ;
+: dup ^# ;                    : swap ^$ ;                      : drop ^\ ;
+: if ^#q b, here 0 c, ;       : then ^here swap c! ;
+: begin ^here ;               : while ^#Q b, c, ;
+: until ^#q b, c,  ;          : again ^#j b, c, ;
+: do ^#[ b, ;                 : loop ^#] b, ;
+( this is a comment
+: mil ^1000 #** ;             : timer ^t ;                     : elapsed ^t$-. ;
+: bm1 ^s1 timer _begin ^d1 r1 _while ^elapsed ;
+: bm2 ^mil timer swap 0 _do loop ^elapsed ;
+: test _if ^"yes" _then ^"-more" 10 0 _do ^I . _loop ^;
+
+
+
+
+
+
+
+
+
