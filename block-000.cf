@@ -1,13 +1,15 @@
 : here ^(here) @ ;            : last ^(last) @ ;
-: if ^#q c, here 0 , ;        : then ^here swap ! ;
-: begin ^here ;               : while ^#Q c, , ;
-: until ^#q c, ,  ;           : again ^#j c, , ;
-( this is a comment
+(( JMP:2, JMPz:3 JMPnz:4 )
+: if ^3 c, here 0 , ;         : then ^here swap ! ;
+: begin ^here ;               : while ^4 c, , ;
+: until ^3 c, ,  ;            : again ^2 c, , ;
+
+(( tests )
 : mil ^1000 #** ;             : timer ^t ;                     : elapsed ^t$-. ;
 : bm1 ^mil s1 timer _begin ^d1 r1 _while ^elapsed ;
 : bm2 ^mil timer swap 0 do loop elapsed ;
 : bm3 ^mil timer swap for next elapsed ;
-: test _if ^"yes" _then ^"-more" 10 0 _do ^I . _loop ^;
+: test _if ^"yes" _then ^"-more" 10 0 do I . loop ^;
 
 
 

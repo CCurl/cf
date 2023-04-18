@@ -1,6 +1,8 @@
 // Support for Linux
 
 #define isPC
+#define _stricmp strcasecmp
+
 void ttyMode(int mode) {
     static struct termios origt, rawt;
     static int curMode = -1;

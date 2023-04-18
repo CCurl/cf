@@ -33,20 +33,20 @@ void NormLO() {
     if (LLEN <= off) { off = (LLEN-1); }
 }
 
-int cfColor(int ch, int prev) {
+int edColor(int ch, int prev) {
     if (prev != BL) { return 0; }
-    if (ch == DEFINE) { return RED; }
-    if (ch == COMMENT) { return WHITE; }
-    if (ch == COMPILE) { return CYAN; }
-    if (ch == INTERP) { return GREEN; }
+    if (ch == DEFINE) { return DEFINE; }
+    if (ch == COMMENT) { return COMMAND; }
+    if (ch == COMPILE) { return COMPILE; }
+    if (ch == INTERP) { return INTERP; }
     return 0;
 }
 
 char edChar(int l, int o) {
     char ch = edLines[l][o];
-    char prev = (0<o) ? edLines[l][o-1] : BL;
-    int color = cfColor(ch, prev);
-    if (color) { Color(color, 0); ch = BL; }
+    char prev = (0 < o) ? edLines[l][o-1] : BL;
+    int color = edColor(ch, prev);
+    if (color) { cfColor(color); ch = BL; }
     return (31<ch) ? ch : BL;
 }
 
@@ -62,9 +62,8 @@ void showLine(int l) {
 void showCursor() {
     char c = edChar(line, off);
     GotoXY(off + 1, line + 1);
-    Color(0, 47);
+    Color(0,47);
     printChar(c ? c : 'X');
-    //Color(WHITE, 0);
 }
 
 void mv(int l, int o) {

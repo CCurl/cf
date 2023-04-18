@@ -25,22 +25,24 @@ typedef struct {
     byte *xt;
     byte fl;
     byte l;
-    char name[26];
+    char name[18];
 } DICT_T;
 
-#define RED      1
-#define GREEN    2
-#define YELLOW   3
-#define BLUE     4
-#define PURPLE   5
-#define CYAN     6
-#define WHITE    7
+#define BLACK    30
+#define RED      91
+#define GREEN    92
+#define YELLOW   93
+#define BLUE     94
+#define PURPLE   95
+#define CYAN     96
+#define WHITE    97
 
 #define COMMENT  '('
 #define COMPILE  '^'
 #define DEFINE   ':'
 #define INTERP   '_'
 #define ASM      '~'
+#define INPUT    5
 
 #define INLINE  0x01
 
@@ -51,7 +53,11 @@ typedef struct {
 
 #define betw(x, y, z) ((y <= x) && (x <= z))
 
-typedef enum { STOP, LIT1, LIT4 } OPCODE_T;
+typedef enum {
+    STOP=0, CALL, 
+    JMP, JMPz, JMPn,
+    LIT1, LIT4,
+} OPCODE_T;
 
 extern char theBlock[];
 
@@ -60,6 +66,7 @@ extern void Color(int, int);
 extern int qKey();
 extern int key();
 extern void Color(int fg, int bg);
+extern void cfColor(int md);
 extern void printString(const char* s);
 extern void printStringF(const char* fmt, ...);
 extern void printChar(char c);

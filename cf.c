@@ -46,7 +46,7 @@ void printStringF(const char* fmt, ...) {
 }
 
 void Color(int fg, int bg) {
-    printStringF("%c[%d;%dm", 27, (30 + fg), bg ? bg : 40);
+    printStringF("%c[%d;%dm", 27, fg, bg ? bg : 40);
 }
 
 #ifdef NEEDS_ALIGN
@@ -99,59 +99,62 @@ byte *doQuote(byte *pc) {
 }
 
 void run(byte *pc) {
-    CELL t1;
+    CELL t1, t2;
 Next:
     if (!betw(pc,&user[0],&user[USER_SZ-1])) {
         printString("-oob-"); return;
     }
     switch (*(pc++)) {
-    case STOP:                                                     return;
-    case 32:                                                       return;
-    case LIT1: push(*(pc++));                                       NEXT;
-    case LIT4: push(CF(pc)); pc += CELL_SZ;                         NEXT;
-    case '"': pc=doQuote(pc);                                       NEXT;
-    case '%': t1 = NOS; push(t1);                                   NEXT;
-    case '#': t1 = TOS; push(t1);                                   NEXT;
-    case '$': t1 = TOS; TOS = NOS; NOS = t1;                        NEXT;
-    case '\\': sp = (0<sp) ? sp-1: 0;                               NEXT;
-    case '+': t1 = pop(); TOS += t1;                                NEXT;
-    case '-': t1 = pop(); TOS -= t1;                                NEXT;
-    case '*': t1 = pop(); TOS *= t1;                                NEXT;
-    case '/': t1 = pop(); TOS /= (t1 ? t1 : 1);                     NEXT;
-    case '=': t1 = pop(); TOS = (TOS == t1) ? 1 : 0;                NEXT;
-    case '<': t1 = pop(); TOS = (TOS < t1) ? 1 : 0;                 NEXT;
-    case '>': t1 = pop(); TOS = (TOS > t1) ? 1 : 0;                 NEXT;
-    case '.': printStringF("%d ", pop());                           NEXT;
-    case 'e': printChar(pop());                                     NEXT;
-    case ',': COMMA(pop());                                         NEXT;
-    case '^': if (*(pc+CELL_SZ)!=';') { rpush(pc+CELL_SZ); }    // fall-thru
-    case 'j': pc=AFA(pc);                                           NEXT;
-    case ';': pc=rpop(); if (!pc) { rsp=0; return; };               NEXT;
-    case 'Q': if (pop()) { pc=AFA(pc); } else { pc+=CELL_SZ; }      NEXT;
-    case 'q': if (pop()==0) { pc=AFA(pc); } else { pc+=CELL_SZ; }   NEXT;
+    case STOP:                                                         return;
+    case LIT1: push(*(pc++));                                           NEXT;
+    case LIT4: push(CF(pc)); pc += CELL_SZ;                             NEXT;
+    case CALL: if (*(pc+CELL_SZ)!=';') { rpush(pc+CELL_SZ); }        // fall-thru
+    case JMP: pc=AFA(pc);                                               NEXT;
+    case JMPn: if (pop()) { pc=AFA(pc); } else { pc+=CELL_SZ; }         NEXT;
+    case JMPz: if (pop()==0) { pc=AFA(pc); } else { pc+=CELL_SZ; }      NEXT;
+    case ' ':                                                           NEXT;
+    case '"': pc=doQuote(pc);                                           NEXT;
+    case '%': t1 = NOS; push(t1);                                       NEXT;
+    case '#': t1 = TOS; push(t1);                                       NEXT;
+    case '$': t1 = TOS; TOS = NOS; NOS = t1;                            NEXT;
+    case '\\': sp = (0<sp) ? sp-1: 0;                                   NEXT;
+    case '+': t1 = pop(); TOS += t1;                                    NEXT;
+    case '-': t1 = pop(); TOS -= t1;                                    NEXT;
+    case '*': t1 = pop(); TOS *= t1;                                    NEXT;
+    case '/': t1=*(pc++); t2=pop(); if (t1=='/') { TOS /= t2; }
+        else if (t1=='M') { t1=pop(); push(t1%t2); push(t1/t2); }
+        else if (t1=='%') { TOS %= t2; }                                NEXT;
+    case ';': pc=rpop(); if (!pc) { rsp=0; return; };                   NEXT;
+    case '=': t1 = pop(); TOS = (TOS == t1) ? 1 : 0;                    NEXT;
+    case '<': t1 = pop(); TOS = (TOS < t1) ? 1 : 0;                     NEXT;
+    case '>': t1 = pop(); TOS = (TOS > t1) ? 1 : 0;                     NEXT;
+    case '.': printStringF("%d ", pop());                               NEXT;
+    case 'e': printChar(pop());                                         NEXT;
+    case ',': COMMA(pop());                                             NEXT;
     case 'c': t1=*(pc++); if (t1=='!') { BS(TOS,NOS); sp-=2; }
         else if (t1=='@') { TOS=BF(TOS); }
-        else if (t1==',') { CCOMMA(pop()); }                        NEXT;
+        else if (t1==',') { CCOMMA(pop()); }                            NEXT;
     case 'l': t1=*(pc++); if (t1=='!') { CS(TOS,NOS); sp-=2; }
         else if (t1=='@') { TOS=CF(TOS); }
-        else if (t1==',') { COMMA(pop()); }                         NEXT;
+        else if (t1==',') { COMMA(pop()); }                             NEXT;
     case 'k': t1=*(pc++); if (t1=='?') { push(qKey()); }
-        else if (t1=='@') { push(key()); }                          NEXT;
-    case 'd': t1=*(pc++)-'0'; if (betw(t1,0,9)) { --regs[t1+rb]; }
-        else { --TOS; }                                             NEXT;
-    case 'i': t1=*(pc++)-'0'; if (betw(t1,0,9)) { ++regs[t1+rb]; }
-        else { ++TOS; }                                             NEXT;
-    case 'r': t1=*(pc++)-'0'; if (t1=='+') { rb+=(rb<=80) ? 10 : 0; }
-        else if (t1=='-') { rb-=(9<rb) ? 10 : 0; }
-        else if (betw(t1,0,9)) { push(regs[t1+rb]); }               NEXT;
-    case 's': t1=*(pc++)-'0'; if (betw(t1,0,9)) { regs[t1+rb]=pop(); }  NEXT;
-    case 't': push(clock());                                        NEXT;
-    case '[': lsp += 3; L0=pop(); L1=pop(); L2=(CELL)pc;            NEXT;
-    case ']': if (++L0 < L1) { pc=(byte*)L2; } else { lsp-=3; }     NEXT;
-    case '{': lsp += 2; L0=pop(); L1=(CELL)pc;                      NEXT;
-    case '}': if (0 < --L0) { pc=(byte*)L1; } else { lsp-=2; }      NEXT;
-    case 'I': push(L0);                                             NEXT;
-    default: ERR("-ir-");                                           return;
+        else if (t1=='@') { push(key()); }                              NEXT;
+    case 'd': t1=*(pc++)-'0'; betw(t1,0,9) ? --regs[t1+rb] : --TOS;     NEXT;
+    case 'i': t1=*(pc++)-'0'; betw(t1,0,9) ? ++regs[t1+rb] : ++TOS;     NEXT;
+    case 'r': t1=*(pc++)-'0'; if (betw(t1,0,9)) { push(regs[rb+t1]); }  NEXT;
+    case 's': t1=*(pc++)-'0'; if (betw(t1,0,9)) { regs[rb+t1]=pop(); }  NEXT;
+    case 't': push(clock());                                            NEXT;
+    case 'u': t1=*(pc++); if (t1=='1') { rpush((byte*)pop()); }
+            else if (t1=='2') { push((CELL)rstk[rsp]); }
+            else if (t1=='3') { push((CELL)rpop()); }                     
+            else if (t1=='+') { rb+=(rb< 81) ? 10 : 0; }
+            else if (t1=='-') { rb-=(9 < rb) ? 10 : 0; }                NEXT;
+    case '[': lsp+=3; L0=pop(); L1=pop(); L2=(CELL)pc;                  NEXT;
+    case ']': if (++L0 < L1) { pc=(byte*)L2; } else { lsp-=3; }         NEXT;
+    case '{': lsp+=2; L0=pop()-1; L1=(CELL)pc;                          NEXT;
+    case '}': if (0 < --L0) { pc=(byte*)L1; } else { lsp-=2; }          NEXT;
+    case 'I': push(L0);                                                 NEXT;
+    default: ERR("-ir-");                                              return;
     }
 }
 
@@ -213,7 +216,7 @@ void doFind(const char* wd) {
     int l = strlen(wd);
     DICT_T *dp = last;
     while (dp < (DICT_T*)&user[USER_SZ]) {
-        if ((l==dp->l) && (strcasecmp(dp->name, wd) == 0)) {
+        if ((l==dp->l) && (_stricmp(dp->name, wd) == 0)) {
             TOS = (CELL)dp;
             push(1);
             break;
@@ -243,7 +246,7 @@ void doCompile(const char* wd) {
             CCOMMA(*(x++));
             while (*x && (*x != ';')) { CCOMMA(*(x++)); }
         } else {
-            CCOMMA('^');
+            CCOMMA(CALL);
             COMMA((CELL)dp->xt);
         }
         return;
@@ -267,7 +270,7 @@ void doInterpret(const char* wd) {
     }
     byte *cp = here;
     while (*wd) { *(cp++) = *(wd++); }
-    *cp = ';';
+    *cp = 0;
     run(here);
 }
 
@@ -311,20 +314,21 @@ void defNum(char *name, CELL val, byte fl) {
     doDefine(name, fl);
     if (betw(val,0,127)) { CCOMMA(LIT1); CCOMMA(val); }
     else { CCOMMA(LIT4); COMMA(val); }
-    CCOMMA(LIT4); COMMA(val);
     CCOMMA(';');
 }
 
 struct { char *nm; char *code; } ops[] = {
-    {"EXIT", ";"}, {"TIMER", "t"}, {"ELAPSED", "t$-"}, 
-    {"DUP", "#"},  {"SWAP", "$"},  {"OVER", "%"}, 
+    {"EXIT", ";"}, {"TIMER", "t"}, {"ELAPSED", "t$-"},
+    {"DUP", "#"},  {"SWAP", "$"},  {"OVER", "%"},  {"DROP", "\\"},
     {"DO", "[" },  {"LOOP", "]"},  {"I", "I"},
     {"FOR", "{" }, {"NEXT", "}"},
     {"KEY", "k@"}, {"?KEY", "k?"},
     {"EMIT", "e"}, {".", "."},
-    {"!", "l!"},  {"@", "l@"},  {",", "l,"},  
-    {"c!", "c!"}, {"c@", "c@"}, {"c,", "c,"},
-    {"1+", "i+"}, {"1-", "i-"},
+    {">r", "u1"},  {"r@", "u2"},   {"r>", "u3"},
+    {"/", "//"},   {"MOD", "/%"},  {"/MOD", "/M"},
+    {"!", "l!"},   {"@", "l@"},    {",", "l,"},
+    {"1+", "i+"},  {"1-", "d-"},
+    {"r+", "u+"},  {"r-", "u-"},
     {0, 0}
 };
 
@@ -345,14 +349,24 @@ void initVM() {
     }
 }
 
+void cfColor(int md) {
+    if (md == INTERP) { Color(GREEN,0); }
+    else if (md == DEFINE) { Color(RED,0); }
+    else if (md == COMPILE) { Color(CYAN,0); }
+    else if (md == COMMENT) { Color(WHITE,0); }
+    else if (md == INPUT) { Color(YELLOW,0); }
+}
+
 int loop() {
     char buf[96];
     sp = (sp<1) ? 0 : sp;
+    lsp = (lsp<1) ? 0 : lsp;
     mode = INTERP;
-    Color(WHITE, 0);
+    cfColor(mode);
     printf(" ok\r\n");
-    Color(GREEN, 0);
+    cfColor(INPUT);
     fgets(buf, 96, stdin);
+    cfColor(mode);
     if (strcmp(rTrim(buf), "edit") == 0) {
         if (sp==0) { push(0); }
         doEditor(pop());
