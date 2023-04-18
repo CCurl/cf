@@ -105,8 +105,10 @@ Next:
         printString("-oob-"); return;
     }
     switch (*(pc++)) {
-    case 0:                                                         return;
-    case 32:                                                        return;
+    case STOP:                                                     return;
+    case 32:                                                       return;
+    case LIT1: push(*(pc++));                                       NEXT;
+    case LIT4: push(CF(pc)); pc += CELL_SZ;                         NEXT;
     case '"': pc=doQuote(pc);                                       NEXT;
     case '%': t1 = NOS; push(t1);                                   NEXT;
     case '#': t1 = TOS; push(t1);                                   NEXT;
@@ -120,7 +122,6 @@ Next:
     case '<': t1 = pop(); TOS = (TOS < t1) ? 1 : 0;                 NEXT;
     case '>': t1 = pop(); TOS = (TOS > t1) ? 1 : 0;                 NEXT;
     case '.': printStringF("%d ", pop());                           NEXT;
-    case '4': push(CF(pc)); pc += CELL_SZ;                          NEXT;
     case 'e': printChar(pop());                                     NEXT;
     case ',': COMMA(pop());                                         NEXT;
     case '^': if (*(pc+CELL_SZ)!=';') { rpush(pc+CELL_SZ); }    // fall-thru
@@ -128,19 +129,27 @@ Next:
     case ';': pc=rpop(); if (!pc) { rsp=0; return; };               NEXT;
     case 'Q': if (pop()) { pc=AFA(pc); } else { pc+=CELL_SZ; }      NEXT;
     case 'q': if (pop()==0) { pc=AFA(pc); } else { pc+=CELL_SZ; }   NEXT;
-    case 'b': t1=*(pc++); if (t1=='!') { BS(TOS,NOS); sp-=2; }
+    case 'c': t1=*(pc++); if (t1=='!') { BS(TOS,NOS); sp-=2; }
         else if (t1=='@') { TOS=BF(TOS); }
         else if (t1==',') { CCOMMA(pop()); }                        NEXT;
-    case 'c': t1=*(pc++); if (t1=='!') { CS(TOS,NOS); sp-=2; }
+    case 'l': t1=*(pc++); if (t1=='!') { CS(TOS,NOS); sp-=2; }
         else if (t1=='@') { TOS=CF(TOS); }
         else if (t1==',') { COMMA(pop()); }                         NEXT;
-    case 'd': t1=*(pc++)-'0'; --regs[t1+rb];                        NEXT;
-    case 'i': t1=*(pc++)-'0'; ++regs[t1+rb];                        NEXT;
-    case 'r': t1=*(pc++)-'0'; push(regs[t1+rb]);                    NEXT;
-    case 's': t1=*(pc++)-'0'; regs[t1+rb]=pop();                    NEXT;
+    case 'k': t1=*(pc++); if (t1=='?') { push(qKey()); }
+        else if (t1=='@') { push(key()); }                          NEXT;
+    case 'd': t1=*(pc++)-'0'; if (betw(t1,0,9)) { --regs[t1+rb]; }
+        else { --TOS; }                                             NEXT;
+    case 'i': t1=*(pc++)-'0'; if (betw(t1,0,9)) { ++regs[t1+rb]; }
+        else { ++TOS; }                                             NEXT;
+    case 'r': t1=*(pc++)-'0'; if (t1=='+') { rb+=(rb<=80) ? 10 : 0; }
+        else if (t1=='-') { rb-=(9<rb) ? 10 : 0; }
+        else if (betw(t1,0,9)) { push(regs[t1+rb]); }               NEXT;
+    case 's': t1=*(pc++)-'0'; if (betw(t1,0,9)) { regs[t1+rb]=pop(); }  NEXT;
     case 't': push(clock());                                        NEXT;
     case '[': lsp += 3; L0=pop(); L1=pop(); L2=(CELL)pc;            NEXT;
     case ']': if (++L0 < L1) { pc=(byte*)L2; } else { lsp-=3; }     NEXT;
+    case '{': lsp += 2; L0=pop(); L1=(CELL)pc;                      NEXT;
+    case '}': if (0 < --L0) { pc=(byte*)L1; } else { lsp-=2; }      NEXT;
     case 'I': push(L0);                                             NEXT;
     default: ERR("-ir-");                                           return;
     }
@@ -188,11 +197,12 @@ void doAsm(const char* wd) {
     while (*wd) { CCOMMA(*(wd++)); }
 }
 
-void doDefine(const char* wd) {
+void doDefine(const char* wd, byte fl) {
     // printStringF("-def:%s-", wd);
     --last;
     last->l = (byte)strlen(wd);
     last->xt = here;
+    last->fl = fl;
     strcpy(last->name, wd);
 }
 
@@ -203,7 +213,7 @@ void doFind(const char* wd) {
     int l = strlen(wd);
     DICT_T *dp = last;
     while (dp < (DICT_T*)&user[USER_SZ]) {
-        if ((l==dp->l) && (strcmp(dp->name, wd) == 0)) {
+        if ((l==dp->l) && (strcasecmp(dp->name, wd) == 0)) {
             TOS = (CELL)dp;
             push(1);
             break;
@@ -216,15 +226,26 @@ void doCompile(const char* wd) {
     // printStringF("-com:%s-", wd);
     if (isNum(wd)) {
         CELL x = pop();
-        CCOMMA('4');
-        COMMA(x);
+        if (betw(x,0,127)) {
+            CCOMMA(LIT1);
+            CCOMMA(x);
+        } else {
+            CCOMMA(LIT4);
+            COMMA(x);
+        }
         return;
     }
     doFind(wd);
     if (pop()) {
         DICT_T* dp = (DICT_T*)pop();
-        CCOMMA('^');
-        COMMA((CELL)dp->xt);
+        if (dp->fl & INLINE) {
+            byte *x = dp->xt;
+            CCOMMA(*(x++));
+            while (*x && (*x != ';')) { CCOMMA(*(x++)); }
+        } else {
+            CCOMMA('^');
+            COMMA((CELL)dp->xt);
+        }
         return;
     }
     while (*wd) { CCOMMA(*(wd++)); }
@@ -270,7 +291,7 @@ void doOuter(char* cp) {
         if (getWord(buf) == 0) { return; }
         switch (mode) {
         case COMMENT:                                   break;
-        case DEFINE:  doDefine(buf);                    break;
+        case DEFINE:  doDefine(buf, 0);                 break;
         case COMPILE: doCompile(buf);                   break;
         case ASM:     doAsm(buf);                       break;
         case INTERP:  doInterpret(buf);                 break;
@@ -286,23 +307,42 @@ char *rTrim(char *cp) {
     return cp;
 }
 
-void defNum(char *name, CELL val) {
-    doDefine(name);
-    CCOMMA('4');
-    COMMA(val);
+void defNum(char *name, CELL val, byte fl) {
+    doDefine(name, fl);
+    if (betw(val,0,127)) { CCOMMA(LIT1); CCOMMA(val); }
+    else { CCOMMA(LIT4); COMMA(val); }
+    CCOMMA(LIT4); COMMA(val);
     CCOMMA(';');
 }
+
+struct { char *nm; char *code; } ops[] = {
+    {"EXIT", ";"}, {"TIMER", "t"}, {"ELAPSED", "t$-"}, 
+    {"DUP", "#"},  {"SWAP", "$"},  {"OVER", "%"}, 
+    {"DO", "[" },  {"LOOP", "]"},  {"I", "I"},
+    {"FOR", "{" }, {"NEXT", "}"},
+    {"KEY", "k@"}, {"?KEY", "k?"},
+    {"EMIT", "e"}, {".", "."},
+    {"!", "l!"},  {"@", "l@"},  {",", "l,"},  
+    {"c!", "c!"}, {"c@", "c@"}, {"c,", "c,"},
+    {"1+", "i+"}, {"1-", "i-"},
+    {0, 0}
+};
 
 void initVM() {
     last = (DICT_T*)&user[USER_SZ];
     here = &user[0];
     sp = rsp = lsp = rb = 0;
     mode = INTERP;
-    defNum("cell",CELL_SZ);
-    defNum("(here)",(CELL)&here);
-    defNum("(last)",(CELL)&last);
-    defNum("user",(CELL)&user[0]);
-    defNum("user-end",(CELL)&user[USER_SZ]);
+    defNum("cell",CELL_SZ, INLINE);
+    defNum("(here)",(CELL)&here, 0);
+    defNum("(last)",(CELL)&last, 0);
+    defNum("user",(CELL)&user[0], 0);
+    defNum("user-end",(CELL)&user[USER_SZ], 0);
+    for (int i = 0; ops[i].code; i++) {
+        doDefine(ops[i].nm, INLINE);
+        for (int j=0; ops[i].code[j]; j++) { CCOMMA(ops[i].code[j]); }
+        CCOMMA(';');
+    }
 }
 
 int loop() {

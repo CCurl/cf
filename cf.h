@@ -23,8 +23,9 @@ typedef unsigned char byte;
 
 typedef struct {
     byte *xt;
+    byte fl;
     byte l;
-    char name[31];
+    char name[26];
 } DICT_T;
 
 #define RED      1
@@ -41,6 +42,8 @@ typedef struct {
 #define INTERP   '_'
 #define ASM      '~'
 
+#define INLINE  0x01
+
 #define STK_SZ     15
 #define USER_SZ    1024*1024
 #define CELL_SZ    sizeof(CELL)
@@ -48,12 +51,12 @@ typedef struct {
 
 #define betw(x, y, z) ((y <= x) && (x <= z))
 
+typedef enum { STOP, LIT1, LIT4 } OPCODE_T;
+
 extern char theBlock[];
 
 extern void GotoXY(int, int);
 extern void Color(int, int);
-//extern void push(CELL);
-//extern CELL pop();
 extern int qKey();
 extern int key();
 extern void Color(int fg, int bg);

@@ -1,7 +1,4 @@
-// editor.cpp - A simple block editor
-//
-// NOTE: A huge thanks to Alain Theroux. This editor was inspired by
-//       his editor and is a shameful reverse-engineering of it. :D
+// editor.cpp - A simple editor
 
 #include "cf.h"
 
@@ -17,6 +14,7 @@ enum { curLEFT = 200, curRIGHT, curUP, curDOWN, curHOME, curPGUP, curPGDN, curEN
 #define MAX_CUR     (BLOCK_SZ-1)
 #define SETC(c)     edLines[line][off]=c
 #define BL          32
+
 char theBlock[BLOCK_SZ];
 int line, off, blkNum, edMode;
 int isDirty = 0;
