@@ -9,12 +9,11 @@ int qKey() { return _kbhit(); }
 #endif
 
 byte user[USER_SZ], vars[VARS_SZ];
-byte *pc, *toIn, mode;
+byte *pc, *here, *toIn, mode;
 CELL sp, rsp, stk[STK_SZ+1];
 byte *rstk[STK_SZ+1];
 CELL lsp, lstk[STK_SZ+1];
 CELL rb, regs[100];
-byte *here;
 DICT_T *last;
 
 #define TOS     stk[sp]
@@ -150,16 +149,18 @@ Next:
         else if (t1=='S') { printString(".\""); }
         else if (t1=='+') { rb+=(rb< 81) ? 10 : 0; }
         else if (t1=='-') { rb-=(9 < rb) ? 10 : 0; }                    NEXT;
-    case '[': t1=*(pc++); lsp += 3; L0 = L1 = 0; L2 = (CELL)pc;                 // BEGIN / XXX
-        if (t1=='1') { L0 = pop(); L1 = pop(); }                                // DO / LOOP
-        else if (t1=='2') { L1 = pop(); }                               NEXT;   // FOR / NEXT
-    case ']': t1=*(pc++); ++L0; if (t1=='0') { pc = L2; }                       // AGAIN
-        else if (t1=='1') { if (pop()!=0) { pc=L2; } else { lsp-=3; } }         // WHILE
-        else if (t1=='2') { if (pop()==0) { pc=L2; } else { lsp-=3; } }         // UNTIL
-        else if (t1=='3') { if (L0<L1) { pc=L2; } else { lsp-=3; } }            // LOOP
-        else if (t1=='4') { pc=doPlusLoop(pc); }                        NEXT;   // +LOOP
-    case '{': lsp+=2; L0=pop()-1; L1=(CELL)pc;                          NEXT;
-    case '}': if (0 <= --L0) { pc=(byte*)L1; } else { lsp-=2; }         NEXT;
+    case '[': t1 = *(pc++); lsp += 3; L2 = (CELL)pc; L0 = pop();
+        if (t1 == '1') { L1 = pop(); }                                          // DO
+        else if (t1 == '2') { --L0; }                                   NEXT;   // FOR
+    case ']': t1 = *(pc++); t2 = (t1 == '3') ? 1 : 0;                           // UNLOOP
+        if (t1 == '1') { ++L0; t2 = (L0 < L1) ? 0 : 1; }                        // LOOP
+        else if (t1 == '2') { --L0; t2 = (L0 < 0) ? 1 : 0; }                    // NEXT
+        if (t2) { lsp -= 3; } else { pc = (byte*)L2; }                  NEXT;
+    case '{': lsp += 3; L0 = L1 = 0; L2 = (CELL)pc;                     NEXT;   // BEGIN
+    case '}': t1 = *(pc++); ++L0; t2 = (t1 == '1') ? 0 : 1;                     // AGAIN
+        if (t1 == '2') { t2 = (pop() == 0) ? 1 : 0; }                           // WHILE
+        else if (t1 == '3') { t2 = (pop() != 0) ? 1 : 0; }                      // UNTIL
+        if (t2) { lsp -= 3; } else { pc = (byte*)L2; }                  NEXT;
     case 'I': push(L0);                                                 NEXT;
     default: ERR("-ir-");                                              return;
     }
@@ -292,9 +293,9 @@ int setMode(char c) {
     return 0;
 }
 
-void doOuter(char* cp) {
+void doOuter(char *cp) {
     char buf[32];
-    toIn = cp;
+    toIn = (byte*)cp;
     while (1) {
         while (isWS(peekChar())) { nextChar(); }
         char c = peekChar();
@@ -327,17 +328,18 @@ void defNum(char *name, CELL val, byte fl) {
 }
 
 struct { char *nm; char *code; } ops[] = {
-    {"EXIT", ";"}, {"TIMER", "t"},
-    {"DUP", "#"},  {"SWAP", "$"},  {"OVER", "%"},   {"DROP", "\\"},
-    {"DO", "[" },  {"LOOP", "]"},  {"+LOOP", "u]"}, {"I", "I"},
-    {"FOR", "{" }, {"NEXT", "}"},
-    {"KEY", "k@"}, {"?KEY", "k?"}, {"EMIT", "e"}, {".", "."},
-    {">R", "u1"},  {"R@", "u2"},   {"R>", "u3"},
-    {"/", "//"},   {"MOD", "/%"},  {"/MOD", "/M"},
-    {"!", "l!"},   {"@", "l@"},    {",", "l,"},
-    {"1+", "i+"},  {"1-", "d-"},
-    {"r+", "u+"},  {"r-", "u-"},
-    {"s\"","us"}, {".\"","uS"},
+    {"EXIT", ";"},    {"TIMER", "t"},
+    {"DUP", "#"},     {"SWAP", "$"},   {"OVER", "%"},   {"DROP", "\\"},
+    {"DO", "[1" },    {"FOR", "[2" },  {"I", "I"},
+    {"LOOP", "]1"},   {"NEXT", "]2"},  {"UNLOOP", "]3"},
+    {"BEGIN", "{1" }, {"AGAIN", "}1"}, {"WHILE", "}2"}, {"UNTIL", "}3"},
+    {"KEY", "k@"},    {"?KEY", "k?"},  {"EMIT", "e"},   {".", "."},
+    {">R", "u1"},     {"R@", "u2"},    {"R>", "u3"},
+    {"/", "//"},      {"MOD", "/%"},   {"/MOD", "/M"},
+    {"!", "l!"},      {"@", "l@"},     {",", "l,"},
+    {"1+", "i+"},     {"1-", "d-"},
+    {"r+", "u+"},     {"r-", "u-"},
+    {"s\"","us"},     {".\"","uS"},
     {"INTERPRET", "uO"},
     {0, 0}
 };
@@ -363,10 +365,6 @@ void initVM() {
     doOuter(": last ^(last) @ ;");
     doOuter(": if ^3 c, here 0 , ;");
     doOuter(": then ^here swap ! ;");
-    doOuter(": begin ^here ;");
-    doOuter(": again ^2 c, , ;");
-    doOuter(": until ^3 c, , ;");
-    doOuter(": while ^4 c, , ;");
 }
 
 void cfColor(int md) {
