@@ -6,6 +6,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="block-000.cf" />
+    <None Include="block-001.cf" />
+    <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cf.h" />

@@ -18,6 +18,14 @@
 #include <termios.h>
 #endif
 
+#define STK_SZ      31
+#define USER_SZ     1024*1024
+#define VARS_SZ     1024*1024
+#define CELL_SZ     sizeof(CELL)
+#define DICT_SZ     sizeof(DICT_T)
+#define BLOCK_SZ    1024*2
+#define NUM_BLOCKS  10
+
 typedef int CELL;
 typedef unsigned char byte;
 
@@ -27,6 +35,15 @@ typedef struct {
     byte l;
     char name[18];
 } DICT_T;
+
+typedef struct {
+    CELL blockNum;
+    byte isDirty;
+    byte inUse;
+    byte isLoaded;
+    byte free2;
+    char data[BLOCK_SZ];
+} BLOCK_T;
 
 #define BLACK       30
 #define RED         91
@@ -48,12 +65,6 @@ typedef struct {
 #define INLINE      0x01
 #define IMMEDIATE   0x02
 
-#define STK_SZ      31
-#define USER_SZ     1024*1024
-#define VARS_SZ     1024*1024
-#define CELL_SZ     sizeof(CELL)
-#define DICT_SZ     sizeof(DICT_T)
-
 #define betw(x, y, z) ((y <= x) && (x <= z))
 
 typedef enum {
@@ -62,8 +73,9 @@ typedef enum {
     LIT1, LIT4,
 } OPCODE_T;
 
-extern char theBlock[];
-
+extern BLOCK_T *getBlock(int);
+extern void writeBlock(BLOCK_T *);
+extern void flushBlocks();
 extern void GotoXY(int, int);
 extern void Color(int, int);
 extern int qKey();
@@ -73,7 +85,7 @@ extern void cfColor(int md);
 extern void printString(const char* s);
 extern void printStringF(const char* fmt, ...);
 extern void printChar(char c);
-extern void doEditor(CELL);
+extern void doEditor(BLOCK_T *);
 extern void doOuter(char *);
 
 #endif 

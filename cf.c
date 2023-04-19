@@ -15,6 +15,7 @@ byte *rstk[STK_SZ+1];
 CELL lsp, lstk[STK_SZ+1];
 CELL rb, regs[100];
 DICT_T *last;
+BLOCK_T blocks[10];
 
 #define TOS     stk[sp]
 #define NOS     stk[sp-1]
@@ -104,6 +105,15 @@ byte *doQuote(byte *x) {
     return x;
 }
 
+void doLoad(CELL blockNum) {
+    byte *tiSave = toIn;
+    BLOCK_T *blk = getBlock(blockNum);
+    blk->inUse = 1;
+    doOuter(blk->data);
+    blk->inUse = 0;
+    toIn = tiSave;
+}
+
 void run(byte *pc) {
     CELL t1, t2;
 Next:
@@ -142,7 +152,8 @@ Next:
         else if (t1==',') { CCOMMA(pop()); }                            NEXT;
     case 'l': t1=*(pc++); if (t1=='!') { CS(TOS,NOS); sp-=2; }
         else if (t1=='@') { TOS=CF(TOS); }
-        else if (t1==',') { COMMA(pop()); }                             NEXT;
+        else if (t1==',') { COMMA(pop()); }
+        else if (t1=='d') { t2=pop(); doLoad(t2); }                     NEXT;
     case 'k': t1=*(pc++); if (t1=='?') { push(qKey()); }
         else if (t1=='@') { push(key()); }                              NEXT;
     case 'd': t1=*(pc++)-'0'; betw(t1,0,9) ? --regs[t1+rb] : --TOS;     NEXT;
@@ -153,8 +164,11 @@ Next:
     case 'u': t1=*(pc++); if (t1=='1') { rpush((byte*)pop()); }
         else if (t1=='2') { push((CELL)rstk[rsp]); }
         else if (t1=='3') { push((CELL)rpop()); }
+        else if (t1=='E') { doEditor(getBlock(pop())); }
+        else if (t1=='F') { flushBlocks(); }
+        else if (t1=='L') { doLoad(pop()); }
         else if (t1=='O') { t1 = pop(); doOuter((char*)t1); }
-        else if (t1=='T') { pc=dotQuote((byte*)pop()); }
+        else if (t1=='T') { pc = dotQuote((byte*)pop()); }
         else if (t1==']') { lsp -= 3; }
         else if (t1=='+') { rb+=(rb< 81) ? 10 : 0; }
         else if (t1=='-') { rb-=(9 < rb) ? 10 : 0; }                    NEXT;
@@ -280,11 +294,6 @@ void doInterpret(const char* wd) {
         run(dp->xt);
         return;
     }
-    if (strcmp(wd,"edit")==0) {
-        doEditor(pop());
-        doOuter(theBlock);
-        return;
-    }
     byte *cp = here;
     while (*wd) { *(cp++) = *(wd++); }
     *cp = 0;
@@ -345,7 +354,7 @@ struct { char *nm; char *code; } ops[] = {
     {"/", "//"},        {"MOD", "/%"},    {"/MOD", "/M"},
     {"!", "l!"},        {"@", "l@"},      {",", "l,"},
     {"r+", "u+"},       {"r-", "u-"},     {"1+", "i+"},         {"1-", "d-"},
-    {"INTERPRET", "uO"},
+    {"INTERP", "uO"},   {"EDIT", "uE"},   {"LOAD", "uL"},       {"FLUSH", "uF"},
     {0, 0}
 };
 
@@ -381,6 +390,58 @@ void cfColor(int md) {
     else if (md == INPUT) { Color(GREEN,0); }
 }
 
+void writeBlock(BLOCK_T *blk) {
+    if (blk->isDirty == 0) { return; }
+    char fn[24];
+    int sz = 0;
+    while ((sz<=BLOCK_SZ) && (blk->data[sz])) { ++sz; }
+    sprintf(fn, "block-%03ld.cf", blk->blockNum);
+    FILE *fp = fopen(fn, "wb");
+    if (fp) {
+        fwrite(blk->data, 1, sz, fp);
+        fclose(fp);
+        blk->isDirty = 0;
+    }
+}
+
+void readBlock(BLOCK_T *blk) {
+    char fn[24];
+    for (int i=0; i<BLOCK_SZ; i++) { blk->data[i] = 0; }
+    sprintf(fn, "block-%03ld.cf", blk->blockNum);
+    FILE *fp = fopen(fn, "rb");
+    if (fp) {
+        fread(blk->data, 1, BLOCK_SZ, fp);
+        fclose(fp);
+    }
+    blk->isDirty = 0;
+}
+
+BLOCK_T *getBlock(CELL blockNum) {
+    BLOCK_T *p = NULL;
+    for (int i=0; i<NUM_BLOCKS; i++) {
+        p = &blocks[i];
+        if ((p->blockNum == blockNum) && (p->isLoaded)) { return p; }
+    }
+
+    for (int i=0; i<NUM_BLOCKS; i++) {
+        p = &blocks[i];
+        if (p->inUse == 0) {
+            if (p->isDirty) { writeBlock(p); }
+            p->blockNum = blockNum;
+            readBlock(p);
+            return p;
+        }
+    }
+
+    return p;
+}
+
+void flushBlocks() {
+    for (int i=0; i<NUM_BLOCKS; i++) {
+        if (blocks[i].isDirty) { writeBlock(&blocks[i]); }
+    }
+}
+
 int loop() {
     char buf[96];
     sp = (sp<1) ? 0 : sp;
@@ -391,16 +452,8 @@ int loop() {
     cfColor(INPUT);
     fgets(buf, 96, stdin);
     cfColor(mode);
-    if (strcmp(rTrim(buf), "edit") == 0) {
-        if (sp==0) { push(0); }
-        doEditor(pop());
-        initVM();
-        doOuter(theBlock);
-    } else if (strcmp(buf, "bye") == 0) {
-        return 0;
-    } else {
-        doOuter(buf);
-    }
+    if (strcmp(rTrim(buf), "bye") == 0) { return 0; }
+    else { doOuter(buf); }
     return 1;
 }
 

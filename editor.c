@@ -10,13 +10,12 @@ enum { curLEFT = 200, curRIGHT, curUP, curDOWN, curHOME, curPGUP, curPGDN, curEN
 
 #define LLEN       100
 #define NUM_LINES   20
-#define BLOCK_SZ    (NUM_LINES)*(LLEN)
 #define MAX_CUR     (BLOCK_SZ-1)
 #define SETC(c)     edLines[line][off]=c
+#define theBlock    pBlock->data
 
-char theBlock[BLOCK_SZ];
-int line, off, blkNum, edMode;
-int isDirty = 0;
+BLOCK_T *pBlock;
+int line, off, edMode;
 const char* msg = NULL;
 char edLines[NUM_LINES][LLEN];
 
@@ -77,7 +76,7 @@ void mv(int l, int o) {
 void edSetCh(char c) {
     SETC(c);
     mv(0, 1);
-    isDirty = 1;
+    pBlock->isDirty = 1;
 }
 
 int edKey() {
@@ -122,16 +121,8 @@ int edKey() {
     return c;
 }
 
-void clearBlock() {
-    for (int i = 0; i < BLOCK_SZ; i++) {
-        theBlock[i] = 0;
-        // if ((i % 50) == 0) { theBlock[i] = 10; }
-    }
-}
-
 int toBlock() {
     int c = 0;
-    clearBlock();
     for (int y = 0; y < NUM_LINES; y++) {
         for (int x = 0; x < LLEN; x++) {
             theBlock[c++] = edLines[y][x];
@@ -162,40 +153,31 @@ void toLines() {
     }
 }
 
-void edRdBlk() {
-    char buf[24];
-    clearBlock();
-    sprintf(buf, "block-%03d.cf", blkNum);
-    msg = "-noFile-";
-    FILE* fp = fopen(buf, "rb");
-    if (fp) {
-        fread(theBlock, 1, BLOCK_SZ, fp);
-        msg = "-loaded-";
-        fclose(fp);
+void edWriteBlock() {
+    if (pBlock->isDirty) {
+        toBlock();
+        writeBlock(pBlock);
     }
-    toLines();
-    isDirty = 0;
 }
 
-void edSvBlk() {
-    int sz = toBlock();
-    char buf[24];
-    sprintf(buf, "block-%03d.cf", blkNum);
-    msg = "-err-";
-    FILE* fp = fopen(buf, "wb");
-    if (fp) {
-        fwrite(theBlock, 1, sz, fp);
-        msg = "-saved-";
-        fclose(fp);
+void edRdBlk(CELL num, int reload) {
+    if (reload) {
+        pBlock->isDirty = 0;
+        pBlock->inUse = 0;
+        pBlock->isLoaded = 0;
+    } else {
+        edWriteBlock(pBlock);
     }
-    // msg = (pop()) ? "-saved-" : "-errWrite-";
-    isDirty = 0;
+    pBlock->inUse = 0;
+    pBlock = getBlock(num);
+    msg = "-noFile-";
+    toLines();
 }
 
 void showFooter() {
     GotoXY(1, NUM_LINES+1);
     printString("- Block Editor v0.1 - ");
-    printStringF("Block# %03d %c", blkNum, isDirty ? '*' : BL);
+    printStringF("Block# %03d %c", pBlock->blockNum, pBlock->isDirty ? '*' : BL);
     printStringF(" %s -\r\n", msg ? msg : "");
     printString("\r\n  (q)home (w)up (e)end (a)left (s)down (d)right (t)op (l)ast");
     printString("\r\n  (x)del (r)Replace (i)Insert");
@@ -219,7 +201,7 @@ void deleteChar() {
     for (int o = off; o < (LLEN - 2); o++) {
         edLines[line][o] = edLines[line][o + 1];
     }
-    isDirty = 1;
+    pBlock->isDirty = 1;
     showLine(line);
     showCursor();
 }
@@ -229,7 +211,7 @@ void insertChar(char c, int refresh) {
         edLines[line][o] = edLines[line][o - 1];
     }
     SETC(c);
-    isDirty = 1;
+    pBlock->isDirty = 1;
     if (refresh) {
         showLine(line);
         showCursor();
@@ -255,7 +237,7 @@ void doType(int isInsert) {
         }
         showLine(line);
         showCursor();
-        isDirty = 1;
+        pBlock->isDirty = 1;
     }
 }
 
@@ -305,27 +287,25 @@ int processEditorChar(int c) {
     case 'i': edMode=INSERT;                    break;
     case 'r': edMode=REPLACE;                   break;
     case 'x': deleteChar();                     break;
-    case 'L': edRdBlk();                        break;
-    case 'W': edSvBlk();                        break;
-    case '+': if (isDirty) { edSvBlk(); }
-            ++blkNum;
-            edRdBlk();
-            break;
-    case '-': if (isDirty) { edSvBlk(); }
-            blkNum -= (blkNum) ? 1 : 0;
-            edRdBlk();
-            break;
+    case 'L': edRdBlk(pBlock->blockNum, 1);
+        showEditor();                           break;
+    case 'W': edWriteBlock(pBlock);             break;
+    case '+': edRdBlk(pBlock->blockNum+1, 0);
+        showEditor();                           break;
+    case '-': if (0 < pBlock->blockNum) {
+            edRdBlk(pBlock->blockNum-1, 0);
+            showEditor();
+        }                                       break;
     }
     return 1;
 }
 
-void doEditor(CELL blk) {
+void doEditor(BLOCK_T *blk) {
     line = 0;
     off = 0;
-    blkNum = blk;
+    pBlock = blk;
+    toLines();
     edMode = COMMAND;
-    if (0 <= blkNum) { edRdBlk(); }
-    blkNum = (0 <= blkNum) ? blkNum : 0;
     CLS();
     showEditor();
     showFooter();
