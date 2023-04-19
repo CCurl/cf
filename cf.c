@@ -80,11 +80,11 @@ void LSO(ushort l, CELL v) {
 void CCOMMA(CELL x) { *(here++)=(byte)(x); }
 void COMMA(CELL val) { CS(here, val); here += CELL_SZ; }
 
-byte *doQuote(byte *pc) {
-    while ((*pc) && (*pc != '"')) {
-        char c = *(pc++);
+byte *doQuote(byte *x) {
+    while ((*x) && (*x != '"')) {
+        char c = *(x++);
         if (c == '%') {
-            c = *(pc++);
+            c = *(x++);
             if (c == 'd') { printStringF("%d", pop()); }
             else if (c == 'x') { printStringF("%x", pop()); }
             else if (c == 'n') { printString("\r\n"); }
@@ -92,8 +92,9 @@ byte *doQuote(byte *pc) {
             else if (c == 'c') { printChar(pop()); }
             else { printChar(c); }
         } else { printChar(c); }
-    } ++pc;
-    return pc;
+    }
+    if (*x) { ++x; }
+    return x;
 }
 
 void run(byte *pc) {
@@ -330,12 +331,12 @@ void defNum(char *name, CELL val, byte fl) {
 }
 
 struct { char *nm; char *code; } ops[] = {
-    {"EXIT", ";"},    {"TIMER", "t"},  {".", ".."},
+    {"EXIT", ";"},    {"TIMER", "t"},
     {"DUP", "#"},     {"SWAP", "$"},   {"OVER", "%"},   {"DROP", "\\"},
     {"DO", "[1" },    {"FOR", "[2" },  {"I", "I"},
     {"LOOP", "]1"},   {"NEXT", "]2"},  {"UNLOOP", "u]"},
     {"BEGIN", "{" },  {"AGAIN", "}1"}, {"WHILE", "}2"}, {"UNTIL", "}3"},
-    {"KEY", "k@"},    {"?KEY", "k?"},  {"EMIT", "e"},   {".", "."},
+    {"KEY", "k@"},    {"?KEY", "k?"},  {"EMIT", "e"},   {".", ".."},
     {">R", "u1"},     {"R@", "u2"},    {"R>", "u3"},
     {"/", "//"},      {"MOD", "/%"},   {"/MOD", "/M"},
     {"!", "l!"},      {"@", "l@"},     {",", "l,"},
