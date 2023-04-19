@@ -126,7 +126,7 @@ Next:
     case '=': t1 = pop(); TOS = (TOS == t1) ? 1 : 0;                    NEXT;
     case '<': t1 = pop(); TOS = (TOS < t1) ? 1 : 0;                     NEXT;
     case '>': t1 = pop(); TOS = (TOS > t1) ? 1 : 0;                     NEXT;
-    case '.': printStringF("%d ", pop());                               NEXT;
+    case '.': doQuote((byte*)"%d ");                                    NEXT;
     case 'e': printChar(pop());                                         NEXT;
     case 'c': t1=*(pc++); if (t1=='!') { BS(TOS,NOS); sp-=2; }
         else if (t1=='@') { TOS=BF(TOS); }
