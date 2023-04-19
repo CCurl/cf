@@ -143,12 +143,21 @@ Next:
     case 's': t1=*(pc++)-'0'; if (betw(t1,0,9)) { regs[rb+t1]=pop(); }  NEXT;
     case 't': push(clock());                                            NEXT;
     case 'u': t1=*(pc++); if (t1=='1') { rpush((byte*)pop()); }
-            else if (t1=='2') { push((CELL)rstk[rsp]); }
-            else if (t1=='3') { push((CELL)rpop()); }                     
-            else if (t1=='+') { rb+=(rb< 81) ? 10 : 0; }
-            else if (t1=='-') { rb-=(9 < rb) ? 10 : 0; }                NEXT;
-    case '[': lsp+=3; L0=pop(); L1=pop(); L2=(CELL)pc;                  NEXT;
-    case ']': if (++L0 < L1) { pc=(byte*)L2; } else { lsp-=3; }         NEXT;
+        else if (t1=='2') { push((CELL)rstk[rsp]); }
+        else if (t1=='3') { push((CELL)rpop()); }
+        else if (t1=='O') { t1 = pop(); doOuter((char*)t1); }
+        else if (t1=='s') { printString("S\""); }
+        else if (t1=='S') { printString(".\""); }
+        else if (t1=='+') { rb+=(rb< 81) ? 10 : 0; }
+        else if (t1=='-') { rb-=(9 < rb) ? 10 : 0; }                    NEXT;
+    case '[': t1=*(pc++); lsp += 3; L0 = L1 = 0; L2 = (CELL)pc;                 // BEGIN / XXX
+        if (t1=='1') { L0 = pop(); L1 = pop(); }                                // DO / LOOP
+        else if (t1=='2') { L1 = pop(); }                               NEXT;   // FOR / NEXT
+    case ']': t1=*(pc++); ++L0; if (t1=='0') { pc = L2; }                       // AGAIN
+        else if (t1=='1') { if (pop()!=0) { pc=L2; } else { lsp-=3; } }         // WHILE
+        else if (t1=='2') { if (pop()==0) { pc=L2; } else { lsp-=3; } }         // UNTIL
+        else if (t1=='3') { if (L0<L1) { pc=L2; } else { lsp-=3; } }            // LOOP
+        else if (t1=='4') { pc=doPlusLoop(pc); }                        NEXT;   // +LOOP
     case '{': lsp+=2; L0=pop()-1; L1=(CELL)pc;                          NEXT;
     case '}': if (0 <= --L0) { pc=(byte*)L1; } else { lsp-=2; }         NEXT;
     case 'I': push(L0);                                                 NEXT;
@@ -319,16 +328,17 @@ void defNum(char *name, CELL val, byte fl) {
 
 struct { char *nm; char *code; } ops[] = {
     {"EXIT", ";"}, {"TIMER", "t"},
-    {"DUP", "#"},  {"SWAP", "$"},  {"OVER", "%"},  {"DROP", "\\"},
-    {"DO", "[" },  {"LOOP", "]"},  {"I", "I"},
+    {"DUP", "#"},  {"SWAP", "$"},  {"OVER", "%"},   {"DROP", "\\"},
+    {"DO", "[" },  {"LOOP", "]"},  {"+LOOP", "u]"}, {"I", "I"},
     {"FOR", "{" }, {"NEXT", "}"},
-    {"KEY", "k@"}, {"?KEY", "k?"},
-    {"EMIT", "e"}, {".", "."},
-    {">r", "u1"},  {"r@", "u2"},   {"r>", "u3"},
+    {"KEY", "k@"}, {"?KEY", "k?"}, {"EMIT", "e"}, {".", "."},
+    {">R", "u1"},  {"R@", "u2"},   {"R>", "u3"},
     {"/", "//"},   {"MOD", "/%"},  {"/MOD", "/M"},
     {"!", "l!"},   {"@", "l@"},    {",", "l,"},
     {"1+", "i+"},  {"1-", "d-"},
     {"r+", "u+"},  {"r-", "u-"},
+    {"s\"","us"}, {".\"","uS"},
+    {"INTERPRET", "uO"},
     {0, 0}
 };
 
