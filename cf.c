@@ -126,7 +126,8 @@ Next:
     case '=': t1 = pop(); TOS = (TOS == t1) ? 1 : 0;                    NEXT;
     case '<': t1 = pop(); TOS = (TOS < t1) ? 1 : 0;                     NEXT;
     case '>': t1 = pop(); TOS = (TOS > t1) ? 1 : 0;                     NEXT;
-    case '.': doQuote((byte*)"%d ");                                    NEXT;
+    case '.': if (*(pc++)=='"') { pc = doQuote(pc); }
+        else { doQuote((byte*)"%d "); }                                 NEXT;
     case 'e': printChar(pop());                                         NEXT;
     case 'c': t1=*(pc++); if (t1=='!') { BS(TOS,NOS); sp-=2; }
         else if (t1=='@') { TOS=BF(TOS); }
@@ -329,7 +330,7 @@ void defNum(char *name, CELL val, byte fl) {
 }
 
 struct { char *nm; char *code; } ops[] = {
-    {"EXIT", ";"},    {"TIMER", "t"},
+    {"EXIT", ";"},    {"TIMER", "t"},  {".", ".."},
     {"DUP", "#"},     {"SWAP", "$"},   {"OVER", "%"},   {"DROP", "\\"},
     {"DO", "[1" },    {"FOR", "[2" },  {"I", "I"},
     {"LOOP", "]1"},   {"NEXT", "]2"},  {"UNLOOP", "u]"},
