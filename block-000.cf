@@ -1,6 +1,6 @@
-(( tests )
+`( tests )
 : mil ^1000 #** ;
-: elapsed ^timer swap - ."%d" ;
+: elapsed ^timer swap - ."%d%b" ;
 : bm1 ^mil s1 timer begin d1 r1 while elapsed ;
 : bm2 ^mil timer swap 0 do loop elapsed ;
 : bm3 ^mil timer swap for next elapsed ;

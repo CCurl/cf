@@ -28,30 +28,31 @@ typedef struct {
     char name[18];
 } DICT_T;
 
-#define BLACK    30
-#define RED      91
-#define GREEN    92
-#define YELLOW   93
-#define BLUE     94
-#define PURPLE   95
-#define CYAN     96
-#define WHITE    97
+#define BLACK       30
+#define RED         91
+#define GREEN       92
+#define YELLOW      93
+#define BLUE        94
+#define PURPLE      95
+#define CYAN        96
+#define WHITE       97
 
-#define COMMENT  '('
-#define COMPILE  '^'
-#define DEFINE   ':'
-#define IMMED    '['
-#define ASM      '~'
-#define INPUT    5
+#define COMMENT     '`'
+#define COMPILE     '^'
+#define DEFINE      ':'
+#define IMMED       '['
+#define ASM         '~'
+#define INPUT        5
+#define BL          32
 
-#define INLINE     0x01
-#define IMMEDIATE  0x02
+#define INLINE      0x01
+#define IMMEDIATE   0x02
 
-#define STK_SZ     31
-#define USER_SZ    1024*1024
-#define VARS_SZ    1024*1024
-#define CELL_SZ    sizeof(CELL)
-#define DICT_SZ    sizeof(DICT_T)
+#define STK_SZ      31
+#define USER_SZ     1024*1024
+#define VARS_SZ     1024*1024
+#define CELL_SZ     sizeof(CELL)
+#define DICT_SZ     sizeof(DICT_T)
 
 #define betw(x, y, z) ((y <= x) && (x <= z))
 

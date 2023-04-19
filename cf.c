@@ -9,7 +9,7 @@ int qKey() { return _kbhit(); }
 #endif
 
 byte user[USER_SZ], vars[VARS_SZ];
-byte *pc, *here, *toIn, mode;
+byte *pc, *here, *vhere, *toIn, mode;
 CELL sp, rsp, stk[STK_SZ+1];
 byte *rstk[STK_SZ+1];
 CELL lsp, lstk[STK_SZ+1];
@@ -80,7 +80,7 @@ void LSO(ushort l, CELL v) {
 void CCOMMA(CELL x) { *(here++)=(byte)(x); }
 void COMMA(CELL val) { CS(here, val); here += CELL_SZ; }
 
-byte *doQuote(byte *x) {
+byte *dotQuote(byte *x) {
     while ((*x) && (*x != '"')) {
         char c = *(x++);
         if (c == '%') {
@@ -93,6 +93,13 @@ byte *doQuote(byte *x) {
             else { printChar(c); }
         } else { printChar(c); }
     }
+    if (*x) { ++x; }
+    return x;
+}
+
+byte *doQuote(byte *x) {
+    push((CELL)x);
+    while ((*x) && (*x != '"')) { ++x; }
     if (*x) { ++x; }
     return x;
 }
@@ -127,8 +134,8 @@ Next:
     case '=': t1 = pop(); TOS = (TOS == t1) ? 1 : 0;                    NEXT;
     case '<': t1 = pop(); TOS = (TOS < t1) ? 1 : 0;                     NEXT;
     case '>': t1 = pop(); TOS = (TOS > t1) ? 1 : 0;                     NEXT;
-    case '.': if (*(pc++)=='"') { pc = doQuote(pc); }
-        else { doQuote((byte*)"%d "); }                                 NEXT;
+    case '.': if (*(pc++)=='"') { pc = dotQuote(pc); }
+        else { dotQuote((byte*)"%d "); }                                NEXT;
     case 'e': printChar(pop());                                         NEXT;
     case 'c': t1=*(pc++); if (t1=='!') { BS(TOS,NOS); sp-=2; }
         else if (t1=='@') { TOS=BF(TOS); }
@@ -147,22 +154,18 @@ Next:
         else if (t1=='2') { push((CELL)rstk[rsp]); }
         else if (t1=='3') { push((CELL)rpop()); }
         else if (t1=='O') { t1 = pop(); doOuter((char*)t1); }
-        else if (t1=='s') { printString("S\""); }
-        else if (t1=='S') { printString(".\""); }
+        else if (t1=='T') { pc=dotQuote((byte*)pop()); }
         else if (t1==']') { lsp -= 3; }
         else if (t1=='+') { rb+=(rb< 81) ? 10 : 0; }
         else if (t1=='-') { rb-=(9 < rb) ? 10 : 0; }                    NEXT;
-    case '[': t1 = *(pc++); lsp += 3; L2 = (CELL)pc;
-        L0 = pop(); if (t1 == '1') { L1 = pop(); }          /* DO*/
-        else if (t1 == '2') { --L0; }                       /* FOR */   NEXT;
-    case ']': t1 = *(pc++); t2 = 0; L0 += (t1=='1') ? 1 : -1;
-        if ((t1 == '1') && (L1 <= L0)) { ++t2; }            // LOOP
-        if ((t1 == '2') && (L0 <  0)) { ++t2; }             // NEXT
-        if (t2) { lsp -= 3; } else { pc = (byte*)L2; }                  NEXT;
-    case '{': lsp += 3; L0 = L1 = 0; L2 = (CELL)pc;                     NEXT;
-    case '}': t1 = *(pc++); ++L0; t2 = 0;                   // AGAIN
-        if (t1 == '2') { t2 = (pop() == 0) ? 1 : 0; }       // WHILE
-        else if (t1 == '3') { t2 = (pop() != 0) ? 1 : 0; }  // UNTIL
+    case '(': lsp += 3; L2 = (CELL)pc; L0 = pop()-1;                    NEXT;
+    case ')': if (--L0<0) { lsp-=3; } else { pc=(byte*)L2; }            NEXT;
+    case '[': lsp+=3; L2=(CELL)pc; L0=pop(); L1=pop();                  NEXT;
+    case ']': if (++L0 < L1) { pc=(byte*)L2; } else { lsp-=3; }         NEXT;
+    case '{': lsp += 3; L2=(CELL)pc; L0 = L1 = 0;                       NEXT;
+    case '}': t1 = *(pc++); ++L0; t2 = 0;                     // AGAIN
+        if (t1 == '2') { t2 = (pop() == 0) ? 1 : 0; }         // WHILE
+        else if (t1 == '3') { t2 = (pop() != 0) ? 1 : 0; }    // UNTIL
         if (t2) { lsp -= 3; } else { pc = (byte*)L2; }                  NEXT;
     case 'I': push(L0);                                                 NEXT;
     default: ERR("-ir-");                                              return;
@@ -218,6 +221,7 @@ void doDefine(const char* wd, byte fl) {
     last->xt = here;
     last->fl = fl;
     strcpy(last->name, wd);
+    mode = COMPILE;
 }
 
 // find (cp--[dp 1]|0)
@@ -310,7 +314,7 @@ void doOuter(char *cp) {
         case DEFINE:  doDefine(buf, 0);                 break;
         case COMPILE: doCompile(buf);                   break;
         case ASM:     doAsm(buf);                       break;
-        case IMMED:  doInterpret(buf);                 break;
+        case IMMED:   doInterpret(buf);                 break;
         default: break;
         }
     }
@@ -331,18 +335,16 @@ void defNum(char *name, CELL val, byte fl) {
 }
 
 struct { char *nm; char *code; } ops[] = {
-    {"EXIT", ";"},    {"TIMER", "t"},
-    {"DUP", "#"},     {"SWAP", "$"},   {"OVER", "%"},   {"DROP", "\\"},
-    {"DO", "[1" },    {"FOR", "[2" },  {"I", "I"},
-    {"LOOP", "]1"},   {"NEXT", "]2"},  {"UNLOOP", "u]"},
-    {"BEGIN", "{" },  {"AGAIN", "}1"}, {"WHILE", "}2"}, {"UNTIL", "}3"},
-    {"KEY", "k@"},    {"?KEY", "k?"},  {"EMIT", "e"},   {".", ".."},
-    {">R", "u1"},     {"R@", "u2"},    {"R>", "u3"},
-    {"/", "//"},      {"MOD", "/%"},   {"/MOD", "/M"},
-    {"!", "l!"},      {"@", "l@"},     {",", "l,"},
-    {"1+", "i+"},     {"1-", "d-"},
-    {"r+", "u+"},     {"r-", "u-"},
-    {"s\"","us"},     {".\"","uS"},
+    {"EXIT", ";"},      {"TIMER", "t"},   {"TYPEZ", "uT"},
+    {"DUP", "#"},       {"SWAP", "$"},    {"OVER", "%"},        {"DROP", "\\"},
+    {"DO", "[" },       {"FOR", "(" },    {"I", "I"},
+    {"LOOP", "]"},      {"NEXT", ")"},    {"UNLOOP", "u]"},
+    {"BEGIN", "{" },    {"AGAIN", "}1"},  {"WHILE", "}2"},      {"UNTIL", "}3"},
+    {"KEY", "k@"},      {"?KEY", "k?"},   {"EMIT", "e"},        {".", ".."},
+    {">R", "u1"},       {"R@", "u2"},     {"R>", "u3"},
+    {"/", "//"},        {"MOD", "/%"},    {"/MOD", "/M"},
+    {"!", "l!"},        {"@", "l@"},      {",", "l,"},
+    {"r+", "u+"},       {"r-", "u-"},     {"1+", "i+"},         {"1-", "d-"},
     {"INTERPRET", "uO"},
     {0, 0}
 };
@@ -359,6 +361,7 @@ void initVM() {
     }
     defNum("cell",CELL_SZ, INLINE);
     defNum("(here)",(CELL)&here, 0);
+    defNum("(vhere)",(CELL)&vhere, 0);
     defNum("(last)",(CELL)&last, 0);
     defNum("user",(CELL)&user[0], 0);
     defNum("user-sz",USER_SZ, 0);
