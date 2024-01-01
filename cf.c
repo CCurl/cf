@@ -118,15 +118,12 @@ int doML(char *wd) {
 
 cell_t lastState;
 int setState(char *wd) {
-    if ((state==COMMENT) && !strEq(wd, "))")) { return 1; }
-    if (strEq(wd, "[[")) { state=INTERP;  return 1; }
+    if (strEq(wd, "((")) { state=COMMENT; return 1; }
+    if (strEq(wd, "::")) { state=DEFINE; return 1; }
+    if (strEq(wd, ":I")) { state=INLINE; return 1; }
     if (strEq(wd, "]]")) { state=COMPILE; return 1; }
-    if (strEq(wd, ":D")) { state=DEFINE; return 1; }
-    if (strEq(wd, "((")) { lastState=state; state=COMMENT; return 1; }
-    if (strEq(wd, "))")) { state=lastState; return 1; }
-    if (strEq(wd, "::")) { state=COMPILE; doDefine(0);  return 1; }
-    if (strEq(wd, ":I")) { state=COMPILE; doDefine(0); last->f=2; return 1; }
-    if (strEq(wd, ":M")) { state=MLMODE;  doDefine(0); last->f=2; return 1; }
+    if (strEq(wd, "[[")) { state=INTERP;  return 1; }
+    if (strEq(wd, ":M")) { state=MLMODE; return 1; }
     return 0;
 }
 
@@ -160,10 +157,10 @@ void parseF(char *fmt, ...) {
 void initVM() {
     vmInit();
     state = INTERP;
-    char *cni = ":I %s #%ld ;";
-    char *cnn = ":: %s #%zu ;";
-    char *m1i = ":M %s #%ld 3";
-    char *m2i = ":M %s #%ld #%ld 3";
+    char *cni = ":I %s ]] #%ld ;";
+    char *cnn = ":: %s ]] #%zu ;";
+    char *m1i = ":I %s :M #%ld 3";
+    char *m2i = ":I %s :M #%ld #%ld 3";
 
     parseF(m1i, ";", EXIT);
     parseF(m1i, "@", FETCH);
@@ -193,9 +190,9 @@ void initVM() {
     parseF(cnn, "base",(cell_t)&base);
     parseF(cnn, "vars",(cell_t)&vars[0]);
     parseF(cnn, "vars-end",(cell_t)&vars[VARS_SZ]);
-    doOuter(":I NIP SWAP DROP ;");
-    doOuter(":I / /MOD NIP ;");
-    doOuter(":: bye 999 state ! ;");
+    doOuter(":I NIP ]] SWAP DROP ;");
+    doOuter(":I /   ]] /MOD NIP ;");
+    doOuter(":: bye ]] 999 state ! ;");
 }
 
 void loop() {
