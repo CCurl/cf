@@ -1,13 +1,17 @@
-(( tests )
-: mil ^1000 #** ;
-: elapsed ^timer swap - ;
-: bm1 ^mil s1 timer [begin ^d1 r1 [while ^elapsed . ;
-: bm2 ^mil timer swap 0 do loop elapsed . ;
-: bm3 ^mil timer swap for next elapsed . ;
-: test [if ^"yes" [then ^"-more" 10 0 do I . loop ;
-
-
-
+Core words
+bl    32 ; test comment
+.     (.)  no EXIT here!!
+space bl emit ;
+spaces0 do space loop ;
+More words ...
+here  (here) @ ;
+last  (last) @ ;
+if    6 c, here 0 , ;
+then  here swap ! ;
+mil   1000 dup * * ;
+elapsed clock swap - . ;
+bm clock swap 0 do loop elapsed ;
+tt'N' SWAP if drop 'Y' thenemit ;
 
 
 

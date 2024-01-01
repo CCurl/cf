@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <time.h>
+#include "vm.h"
 
 #ifdef _MSC_VER
 #include <conio.h>
@@ -18,48 +19,20 @@
 #include <termios.h>
 #endif
 
-typedef int CELL;
-typedef unsigned char byte;
+#define RED      1
+#define GREEN    2
+#define ORANGE   3
+#define BLUE     4
+#define PURPLE   5
+#define CYAN     6
+#define WHITE    7
 
-typedef struct {
-    byte *xt;
-    byte fl;
-    byte l;
-    char name[18];
-} DICT_T;
-
-#define BLACK    30
-#define RED      91
-#define GREEN    92
-#define YELLOW   93
-#define BLUE     94
-#define PURPLE   95
-#define CYAN     96
-#define WHITE    97
-
-#define COMMENT  '('
-#define COMPILE  '^'
-#define DEFINE   ':'
-#define IMMED    '['
-#define ASM      '~'
-#define INPUT    5
-
-#define INLINE     0x01
-#define IMMEDIATE  0x02
-
-#define STK_SZ     31
-#define USER_SZ    1024*1024
-#define VARS_SZ    1024*1024
-#define CELL_SZ    sizeof(CELL)
-#define DICT_SZ    sizeof(DICT_T)
-
-#define betw(x, y, z) ((y <= x) && (x <= z))
-
-typedef enum {
-    STOP=0, CALL, 
-    JMP, JMPz, JMPn,
-    LIT1, LIT4,
-} OPCODE_T;
+#define DEFINE   RED
+#define INLINE   ORANGE
+#define COMPILE  BLUE
+#define COMMENT  GREEN
+#define MLMODE   CYAN
+#define INTERP   WHITE
 
 extern char theBlock[];
 
@@ -67,12 +40,10 @@ extern void GotoXY(int, int);
 extern void Color(int, int);
 extern int qKey();
 extern int key();
-extern void Color(int fg, int bg);
-extern void cfColor(int md);
 extern void printString(const char* s);
 extern void printStringF(const char* fmt, ...);
 extern void printChar(char c);
-extern void doEditor(CELL);
+extern void doEditor(cell_t);
 extern void doOuter(char *);
 
-#endif 
+#endif

@@ -1,7 +1,9 @@
 // Support for Linux
 
 #define isPC
-#define _stricmp strcasecmp
+#include <termios.h>
+#include <unistd.h>
+#include <sys/time.h>
 
 void ttyMode(int mode) {
     static struct termios origt, rawt;

@@ -141,9 +141,11 @@
   <ItemGroup>
     <ClCompile Include="cf.c" />
     <ClCompile Include="editor.c" />
+    <ClCompile Include="vm.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cf.h" />
+    <ClInclude Include="vm.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="block-000.cf" />
