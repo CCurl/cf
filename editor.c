@@ -176,10 +176,12 @@ void showFooter() {
     GotoXY(1, NUM_LINES+1);
     printString("- Block Editor v0.1 - ");
     printStringF("Block# %03d %c", blkNum, isDirty ? '*' : ' ');
-    printStringF(" %s -\r\n", msg ? msg : "");
+    printStringF(" %s -", msg ? msg : "");
     printString("\r\n  (q)home (w)up (e)end (a)left (s)down (d)right (t)op (l)ast");
     printString("\r\n  (x)del char (r)eplace (i)nsert");
     printString("\r\n  (W)rite (L)reLoad (+)next (-)prev (Q)uit");
+    printString("\r\n  (C-A) Define (C-B) Comment (C-C) Inline (C-D) Compile (I)nterp");
+    printString(" (C-E) Unused (C-F) Machine (C-G) Interpret");
     printString("\r\n  (D)efine (C)ompile (I)nterp (A)sm (M)Comment");
     printString("\r\n-> \x8");
 }
@@ -206,18 +208,11 @@ void deleteChar() {
     showCursor();
 }
 
-void insertChar(char c, int force, int refresh) {
-    if ((c<32) && (force==0)) { return; }
+void insertSpace() {
     for (int o = LLEN-1; o > off; o--) {
         edLines[line][o] = edLines[line][o - 1];
     }
-    SETC(c);
-    isDirty = 1;
-    mv(0,1);
-    if (refresh) {
-        showLine(line);
-        showCursor();
-    }
+    SETC(32);
 }
 
 void replaceChar(char c, int force, int refresh) {
@@ -231,9 +226,10 @@ void replaceChar(char c, int force, int refresh) {
     }
 }
 
-int doInsertReplace(char c) {
-    if (edMode == INSERT) { insertChar(c, 0, 1); }
-    else { replaceChar(c, 0, 1); }
+int doInsertReplace(char c, int force) {
+    if (!BTW(c,32,126) && (!force)) { return 1; }
+    if (edMode == INSERT) { insertSpace(); }
+    replaceChar(c, 0, 1);
     return 1;
 }
 
@@ -241,21 +237,19 @@ int doCTL(int c) {
     if (c==9) { mv(0,8); }
     else if (c==13) { mv(1,-999); showCursor(); }
     else if (BTW(c,RED,WHITE)) {
-        if (edChar(line, off)==' ') { replaceChar(c, 1, 0); }
-        else { insertChar(c, 1, 0); }
-        mv(0,-1);
-        showLine(line);
+        if (edChar(line, off)!=' ') {  insertSpace(); }
+        replaceChar(c, 1, 0);
+        mv(0,-1); showLine(line);
     }
     return 1;
 }
 
 int processEditorChar(int c) {
     if (c==27) { edMode = COMMAND; return 1; }
-    if (BTW(edMode,INSERT,REPLACE) && BTW(c,32,126)) {
-        return doInsertReplace((char)c);
+    if (BTW(edMode,INSERT,REPLACE)) {
+        return doInsertReplace((char)c, 0);
     }
     if (c<32) { return doCTL(c); }
-    if (!BTW(c,32,126)) { return 1; }
     printChar(c);
     edMode = COMMAND;
     switch (c) {
@@ -273,11 +267,9 @@ int processEditorChar(int c) {
     BCASE 'L': edRdBlk();
     BCASE 'W': edSvBlk();
     BCASE '+': if (isDirty) { edSvBlk(); }
-            ++blkNum;
-            edRdBlk();
+            ++blkNum; edRdBlk();
     BCASE '-': if (isDirty) { edSvBlk(); }
-            blkNum -= (blkNum) ? 1 : 0;
-            edRdBlk();
+            blkNum -= (blkNum) ? 1 : 0; edRdBlk();
     }
     return 1;
 }
