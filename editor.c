@@ -47,12 +47,10 @@ char edChar(int l, int o, int changeMode) {
 }
 
 void showLine(int l) {
-    // CursorOff();
     GotoXY(1, l + 1);
     for (int o = 0; o < LLEN; o++) {
         printChar(edChar(l, o, 1));
     }
-    // CursorOn();
 }
 
 void showCursor() {
@@ -65,7 +63,7 @@ void showCursor() {
 }
 
 void mv(int l, int o) {
-    showLine(line);
+    if (l) { showLine(line); }
     line += l;
     off += o;
     NormLO();
@@ -80,16 +78,13 @@ void edSetCh(char c, int move) {
 }
 
 int edGetChar() {
-    //CursorOn();
     int c = key();
-    //CursorOff();
     return c;
 }
 
 void clearBlock() {
     for (int i = 0; i < BLOCK_SZ; i++) {
         theBlock[i] = 0;
-        // if ((i % 50) == 0) { theBlock[i] = 10; }
     }
 }
 
@@ -107,7 +102,6 @@ int toBlock() {
 
 void clearLine(int y) {
     for (int x = 0; x < LLEN; x++) { edLines[y][x] = 0; }
-    //edLines[y][LLEN-1] = 0;
 }
 
 void toLines() {
@@ -131,9 +125,9 @@ void edRdBlk() {
     msg = "-noFile-";
     FILE* fp = fopen(buf, "rb");
     if (fp) {
-        int n = fread(theBlock, 1, BLOCK_SZ, fp);
+        int n = (int)fread(theBlock, 1, BLOCK_SZ, fp);
         msg = message;
-        sprintf(message, "- loaded, % d chars", n);
+        sprintf(message, " - loaded (%d chars) ", n);
         fclose(fp);
     }
     toLines();
@@ -148,7 +142,7 @@ void edSvBlk() {
     FILE* fp = fopen(buf, "wb");
     if (fp) {
         fwrite(theBlock, 1, sz, fp);
-        msg = "-saved-";
+        msg = " - saved ";
         fclose(fp);
     }
     isDirty = 0;
@@ -160,13 +154,13 @@ void showFooter() {
     GotoXY(1, NUM_LINES+1);
     Color(WHITE, 0);
     printString("- Block Editor v0.1 - ");
-    printStringF("Block# %03d %c", blkNum, isDirty ? '*' : ' ');
-    printStringF(" %s - %s", msg ? msg : "", mode);
+    printStringF("Block# %03d%s", blkNum, isDirty ? " *" : "");
+    printStringF("%s- %s", msg ? msg : " ", mode);
     ClearEOL();
-    if (msg && (5<++cnt)) { msg=NULL; cnt=0; }
-    printString("\r\n  (h/j/k/l/tab/spc/bs/_/$) move (g) Top (G) Bottom");
-    printString("\r\n  (x) Del (X) BackSpace (r) Replace 1 (i) Insert (R) Replace");
-    printString("\r\n  (W) Write (L) reLoad (+) Next (-) Prev (Q) Quit");
+    if (msg && (1<++cnt)) { msg=NULL; cnt=0; }
+    printString("\r\n  (h/j/k/l/tab/spc/bs/_/$) Move Cursor (g) Top (G) Bottom");
+    printString("\r\n  (x) Del (X) Del-Prev (r) Replace 1 (i) Insert (R) Replace");
+    printString("\r\n  (W) Write (L) Reload (+) Next (-) Prev (Q) Quit");
     printString("\r\n  (^A) Define (^B) Comment (^C) Inline (^D) Var");
     printString("\r\n  (^E) Machine (^F) Compile (^G) Interpret");
     printString("\r\n-> \x8");
@@ -204,10 +198,10 @@ void replaceChar(char c, int force, int refresh) {
     SETC(c);
     isDirty = 1;
     mv(0,1);
-    if (refresh) {
-        showLine(line);
-        showCursor();
-    }
+    //if (refresh) {
+    //    showLine(line);
+    //    showCursor();
+    //}
 }
 
 int doInsertReplace(char c, int force) {
@@ -221,11 +215,12 @@ int doInsertReplace(char c, int force) {
 int doCTL(int c) {
     if (c==8) { mv(0,-1); }
     else if (c==9) { mv(0,8); }
-    else if (c==13) { mv(1,-999); showCursor(); }
+    else if (c==13) { mv(1,-999); }
     else if (BTW(c,RED,WHITE)) {
         if (edChar(line, off, 0)!=' ') {  insertSpace(); }
         replaceChar(c, 1, 0);
-        mv(0,-1); showLine(line);
+        mv(0,-1);
+        // showLine(line);
     }
     return 1;
 }
@@ -239,8 +234,7 @@ int processEditorChar(int c) {
 
     printChar(c);
     switch (c) {
-    case  'Q': toBlock(); edMode = QUIT;
-    BCASE 'h': mv(0,-1);
+    case  'h': mv(0,-1);
     BCASE ' ': mv(0, 1);
     BCASE 'l': mv(0,1);
     BCASE 'j': mv(1,0);
@@ -260,6 +254,7 @@ int processEditorChar(int c) {
             blkNum = min(999,blkNum+1); edRdBlk(); showEditor();
     BCASE '-': if (isDirty) { edSvBlk(); }
             blkNum = max(0, blkNum-1); edRdBlk(); showEditor();
+    BCASE 'Q': toBlock(); edMode = QUIT;
     }
     return 1;
 }
