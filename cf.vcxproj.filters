@@ -35,5 +35,14 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="block-000.cf" />
+    <None Include="block-001.cf" />
+    <None Include="linux.inc">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="makefile" />
+    <None Include="README.md" />
+    <None Include="LICENSE" />
+    <None Include="lib.fs" />
+    <None Include=".gitignore" />
   </ItemGroup>
 </Project>

@@ -22,6 +22,9 @@ $(app32): $(srcfiles) $(incfiles)
 clean:
 	rm -f $(app64) $(app32)
 
+run: $(app)
+	./$(app)
+
 test: $(app)
 	./$(app) test1.txt
 
