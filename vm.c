@@ -33,6 +33,8 @@ char *lTrim(char *d) { while (*d && (*d<33)) { ++d; } return d; }
 char *rTrim(char *d) { char *s=strEnd(d)-1; while ((d<=s) && (*s< 33)) { *(s--) = 0; } return d; }
 int lower(int x) { return BTW(x,'A','Z') ? x+32: x; }
 int upper(int x) { return BTW(x,'a','z') ? x-32: x; }
+int min(int a, int b) { return (a < b) ? a : b; }
+int max(int a, int b) { return (a > b) ? a : b; }
 
 int strEqI(const char *s, const char *d) {
     while (lower(*s++) == lower(*d++)) { if (*(s-1)==0) { return 1; } }

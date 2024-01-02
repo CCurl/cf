@@ -113,7 +113,10 @@ extern int strLen(const char *d);
 extern char *lTrim(char *d); 
 extern char *rTrim(char *d);
 extern int lower(int x); 
-extern int upper(int x); 
+extern int upper(int x);
+extern int min(int a, int b);
+extern int max(int a, int b);
+
 extern int strEqI(const char *s, const char *d);
 extern int strEq(const char *d, const char *s);
 extern void printStringF(const char *fmt, ...);
