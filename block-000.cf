@@ -1,17 +1,17 @@
 Core words
-bl    32 ; test comment
-.     (.)  no EXIT here!!
-space bl emit ;
-spaces0 do space loop ;
+bl32 ; test comment
+.(.)  no EXIT here!!
+spacebl emit ;
+spaces0 do space loop ;
 More words ...
-here  (here) @ ;
-last  (last) @ ;
-if    6 c, here 0 , ;
-then  here swap ! ;
-mil   1000 dup * * ;
-elapsed clock swap - . ;
-bm clock swap 0 do loop elapsed ;
-tt'N' SWAP if drop 'Y' thenemit ;
+here(here) @ ;
+last(last) @ ;
+if6 c, here 0 , ;
+thenhere swap ! ;
+mil1000 dup * * ;
+elapsedclock swap - . ;
+bmclock swap 0 do loop elapsed ;
+tt'N' SWAP ifdrop 'Y'thenemit ;
 
 
 

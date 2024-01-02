@@ -32,19 +32,17 @@ cell_t Fetch(const char *a) { return *(cell_t*)(a); }
 void Store(const char *a, cell_t v) { *(cell_t*)(a) = v; }
 #endif
 
-char *doUser(char *pc, char ir) {
-    if (ir==100) {
-        char fn[32];
-        doEditor(pop());
-    }
-    return pc;
-}
 cell_t sysTime() { return (cell_t)clock(); }
 
+char *doUser(char *pc, char ir) {
+    if (ir==100) { doEditor(pop()); }
+    return pc;
+}
+
 int checkState(int c, int set) {
-    if (BTW(c,1,7) && (c!=PURPLE)) {
+    if (BTW(c,1,7) && (c!=BLUE)) {
         if (set) { state=c; }
-        //printStringF("-chSt:%d-",c);
+        // printStringF("(state-change:%d)",c);
         return c;
     }
     return 0;
@@ -116,7 +114,6 @@ int doML(char *wd) {
 	return 0;
 }
 
-cell_t lastState;
 int setState(char *wd) {
     if (strEq(wd, "((")) { state=COMMENT; return 1; }
     if (strEq(wd, "::")) { state=DEFINE; return 1; }
@@ -210,6 +207,7 @@ void loop() {
 
 int main(int argc, char **argv) {
     initVM();
+    // doEditor(0);
     input_fp = (cell_t)fopen("block-000.cf","rt");
     while (state != 999) { loop(); }
     return 1;

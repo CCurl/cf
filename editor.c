@@ -8,6 +8,7 @@
 #define COMMAND       1
 #define INSERT        2
 #define REPLACE       3
+#define QUIT         99
 #define CELL cell_t
 
 #define LLEN       100
@@ -15,14 +16,15 @@
 #define BLOCK_SZ    (NUM_LINES)*(LLEN)
 #define MAX_CUR     (BLOCK_SZ-1)
 #define SETC(c)     edLines[line][off]=c
-char theBlock[BLOCK_SZ];
+char theBlock[BLOCK_SZ], message[64];
 int line, off, blkNum, edMode;
 int isDirty = 0, currentColor=WHITE;
-const char* msg = NULL;
+char message[64], mode[32], *msg = NULL;
 char edLines[NUM_LINES][LLEN];
 
 void GotoXY(int x, int y) { printStringF("\x1B[%d;%dH", y, x); }
 void CLS() { printString("\x1B[2J"); GotoXY(1, 1); }
+void ClearEOL() { printString("\x1B[K"); }
 void CursorOn() { printString("\x1B[?25h"); }
 void CursorOff() { printString("\x1B[?25l"); }
 void Color(int c, int bg) {
@@ -41,7 +43,9 @@ char edCh(int l, int o) {
     if (BTW(l,0,NUM_LINES) && BTW(o,0,LLEN)) {
         c = edLines[l][o];
     }
-    if (BTW(c,RED,WHITE)) { Color(c,0); currentColor=c; }
+    if (BTW(c,RED,WHITE)){ // } && (line <= l) && (off <= 0)) {
+        Color(c,0); currentColor=c;
+    }
     return c>31 ? c : ' ';
 }
 
@@ -63,6 +67,7 @@ void showLine(int l) {
 }
 
 void showCursor() {
+    NormLO();
     char c = edChar(line, off);
     GotoXY(off + 1, line + 1);
     Color(0, 47);
@@ -86,9 +91,9 @@ void edSetCh(char c, int move) {
 }
 
 int edGetChar() {
-    CursorOn();
+    //CursorOn();
     int c = key();
-    CursorOff();
+    //CursorOff();
     return c;
 }
 
@@ -140,15 +145,11 @@ void edRdBlk() {
     FILE* fp = fopen(buf, "rb");
     if (fp) {
         int n = fread(theBlock, 1, BLOCK_SZ, fp);
-        msg = "-loaded-"; printStringF("(%d chars)", n);
+        msg = message;
+        sprintf(message, "- loaded, % d chars", n);
         fclose(fp);
     }
     toLines();
-    //push(blkNum);
-    //push((CELL)theBlock);
-    //push(BLOCK_SZ);
-    // blockRead();
-    //msg = (pop()) ? "-loaded-" : "-noFile-";
     isDirty = 0;
 }
 
@@ -173,17 +174,19 @@ void edSvBlk() {
 }
 
 void showFooter() {
+    showCursor();
     GotoXY(1, NUM_LINES+1);
+    Color(WHITE, 0);
     printString("- Block Editor v0.1 - ");
     printStringF("Block# %03d %c", blkNum, isDirty ? '*' : ' ');
-    printStringF(" %s -", msg ? msg : "");
-    printString("\r\n  (q)home (w)up (e)end (a)left (s)down (d)right (t)op (l)ast");
-    printString("\r\n  (x)del char (r)eplace (i)nsert");
-    printString("\r\n  (W)rite (L)reLoad (+)next (-)prev (Q)uit");
-    printString("\r\n  (C-A) Define (C-B) Comment (C-C) Inline (C-D) Compile (I)nterp");
-    printString(" (C-E) Unused (C-F) Machine (C-G) Interpret");
-    printString("\r\n  (D)efine (C)ompile (I)nterp (A)sm (M)Comment");
+    printStringF(" %s - %s", msg ? msg : "", mode);
+    printString("\r\n  (h/j/k/l/tab) move (g) top (G) bottom (_) home ($) end ");
+    printString("\r\n  (x) del (r) replace one (i) insert (R) replace");
+    printString("\r\n  (W) write (L) reLoad (+) next (-) prev (Q) quit");
+    printString("\r\n  (C-A) Define (C-B) Comment (C-C) Inline (C-D) Unused");
+    printString("\r\n  (C-E) Machine (C-F) Compile (C-G) Interpret");
     printString("\r\n-> \x8");
+    ClearEOL();
 }
 
 void showEditor() {
@@ -245,31 +248,37 @@ int doCTL(int c) {
 }
 
 int processEditorChar(int c) {
-    if (c==27) { edMode = COMMAND; return 1; }
+    if (c==27) { edMode = COMMAND; strCpy(mode, "command "); return 1; }
     if (BTW(edMode,INSERT,REPLACE)) {
         return doInsertReplace((char)c, 0);
     }
     if (c<32) { return doCTL(c); }
+
     printChar(c);
     edMode = COMMAND;
+    strCpy(mode, "command ");
     switch (c) {
-    case  'Q': toBlock(); return 0;
-    BCASE 'a': mv(0,-1);
-    BCASE 'd': mv(0,1);
-    BCASE 's': mv(1,0);
-    BCASE 'w': mv(-1,0);
-    BCASE 'q': mv(0,-off);
-    BCASE 'e': mv(0,99);
-    BCASE 'i': edMode=INSERT;
+    case  'Q': toBlock(); edMode = QUIT;
+    BCASE 'h': mv(0,-1);
+    BCASE 'l': mv(0,1);
+    BCASE 'j': mv(1,0);
+    BCASE 'k': mv(-1,0);
+    BCASE '_': mv(0,-99);
+    BCASE '$': mv(0,99);
+    BCASE 'g': mv(-99,-99);
+    BCASE 'G': mv(99,-999);
+    BCASE 'i': edMode=INSERT; strCpy(mode, "insert  ");
     BCASE 'r': replaceChar(edGetChar(),0,1);
-    BCASE 'R': edMode=REPLACE;
+    BCASE 'R': edMode=REPLACE; strCpy(mode, "replace ");
     BCASE 'x': deleteChar();
     BCASE 'L': edRdBlk();
     BCASE 'W': edSvBlk();
     BCASE '+': if (isDirty) { edSvBlk(); }
-            ++blkNum; edRdBlk();
+            ++blkNum;
+            edRdBlk(); showEditor();
     BCASE '-': if (isDirty) { edSvBlk(); }
-            blkNum -= (blkNum) ? 1 : 0; edRdBlk();
+            blkNum -= (blkNum) ? 1 : 0;
+            edRdBlk(); showEditor();
     }
     return 1;
 }
@@ -279,17 +288,16 @@ void doEditor(CELL blk) {
     off = 0;
     blkNum = (int)blk;
     edMode = COMMAND;
+    strCpy(mode, "command ");
     if (0 <= blkNum) { edRdBlk(); }
     blkNum = (0 <= blkNum) ? blkNum : 0;
     CLS();
+    CursorOff();
     showEditor();
-    showFooter();
-    while (processEditorChar(edGetChar())) {
-        NormLO();
-        currentColor = WHITE;
-        Color(WHITE, 0);
-        showCursor();
+    while (edMode != QUIT) {
+        
         showFooter();
+        processEditorChar(edGetChar());
     }
     CursorOn();
 }

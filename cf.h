@@ -22,16 +22,17 @@
 #define RED      1
 #define GREEN    2
 #define ORANGE   3
-#define BLUE     4
+#define BLUE     4 // HARD TO SEE!
 #define PURPLE   5
 #define CYAN     6
 #define WHITE    7
 
 #define DEFINE   RED
-#define INLINE   ORANGE
-#define COMPILE  BLUE
 #define COMMENT  GREEN
-#define MLMODE   CYAN
+#define INLINE   ORANGE
+#define XXXXX    BLUE
+#define MLMODE   PURPLE
+#define COMPILE  CYAN
 #define INTERP   WHITE
 
 extern char theBlock[];
