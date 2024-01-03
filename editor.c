@@ -29,6 +29,7 @@ void CursorOn() { printString("\x1B[?25h"); }
 void CursorOff() { printString("\x1B[?25l"); }
 void Color(int c, int bg) { printStringF("\x1B[%d;%dm", (30+c), bg?bg:40); }
 void commandMode() { edMode = COMMAND; strCpy(mode, "command"); }
+int edGetChar() { return key(); }
 
 void NormLO() {
     line = min(max(line, 0), NUM_LINES - 1);
@@ -75,11 +76,6 @@ void edSetCh(char c, int move) {
     SETC(c);
     if (move) { mv(0, 1); }
     isDirty = 1;
-}
-
-int edGetChar() {
-    int c = key();
-    return c;
 }
 
 void clearBlock() {
@@ -198,10 +194,6 @@ void replaceChar(char c, int force, int refresh) {
     SETC(c);
     isDirty = 1;
     mv(0,1);
-    //if (refresh) {
-    //    showLine(line);
-    //    showCursor();
-    //}
 }
 
 int doInsertReplace(char c, int force) {
@@ -220,7 +212,6 @@ int doCTL(int c) {
         if (edChar(line, off, 0)!=' ') {  insertSpace(); }
         replaceChar(c, 1, 0);
         mv(0,-1);
-        // showLine(line);
     }
     return 1;
 }

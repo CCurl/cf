@@ -10,8 +10,14 @@ int qKey() { return _kbhit(); }
 #include "linux.inc"
 #endif
 
+cell_t fileStk[10], fileSp, input_fp, output_fp;
+
+enum { EDIT=100, BLOAD };
+
 void printString(const char *s) { printf("%s", s); }
 void printChar(char c) { printf("%c", c); }
+cell_t sysTime() { return (cell_t)clock(); }
+int chSt(int st) { state = st; return (int)st; }
 
 #ifdef NEEDS_ALIGN
 cell_t Fetch(const byte *a) {
@@ -32,15 +38,24 @@ cell_t Fetch(const char *a) { return *(cell_t*)(a); }
 void Store(const char *a, cell_t v) { *(cell_t*)(a) = v; }
 #endif
 
-cell_t sysTime() { return (cell_t)clock(); }
-
 char *doUser(char *pc, char ir) {
-    if (ir==100) { doEditor(pop()); }
+    switch (ir) {
+        case EDIT: doEditor(pop());
+        RCASE BLOAD : {
+            char fn[32]; sprintf(fn, "block-%03d.cf", (int)pop());
+            FILE *fp = fopen(fn, "rb");
+            if (fp) {
+                if (input_fp) { fileStk[++fileSp] = input_fp; }
+                input_fp = (cell_t)fp;
+            } else { printStringF("-nf:%s-", fn); }
+        }
+    }
+
     return pc;
 }
 
 int checkState(int c, int set) {
-    if (BTW(c,1,7) && (c!=BLUE)) {
+    if (BTW(c,RED,WHITE)) {
         if (set) { state=c; }
         // printStringF("(state-change:%d)",c);
         return c;
@@ -115,12 +130,24 @@ int doML(char *wd) {
 }
 
 int setState(char *wd) {
-    if (strEq(wd, "((")) { state=COMMENT; return 1; }
-    if (strEq(wd, "::")) { state=DEFINE; return 1; }
-    if (strEq(wd, ":I")) { state=INLINE; return 1; }
-    if (strEq(wd, "]]")) { state=COMPILE; return 1; }
-    if (strEq(wd, "[[")) { state=INTERP;  return 1; }
-    if (strEq(wd, ":M")) { state=MLMODE; return 1; }
+    static int lastState=0;
+    if ((lastState) && (state==COMMENT) && !strEq(wd, ")")) { return 1; }
+
+    if (strEq(wd, "((")) { return chSt(COMMENT); }
+    if (strEq(wd, "::")) { return chSt(DEFINE);  }
+    if (strEq(wd, ":I")) { return chSt(INLINE);  }
+    if (strEq(wd, "]]")) { return chSt(COMPILE); }
+    if (strEq(wd, "[[")) { return chSt(INTERP);  }
+    if (strEq(wd, ":M")) { return chSt(MLMODE);  }
+
+    // Auto state transitions for text-based usage
+    if (strEq(wd, ":"))  { doDefine(0); return chSt(COMPILE); }
+    if (strEq(wd, ":i")) { doDefine(0); last->f=2; return chSt(COMPILE); }
+    if (strEq(wd, ":m")) { doDefine(0); last->f=2; return chSt(MLMODE); }
+    if (strEq(wd, "["))  { return chSt(INTERP); }
+    if (strEq(wd, "]"))  { return chSt(COMPILE); }
+    if (strEq(wd, "("))  { lastState=(int)state; return chSt(COMMENT); }
+    if (strEq(wd, ")"))  { int x=lastState; lastState=0; return chSt(x); }
     return 0;
 }
 
@@ -130,13 +157,13 @@ void doOuter(char* cp) {
     while (getWord(buf)) {
         if (setState(buf)) { continue; }
         switch (state) {
-        case COMMENT:
-        BCASE DEFINE:  doDefine(buf);
-        BCASE INLINE:  doDefine(buf); last->f=2;
-        BCASE COMPILE: if (!doCompile(buf)) return;
-        BCASE INTERP:  if (!doInterpret(buf)) return;
-        BCASE MLMODE:  if (!doML(buf)) return;
-        break; default: printStringF("-state?-"); break;
+            case COMMENT:
+            BCASE DEFINE:  doDefine(buf);
+            BCASE INLINE:  doDefine(buf); last->f=2;
+            BCASE COMPILE: if (!doCompile(buf)) return;
+            BCASE INTERP:  if (!doInterpret(buf)) return;
+            BCASE MLMODE:  if (!doML(buf)) return;
+            break; default: printStringF("-state?-"); break;
         }
     }
 }
@@ -153,11 +180,12 @@ void parseF(char *fmt, ...) {
 
 void initVM() {
     vmInit();
+    fileSp = 0;
     state = INTERP;
-    char *cni = ":I %s ]] #%ld ;";
-    char *cnn = ":: %s ]] #%zu ;";
-    char *m1i = ":I %s :M #%ld 3";
-    char *m2i = ":I %s :M #%ld #%ld 3";
+    char *m1i = ":m %s #%ld 3";       // MACHINE-INLINE/one
+    char *m2i = ":m %s #%ld #%ld 3";  // MACHINE-INLINE/two
+    char *cni = ":i %s #%ld ;";       // CONSTANT-INLINE
+    char *cnn = ":  %s #%zu ;";       // CONSTANT-NORMAL
 
     parseF(m1i, ";", EXIT);
     parseF(m1i, "@", FETCH);
@@ -178,7 +206,8 @@ void initVM() {
     parseF(m2i, "CLOCK", SYS_OPS, TIMER);
     parseF(m2i, ",", SYS_OPS, COMMA);
     parseF(m2i, "c,", SYS_OPS, CCOMMA);
-    parseF(m1i, "edit", 100);
+    parseF(m1i, "edit", EDIT);
+    parseF(m1i, "load", BLOAD);
 
     parseF(cni, "cell", CELL_SZ);
     parseF(cnn, "(here)",(cell_t)&here);
@@ -187,9 +216,9 @@ void initVM() {
     parseF(cnn, "base",(cell_t)&base);
     parseF(cnn, "vars",(cell_t)&vars[0]);
     parseF(cnn, "vars-end",(cell_t)&vars[VARS_SZ]);
-    doOuter(":I NIP ]] SWAP DROP ;");
-    doOuter(":I /   ]] /MOD NIP ;");
-    doOuter(":: bye ]] 999 state ! ;");
+    doOuter(":i  NIP SWAP DROP ;");
+    doOuter(":i  /   /MOD NIP ;");
+    doOuter(": bye  999 state ! ;");
 }
 
 void loop() {
@@ -199,9 +228,10 @@ void loop() {
     if (fp == (cell_t)stdin) { printString(" ok\r\n"); state=INTERP; }
     if (fgets(buf, 128, (FILE *)fp) == buf) { doOuter(buf); }
     else {
-        if (input_fp == (cell_t)stdin) { state = 999; }
-        else { fclose((FILE*)input_fp); }
-        input_fp = 0;
+        if (input_fp == (cell_t)stdin) { state = 999; return; }
+        fclose((FILE*)input_fp);
+        if (fileSp) { input_fp = fileStk[fileSp--]; }
+        else { input_fp = 0; }
     }
 }
 

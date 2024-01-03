@@ -1,17 +1,19 @@
-(( Primitives ))
-:I  bl     32 ;
-:I  .      (.)  (( no EXIT here!! ))
-:I  space  bl emit ;
-(( : spaces 0 do space loop ; ))
-(( Words ... ))
-::  here   (here) @ ;
-::  last   (last) @ ;
-::  if 6 c, here 0 , ;
-::  then here swap ! ;
-:I mil 1000 dup * * ;
-::  elapsed  clock swap - . ;
-::  bm  clock swap 0 do loop elapsed ;
-::  tt 'N' SWAP [[ if ]] drop 'Y' [[ then ]] emit ;
+( a standard cf file - no embedded state-transition codes )
+: test 1 2 3 + + . ;
+( [ test )
+[ 500 mil bm
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

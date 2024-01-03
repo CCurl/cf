@@ -4,7 +4,6 @@
 
 stk_t ds, rs;
 cell_t lstk[LSTK_SZ+1], lsp;
-cell_t fileStk[10], fileSp, input_fp, output_fp;
 cell_t state, base, reg[REGS_SZ], reg_base, t1, n1;
 char code[CODE_SZ], vars[VARS_SZ], tib[256], WD[32];
 char *here, *vhere, *in, *y;
