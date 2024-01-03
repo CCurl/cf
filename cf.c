@@ -134,20 +134,20 @@ int setState(char *wd) {
     if ((lastState) && (state==COMMENT) && !strEq(wd, ")")) { return 1; }
 
     if (strEq(wd, "((")) { return chSt(COMMENT); }
-    if (strEq(wd, "::")) { return chSt(DEFINE);  }
+    if (strEq(wd, ":D")) { return chSt(DEFINE);  }
     if (strEq(wd, ":I")) { return chSt(INLINE);  }
     if (strEq(wd, "]]")) { return chSt(COMPILE); }
     if (strEq(wd, "[[")) { return chSt(INTERP);  }
     if (strEq(wd, ":M")) { return chSt(MLMODE);  }
 
     // Auto state transitions for text-based usage
-    if (strEq(wd, ":"))  { doDefine(0); return chSt(COMPILE); }
-    if (strEq(wd, ":i")) { doDefine(0); last->f=2; return chSt(COMPILE); }
-    if (strEq(wd, ":m")) { doDefine(0); last->f=2; return chSt(MLMODE); }
-    if (strEq(wd, "["))  { return chSt(INTERP); }
-    if (strEq(wd, "]"))  { return chSt(COMPILE); }
-    if (strEq(wd, "("))  { lastState=(int)state; return chSt(COMMENT); }
-    if (strEq(wd, ")"))  { int x=lastState; lastState=0; return chSt(x); }
+    //if (strEq(wd, ":"))  { doDefine(0); return chSt(COMPILE); }
+    //if (strEq(wd, ":i")) { doDefine(0); last->f=2; return chSt(COMPILE); }
+    //if (strEq(wd, ":m")) { doDefine(0); last->f=2; return chSt(MLMODE); }
+    //if (strEq(wd, "["))  { return chSt(INTERP); }
+    //if (strEq(wd, "]"))  { return chSt(COMPILE); }
+    //if (strEq(wd, "("))  { lastState=(int)state; return chSt(COMMENT); }
+    //if (strEq(wd, ")"))  { int x=lastState; lastState=0; return chSt(x); }
     return 0;
 }
 
@@ -182,10 +182,10 @@ void initVM() {
     vmInit();
     fileSp = 0;
     state = INTERP;
-    char *m1i = ":m %s #%ld 3";       // MACHINE-INLINE/one
-    char *m2i = ":m %s #%ld #%ld 3";  // MACHINE-INLINE/two
-    char *cni = ":i %s #%ld ;";       // CONSTANT-INLINE
-    char *cnn = ":  %s #%zu ;";       // CONSTANT-NORMAL
+    char *m1i = ":I %s :M #%ld 3";       // MACHINE-INLINE/one
+    char *m2i = ":I %s :M #%ld #%ld 3";  // MACHINE-INLINE/two
+    char *cni = ":I %s ]] #%ld ;";       // CONSTANT-INLINE
+    char *cnn = ":D %s ]] #%zu ;";       // CONSTANT-NORMAL
 
     parseF(m1i, ";", EXIT);
     parseF(m1i, "@", FETCH);
@@ -216,9 +216,9 @@ void initVM() {
     parseF(cnn, "base",(cell_t)&base);
     parseF(cnn, "vars",(cell_t)&vars[0]);
     parseF(cnn, "vars-end",(cell_t)&vars[VARS_SZ]);
-    doOuter(":i  NIP SWAP DROP ;");
-    doOuter(":i  /   /MOD NIP ;");
-    doOuter(": bye  999 state ! ;");
+    doOuter(":I  NIP ]] SWAP DROP ;");
+    doOuter(":I  /   ]] /MOD NIP ;");
+    doOuter(":D  bye ]]  999 state ! ;");
 }
 
 void loop() {

@@ -1,7 +1,8 @@
-( a standard cf file - no embedded state-transition codes )
-: test 1 2 3 + + . ;
-( [ test )
-[ 500 mil bm
+(( a standard cf file - no embedded state-transition codes ))
+:D cr ]] 10 emit ;
+:D test ]] 1 2 3 + + . ; test cr
+(( test ))
+[[ test cr 500 mil bm
 
 
 
