@@ -13,7 +13,6 @@
 #define BLOCK_SZ    (NUM_LINES)*(LLEN)
 #define MAX_CUR     (BLOCK_SZ-1)
 #define EDCH(l,o)   edBuf[(l*LLEN)+o]
-#define SETC(c)     EDCH(line,off)=c
 
 char theBlock[BLOCK_SZ];
 int line, off, blkNum, edMode;
@@ -30,6 +29,8 @@ void Color(int c, int bg) { printStringF("\x1B[%d;%dm", (30+c), bg?bg:40); }
 void commandMode() { edMode = COMMAND; strCpy(mode, "command"); }
 void fillWith(char* x, int num, byte ch) { for (int i = 0; i < num; i++) x[i] = ch; }
 int edKey() { return key(); }
+void insertMode() { edMode = INSERT; strCpy(mode, "insert"); }
+void replaceMode() { edMode = REPLACE; strCpy(mode, "replace"); }
 
 void NormLO() {
     line = min(max(line, 0), NUM_LINES-1);
@@ -38,21 +39,11 @@ void NormLO() {
 
 char edChar(int l, int o, int changeMode) {
     char c = EDCH(l,o);
+    if (c==0) { return c; }
     if (BTW(c, RED, WHITE) && changeMode) {
         Color(c, 0); currentColor = c;
     }
     return BTW(c,32,126) ? c : ' ';
-}
-
-void showLine(int l) {
-    GotoXY(1, l + 1);
-    for (int o = 0; o < LLEN; o++) {
-        printChar(edChar(l, o, 1));
-    }
-}
-
-void showEditor() {
-    for (int i = 0; i < NUM_LINES; i++) { showLine(i); }
 }
 
 void showCursor() {
@@ -61,48 +52,80 @@ void showCursor() {
     GotoXY(off + 1, line + 1);
     Color(0, 47);
     printChar(c ? c : 'X');
-    Color(currentColor, 0);
+}
+
+void showLine(int l) {
+    GotoXY(1, l + 1);
+    for (int o = 0; o < LLEN; o++) {
+        int c = edChar(l, o, 1);
+        if (c) { printChar(c); }
+        else { ClearEOL(); break; }
+    }
+}
+
+void showFooter() {
+    static int cnt = 0;
+    showCursor();
+    GotoXY(1, NUM_LINES + 1);
+    Color(WHITE, 0);
+    printString("- Block Editor v0.1 - ");
+    printStringF("Block# %03d%s", blkNum, isDirty ? " *" : "");
+    printStringF("%s- %s", msg ? msg : " ", mode);
+    ClearEOL();
+    if (msg && (1 < ++cnt)) { msg = NULL; cnt = 0; }
+    printString("\r\n  (h/j/k/l/tab/spc/bs/_/$) Move Cursor (g) Top (G) Bottom");
+    printString("\r\n  (x) Del (X) Del-Prev (r) Replace 1 (i) Insert (R) Replace");
+    printString("\r\n  (W) Write (L) Reload (+) Next (-) Prev (Q) Quit");
+    printString("\r\n  (^A) Define (^B) Comment (^C) Inline (^D) Var");
+    printString("\r\n  (^E) Machine (^F) Compile (^G) Interpret");
+    printString("\r\n-> \x8");
+    ClearEOL();
+}
+
+void showEditor() {
+    for (int i = 0; i < NUM_LINES; i++) { showLine(i); }
+    showFooter();
 }
 
 void mv(int l, int o) {
-    if (l) { showLine(line); }
+    // if (l) { showLine(line); }
     line += l;
     off += o;
     NormLO();
-    showLine(line);
-}
-
-void edSetCh(char c, int move) {
-    SETC(c);
-    if (move) { mv(0, 1); }
-    isDirty = 1;
+    // showLine(line);
 }
 
 int toBlock() {
-    int c = 0;
     fillWith(theBlock, BLOCK_SZ, 0);
     for (int l = 0; l < NUM_LINES; l++) {
-        for (int o = 0; o < LLEN; o++) { theBlock[c++] = EDCH(l,o); }
-        int o=LLEN-1;
-        while ((theBlock[c-1] < 33) && (0 <= o)) { theBlock[--c]=0; --o; }
-        theBlock[c++]=10;
+        char *y=&EDCH(l,0);
+        strCat(theBlock,y);
     }
-    return c;
+    return strLen(theBlock);
+}
+
+void addLF(int l) {
+    int o, lc = 0;
+    for (o = 0; EDCH(l, o); ++o) { lc = EDCH(l, o); }
+    if (lc != 10) { EDCH(l, o) = 10; }
 }
 
 void toBuf() {
     int o = 0, l = 0, ch;
-    fillWith(edBuf, BLOCK_SZ, 32);
+    fillWith(edBuf, BLOCK_SZ, 0);
     for (int i = 0; i < BLOCK_SZ; i++) {
         ch = theBlock[i];
-        if (ch == 0) { return; }
+        if (ch == 0) { break; }
         if (ch ==10) {
+            EDCH(l, o) = (char)ch;
             if (NUM_LINES <= (++l)) { return; }
-            o=0; continue;
+            o=0;
+            continue;
         } else if ((o < LLEN) && (ch!=13)) {
             EDCH(l,o++) = (char)ch;
         }
     }
+    for (int i = 0; i < NUM_LINES; i++) { addLF(i); }
 }
 
 void edRdBlk() {
@@ -119,7 +142,7 @@ void edRdBlk() {
     }
     toBuf();
     isDirty = 0;
-    showEditor();
+    // showEditor();
 }
 
 void edSvBlk() {
@@ -136,51 +159,56 @@ void edSvBlk() {
     isDirty = 0;
 }
 
-void showFooter() {
-    static int cnt=0;
-    showCursor();
-    GotoXY(1, NUM_LINES+1);
-    Color(WHITE, 0);
-    printString("- Block Editor v0.1 - ");
-    printStringF("Block# %03d%s", blkNum, isDirty ? " *" : "");
-    printStringF("%s- %s", msg ? msg : " ", mode);
-    ClearEOL();
-    if (msg && (1<++cnt)) { msg=NULL; cnt=0; }
-    printString("\r\n  (h/j/k/l/tab/spc/bs/_/$) Move Cursor (g) Top (G) Bottom");
-    printString("\r\n  (x) Del (X) Del-Prev (r) Replace 1 (i) Insert (R) Replace");
-    printString("\r\n  (W) Write (L) Reload (+) Next (-) Prev (Q) Quit");
-    printString("\r\n  (^A) Define (^B) Comment (^C) Inline (^D) Var");
-    printString("\r\n  (^E) Machine (^F) Compile (^G) Interpret");
-    printString("\r\n-> \x8");
-    ClearEOL();
-}
-
 void deleteChar() {
     for (int o = off; o < (LLEN - 2); o++) {
         EDCH(line,o) = EDCH(line, o+1);
     }
     isDirty = 1;
-    showLine(line);
+    addLF(line);
+}
+
+void deleteLine() {
+    EDCH(line,0) = 0;
+    toBlock();
+    toBuf();
+    isDirty = 1;
 }
 
 void insertSpace() {
-    for (int o = LLEN-1; o > off; o--) {
+    for (int o=LLEN-1; off<o; o--) {
         EDCH(line,o) = EDCH(line, o-1);
     }
-    SETC(32);
+    EDCH(line,off)=32;
+}
+
+void insertLine() {
+    insertSpace();
+    EDCH(line, off)=10;
+    toBlock();
+    toBuf();
+    mv(1,-99);
 }
 
 void replaceChar(char c, int force, int mov) {
     if ((c<32) && (force==0)) { return; }
-    SETC(c);
+    for (int o=off-1; 0<=o; --o) {
+        int ch = EDCH(line, o);
+        if (ch && (ch != 10)) { break; }
+        EDCH(line,o)=32;
+    }
+    EDCH(line, off)=c;
     isDirty = 1;
+    addLF(line);
     if (mov) { mv(0, 1); }
-    else { showLine(line); }
 }
 
 int doInsertReplace(char c, int force) {
     if (c == 8) { mv(0, -1); return 1; }
-    if (c == 13) { mv(1, -999); return 1; }
+    if (c == 13) {
+        if (edMode == REPLACE) { mv(1, -999); }
+        else { insertLine(); }
+        return 1;
+    }
     if (!BTW(c,32,126) && (!force)) { return 1; }
     if (edMode == INSERT) { insertSpace(); }
     replaceChar(c, 0, 1);
@@ -198,6 +226,11 @@ int doCTL(int c) {
     return 1;
 }
 
+void gotoEOL() {
+    mv(0, 99);
+    while (EDCH(line, off) != 10) { --off; }
+}
+
 int processEditorChar(int c) {
     if (c==27) { commandMode(); return 1; }
     if (BTW(edMode,INSERT,REPLACE)) {
@@ -212,12 +245,15 @@ int processEditorChar(int c) {
     BCASE 'j': mv(1,0);
     BCASE 'k': mv(-1,0);
     BCASE '_': mv(0,-99);
-    BCASE '$': mv(0,99);
+    BCASE 'a': mv(0, 1); replaceMode();
+    BCASE 'A': gotoEOL(); replaceMode();
+    BCASE '$': gotoEOL();
     BCASE 'g': mv(-99,-99);
     BCASE 'G': mv(99,-999);
-    BCASE 'i': edMode=INSERT; strCpy(mode, "insert");
+    BCASE 'i': insertMode();
     BCASE 'r': printString(" replace ch.."); replaceChar(edKey(), 0, 1);
-    BCASE 'R': edMode=REPLACE; strCpy(mode, "replace");
+    BCASE 'R': replaceMode();
+    BCASE 'D': deleteLine();
     BCASE 'x': deleteChar();
     BCASE 'X': if (0 < off) { --off; deleteChar(); }
     BCASE 'L': edRdBlk();
@@ -240,6 +276,7 @@ void doEditor(CELL blk) {
     edRdBlk();
     commandMode();
     while (edMode != QUIT) {
+        showEditor();
         showFooter();
         processEditorChar(edKey());
     }
