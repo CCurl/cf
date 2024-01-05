@@ -16,7 +16,7 @@
 
 char theBlock[BLOCK_SZ];
 int line, off, blkNum, edMode;
-int isDirty = 0, currentColor=WHITE;
+int isDirty, lineShow[NUM_LINES], lineCol[NUM_LINES];
 char mode[32], *msg = NULL;
 char edBuf[BLOCK_SZ], tBuf[LLEN];
 
@@ -37,62 +37,84 @@ void NormLO() {
     off = min(max(off,0), LLEN-1);
 }
 
+void showAll() {
+    for (int i = 0; i < NUM_LINES; i++) {
+        lineCol[i] = 0;
+        lineShow[i] = 1;
+    }
+}
+
 char edChar(int l, int o, int changeMode) {
     char c = EDCH(l,o);
     if (c==0) { return c; }
     if (BTW(c, RED, WHITE) && changeMode) {
-        Color(c, 0); currentColor = c;
+        Color(c, 0);
     }
     return BTW(c,32,126) ? c : ' ';
 }
 
 void showCursor() {
-    NormLO();
     char c = edChar(line, off, 0);
     GotoXY(off + 1, line + 1);
     Color(0, 47);
     printChar(c ? c : 'X');
 }
 
+int getPrevColor(int l) {
+    int col=0;
+    char *y = &EDCH(l,0);
+    while ((col == 0) && (edBuf <= y)) {
+        if (BTW(*y,RED,WHITE)) { col=*y; }
+        else { --y; }
+    }
+    return (col) ? col : INTERP;
+}
+
 void showLine(int l) {
-    GotoXY(1, l + 1);
+    if (!lineShow[l]) { return; }
+    lineShow[l] = 0;
+    lineCol[l] = getPrevColor(l);
+    Color(lineCol[l], 0);
+    GotoXY(1, l+1);
     for (int o = 0; o < LLEN; o++) {
         int c = edChar(l, o, 1);
         if (c) { printChar(c); }
         else { ClearEOL(); break; }
     }
+    if (l == line) { showCursor(); }
 }
 
-void showFooter() {
+void showStatus() {
     static int cnt = 0;
-    showCursor();
-    GotoXY(1, NUM_LINES + 1);
+    GotoXY(1, NUM_LINES+1);
     Color(WHITE, 0);
     printString("- Block Editor v0.1 - ");
     printStringF("Block# %03d%s", blkNum, isDirty ? " *" : "");
     printStringF("%s- %s", msg ? msg : " ", mode);
     ClearEOL();
     if (msg && (1 < ++cnt)) { msg = NULL; cnt = 0; }
-    printString("\r\n  (h/j/k/l/tab/spc/bs/_/$) Move Cursor (g) Top (G) Bottom");
+}
+
+void showHelp() {
+    GotoXY(1, NUM_LINES+2);
+    Color(WHITE, 0);
+    printString("  (h/j/k/l/tab/spc/bs/_/$) Move Cursor (g) Top (G) Bottom");
     printString("\r\n  (x) Del (X) Del-Prev (r) Replace 1 (i) Insert (R) Replace");
     printString("\r\n  (W) Write (L) Reload (+) Next (-) Prev (Q) Quit");
     printString("\r\n  (^A) Define (^B) Comment (^C) Inline (^D) Var");
     printString("\r\n  (^E) Machine (^F) Compile (^G) Interpret");
-    printString("\r\n-> \x8");
-    ClearEOL();
 }
 
 void showEditor() {
     for (int i = 0; i < NUM_LINES; i++) { showLine(i); }
-    showFooter();
 }
 
 void mv(int l, int o) {
-    // if (l) { showLine(line); }
+    lineShow[line] = 1;
     line += l;
     off += o;
     NormLO();
-    // showLine(line);
+    lineShow[line] = 1;
 }
 
 int toBlock() {
@@ -141,8 +163,8 @@ void edRdBlk() {
         fclose(fp);
     }
     toBuf();
+    showAll();
     isDirty = 0;
-    // showEditor();
 }
 
 void edSvBlk() {
@@ -164,6 +186,7 @@ void deleteChar() {
         EDCH(line,o) = EDCH(line, o+1);
     }
     isDirty = 1;
+    lineShow[line] = 1;
     addLF(line);
 }
 
@@ -171,6 +194,7 @@ void deleteLine() {
     EDCH(line,0) = 0;
     toBlock();
     toBuf();
+    showAll();
     isDirty = 1;
 }
 
@@ -186,7 +210,9 @@ void insertLine() {
     EDCH(line, off)=10;
     toBlock();
     toBuf();
+    showAll();
     mv(1,-99);
+    isDirty = 1;
 }
 
 void replaceChar(char c, int force, int mov) {
@@ -197,6 +223,7 @@ void replaceChar(char c, int force, int mov) {
         EDCH(line,o)=32;
     }
     EDCH(line, off)=c;
+    lineShow[line] = 1;
     isDirty = 1;
     addLF(line);
     if (mov) { mv(0, 1); }
@@ -222,6 +249,7 @@ int doCTL(int c) {
     else if (BTW(c,RED,WHITE)) {
         if (edChar(line, off, 0)!=' ') {  insertSpace(); }
         replaceChar(c, 1, 0);
+
     }
     return 1;
 }
@@ -251,7 +279,9 @@ int processEditorChar(int c) {
     BCASE 'g': mv(-99,-99);
     BCASE 'G': mv(99,-999);
     BCASE 'i': insertMode();
-    BCASE 'r': printString(" replace ch.."); replaceChar(edKey(), 0, 1);
+    BCASE 'o': mv(1, -99); insertLine(); mv(-1, 0); insertMode();
+    BCASE 'O': mv(0, -99); insertLine(); mv(-1, 0); insertMode();
+    BCASE 'r': replaceChar(edKey(), 0, 1);
     BCASE 'R': replaceMode();
     BCASE 'D': deleteLine();
     BCASE 'x': deleteChar();
@@ -275,10 +305,13 @@ void doEditor(CELL blk) {
     CursorOff();
     edRdBlk();
     commandMode();
+    showAll();
+    showHelp();
     while (edMode != QUIT) {
         showEditor();
-        showFooter();
+        showStatus();
         processEditorChar(edKey());
     }
+    GotoXY(1, NUM_LINES + 7);
     CursorOn();
 }
