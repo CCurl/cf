@@ -13,11 +13,12 @@
 #define BLOCK_SZ    (NUM_LINES)*(LLEN)
 #define MAX_CUR     (BLOCK_SZ-1)
 #define EDCH(l,o)   edBuf[(l*LLEN)+o]
+#define DIRTY(l)    isDirty=1; lineShow[l]=1
 
 char theBlock[BLOCK_SZ];
 int line, off, blkNum, edMode;
 int isDirty, lineShow[NUM_LINES], lineCol[NUM_LINES];
-char mode[32], *msg = NULL;
+char mode[32], *msg=NULL;
 char edBuf[BLOCK_SZ], tBuf[LLEN];
 
 void GotoXY(int x, int y) { printStringF("\x1B[%d;%dH", y, x); }
@@ -27,10 +28,10 @@ void CursorOn() { printString("\x1B[?25h"); }
 void CursorOff() { printString("\x1B[?25l"); }
 void Color(int c, int bg) { printStringF("\x1B[%d;%dm", (30+c), bg?bg:40); }
 void commandMode() { edMode = COMMAND; strCpy(mode, "command"); }
-void fillWith(char* x, int num, byte ch) { for (int i = 0; i < num; i++) x[i] = ch; }
+void fillWith(char *x, int num, byte ch) { for (int i=0; i<num; i++) x[i]=ch; }
 int edKey() { return key(); }
-void insertMode() { edMode = INSERT; strCpy(mode, "insert"); }
-void replaceMode() { edMode = REPLACE; strCpy(mode, "replace"); }
+void insertMode() { edMode=INSERT; strCpy(mode, "insert"); }
+void replaceMode() { edMode=REPLACE; strCpy(mode, "replace"); }
 
 void NormLO() {
     line = min(max(line, 0), NUM_LINES-1);
@@ -119,7 +120,7 @@ void mv(int l, int o) {
 
 int toBlock() {
     fillWith(theBlock, BLOCK_SZ, 0);
-    for (int l = 0; l < NUM_LINES; l++) {
+    for (int l=0; l < NUM_LINES; l++) {
         char *y=&EDCH(l,0);
         strCat(theBlock,y);
     }
@@ -185,8 +186,7 @@ void deleteChar() {
     for (int o = off; o < (LLEN - 2); o++) {
         EDCH(line,o) = EDCH(line, o+1);
     }
-    isDirty = 1;
-    lineShow[line] = 1;
+    DIRTY(line);
     addLF(line);
 }
 
@@ -223,8 +223,7 @@ void replaceChar(char c, int force, int mov) {
         EDCH(line,o)=32;
     }
     EDCH(line, off)=c;
-    lineShow[line] = 1;
-    isDirty = 1;
+    DIRTY(line);
     addLF(line);
     if (mov) { mv(0, 1); }
 }
@@ -249,7 +248,6 @@ int doCTL(int c) {
     else if (BTW(c,RED,WHITE)) {
         if (edChar(line, off, 0)!=' ') {  insertSpace(); }
         replaceChar(c, 1, 0);
-
     }
     return 1;
 }
