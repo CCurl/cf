@@ -1,5 +1,7 @@
 # cf - a ColorForth inspired system
 
+![Editing](/images/editing.jpg)
+
 ## What is cf?
 - cf is NOT ColorForth, but it does use markers in the source to control its mode.
 - cf is a byte-coded system written in C.
