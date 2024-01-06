@@ -2,24 +2,17 @@
 
 #include "cf.h"
 
-#define COMMAND       1
-#define INSERT        2
-#define REPLACE       3
-#define QUIT         99
-#define CELL cell_t
-
 #define LLEN       100
 #define NUM_LINES   20
 #define BLOCK_SZ    (NUM_LINES)*(LLEN)
-#define MAX_CUR     (BLOCK_SZ-1)
 #define EDCH(l,o)   edBuf[(l*LLEN)+o]
 #define DIRTY(l)    isDirty=1; lineShow[l]=1
 
+enum { COMMAND = 1, INSERT, REPLACE, QUIT };
 char theBlock[BLOCK_SZ];
 int line, off, blkNum, edMode;
-int isDirty, lineShow[NUM_LINES], lineCol[NUM_LINES];
-char mode[32], *msg=NULL;
-char edBuf[BLOCK_SZ], tBuf[LLEN];
+int isDirty, lineShow[NUM_LINES];
+char edBuf[BLOCK_SZ], tBuf[LLEN], mode[32], *msg = NULL;
 
 void GotoXY(int x, int y) { printStringF("\x1B[%d;%dH", y, x); }
 void CLS() { printString("\x1B[2J"); GotoXY(1, 1); }
@@ -40,7 +33,6 @@ void NormLO() {
 
 void showAll() {
     for (int i = 0; i < NUM_LINES; i++) {
-        lineCol[i] = 0;
         lineShow[i] = 1;
     }
 }
@@ -74,8 +66,7 @@ int getPrevColor(int l) {
 void showLine(int l) {
     if (!lineShow[l]) { return; }
     lineShow[l] = 0;
-    lineCol[l] = getPrevColor(l);
-    Color(lineCol[l], 0);
+    Color(getPrevColor(l), 0);
     GotoXY(1, l+1);
     for (int o = 0; o < LLEN; o++) {
         int c = edChar(l, o, 1);
@@ -116,6 +107,11 @@ void mv(int l, int o) {
     off += o;
     NormLO();
     lineShow[line] = 1;
+}
+
+void gotoEOL() {
+    mv(0, -99);
+    while (EDCH(line, off) != 10) { ++off; }
 }
 
 int toBlock() {
@@ -215,6 +211,15 @@ void insertLine() {
     isDirty = 1;
 }
 
+void joinLines() {
+    gotoEOL();
+    EDCH(line, off) = 0;
+    toBlock();
+    toBuf();
+    showAll();
+    isDirty = 1;
+}
+
 void replaceChar(char c, int force, int mov) {
     if ((c<32) && (force==0)) { return; }
     for (int o=off-1; 0<=o; --o) {
@@ -229,7 +234,11 @@ void replaceChar(char c, int force, int mov) {
 }
 
 int doInsertReplace(char c, int force) {
-    if (c == 8) { mv(0, -1); return 1; }
+    if (c == 8) {
+        mv(0, -1);
+        if (edMode == INSERT) { deleteChar(); }
+        return 1;
+    }
     if (c == 13) {
         if (edMode == REPLACE) { mv(1, -999); }
         else { insertLine(); }
@@ -242,7 +251,7 @@ int doInsertReplace(char c, int force) {
 }
 
 int doCTL(int c) {
-    if (c==8) { mv(0,-1); }
+    if (c==8) { mv(0,-1);  }
     else if (c==9) { mv(0,8); }
     else if (c==13) { mv(1,-999); }
     else if (BTW(c,RED,WHITE)) {
@@ -250,11 +259,6 @@ int doCTL(int c) {
         replaceChar(c, 1, 0);
     }
     return 1;
-}
-
-void gotoEOL() {
-    mv(0, 99);
-    while (EDCH(line, off) != 10) { --off; }
 }
 
 int processEditorChar(int c) {
@@ -271,8 +275,9 @@ int processEditorChar(int c) {
     BCASE 'j': mv(1,0);
     BCASE 'k': mv(-1,0);
     BCASE '_': mv(0,-99);
-    BCASE 'a': mv(0, 1); replaceMode();
-    BCASE 'A': gotoEOL(); replaceMode();
+    BCASE 'a': mv(0, 1); insertMode();
+    BCASE 'A': gotoEOL(); insertMode();
+    BCASE 'J': joinLines();
     BCASE '$': gotoEOL();
     BCASE 'g': mv(-99,-99);
     BCASE 'G': mv(99,-999);
@@ -295,7 +300,7 @@ int processEditorChar(int c) {
     return 1;
 }
 
-void doEditor(CELL blk) {
+void doEditor(cell_t blk) {
     blkNum = max((int)blk, 0);
     line = off = 0;
     msg = NULL;

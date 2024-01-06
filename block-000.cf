@@ -6,13 +6,13 @@
 More words ...
 here(here) @ ;
 last(last) @ ;
-if6 c, here 0 , ;
+if6 c, here 0 , ;               
 thenhere swap ! ;
 mil1000 dup * * ;
 elapsedclock swap - . ;
 bmclock swap 0 do loop elapsed ;
 tt'N' SWAP ifdrop 'Y'thenemit ;
-
+key47 14 3?key47 15 3
 
 
 
