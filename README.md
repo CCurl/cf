@@ -9,31 +9,17 @@
 - cf includes a simple text editor that will color the code to identify how it will be processed.
 - cf is a work in progress.
 
-- The marker colors as shown in the editor:
-    - DEFINE: red
-    - COMMENT: green
-    - INLINE: orange
-    - COMPILE: blue
-    - UNUSED: purple
-    - MACHINE: cyan
-    - INTERPRET: white
+### The markers:
 
-- The marker codes:
-    - DEFINE: ctrl-a (1)
-    - COMMENT: ctrl-b (2)
-    - INLINE: ctrl-c (3)
-    - COMPILE: ctr-d (4)
-    - UNUSED: ctrl-e (5)
-    - MACHINE: ctrl-f (6)
-    - INTERPRET: ctrl-g (7)
-
-- The marker words:
-    - DEFINE: '::'
-    - COMMENT: '(('
-    - INLINE: ':I'
-    - COMPILE: '[['
-    - MACHINE: ':M'
-    - INTERPRET: ']]'
+|Mode       |Color   | Code  |Editor  | Word |
+| :--       | :--    | :--   | :--    | :--  |
+| DEFINE    | red    | 1     | ctrl-a | ::   |
+| COMMENT   | green  | 2     | ctrl-b | ((   |
+| INLINE    | orange | 3     | ctrl-c | :I   |
+| UNUSED    | blue   | 4     | ctrl-d |      |
+| MACHINE   | purple | 5     | ctrl-e | :M   |
+| COMPILE   | cyan   | 6     | ctrl-f | [[   |
+| INTERPRET | white  | 7     | ctrl-g | ]]   |
 
 ## Notes:
 - Words like IF/THEN and BEGIN/WHILE are defined in block 0.

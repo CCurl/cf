@@ -13,6 +13,7 @@ char theBlock[BLOCK_SZ];
 int line, off, blkNum, edMode;
 int isDirty, lineShow[NUM_LINES];
 char edBuf[BLOCK_SZ], tBuf[LLEN], mode[32], *msg = NULL;
+char yanked[LLEN];
 
 void GotoXY(int x, int y) { printStringF("\x1B[%d;%dH", y, x); }
 void CLS() { printString("\x1B[2J"); GotoXY(1, 1); }
@@ -47,10 +48,12 @@ char edChar(int l, int o, int changeMode) {
 }
 
 void showCursor() {
-    char c = edChar(line, off, 0);
+    char c = EDCH(line, off);
     GotoXY(off + 1, line + 1);
     Color(0, 47);
-    printChar(c ? c : 'X');
+    if (c == 0) c = 'X';
+    if (c < 32) c += ('a'-1);
+    printChar(c);
 }
 
 int getPrevColor(int l) {
@@ -250,6 +253,14 @@ int doInsertReplace(char c, int force) {
     return 1;
 }
 
+void putLine() {
+    mv(1,-99);
+    insertLine();
+    mv(-1,0);
+    strCpy(&EDCH(line, 0), yanked);
+    // mv(1,0);
+}
+
 int doCTL(int c) {
     if (c==8) { mv(0,-1);  }
     else if (c==9) { mv(0,8); }
@@ -291,6 +302,8 @@ int processEditorChar(int c) {
     BCASE 'X': if (0 < off) { --off; deleteChar(); }
     BCASE 'L': edRdBlk();
     BCASE 'W': edSvBlk();
+    BCASE 'Y': strCpy(yanked, &EDCH(line, 0));
+    BCASE 'P': putLine();
     BCASE '+': if (isDirty) { edSvBlk(); }
             blkNum = min(999,blkNum+1); edRdBlk();
     BCASE '-': if (isDirty) { edSvBlk(); }

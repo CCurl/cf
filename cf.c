@@ -188,6 +188,7 @@ void initVM() {
     char *cnn = ":D %s ]] #%zu ;";       // CONSTANT-NORMAL
 
     parseF(m1i, ";", EXIT);
+    parseF(m1i, "EXIT", EXIT);
     parseF(m1i, "@", FETCH);
     parseF(m1i, "C@", CFETCH);
     parseF(m1i, "!", STORE);
@@ -211,11 +212,16 @@ void initVM() {
 
     parseF(cni, "cell", CELL_SZ);
     parseF(cnn, "(here)",(cell_t)&here);
+    parseF(cnn, "(vhere)",(cell_t)&vhere);
     parseF(cnn, "(last)",(cell_t)&last);
     parseF(cnn, "state",(cell_t)&state);
     parseF(cnn, "base",(cell_t)&base);
     parseF(cnn, "vars",(cell_t)&vars[0]);
     parseF(cnn, "vars-end",(cell_t)&vars[VARS_SZ]);
+    doOuter(":I  LIT,   ]] 2 c, ;");
+    doOuter(":I  JMP,   ]] 5 c, ;");
+    doOuter(":I  JMPZ,  ]] 6 c, ;");
+    doOuter(":I  JMPNZ, ]] 7 c, ;");
     doOuter(":I  NIP ]] SWAP DROP ;");
     doOuter(":I  /   ]] /MOD NIP ;");
     doOuter(":D  bye ]]  999 state ! ;");
