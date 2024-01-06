@@ -253,14 +253,6 @@ int doInsertReplace(char c, int force) {
     return 1;
 }
 
-void putLine() {
-    mv(1,-99);
-    insertLine();
-    mv(-1,0);
-    strCpy(&EDCH(line, 0), yanked);
-    // mv(1,0);
-}
-
 int doCTL(int c) {
     if (c==8) { mv(0,-1);  }
     else if (c==9) { mv(0,8); }
@@ -297,13 +289,19 @@ int processEditorChar(int c) {
     BCASE 'O': mv(0, -99); insertLine(); mv(-1, 0); insertMode();
     BCASE 'r': replaceChar(edKey(), 0, 1);
     BCASE 'R': replaceMode();
+    BCASE 'c': deleteChar(); insertMode();
+    BCASE 'C': c=off; while (c<LLEN) { EDCH(line, c++) = 0; }
+            isDirty=lineShow[line]=1; insertMode();
     BCASE 'D': deleteLine();
     BCASE 'x': deleteChar();
     BCASE 'X': if (0 < off) { --off; deleteChar(); }
     BCASE 'L': edRdBlk();
     BCASE 'W': edSvBlk();
     BCASE 'Y': strCpy(yanked, &EDCH(line, 0));
-    BCASE 'P': putLine();
+    BCASE 'p': mv(1, -99); insertLine(); mv(-1, 0);
+            strCpy(&EDCH(line, 0), yanked);
+    BCASE 'P': mv(0, -99); insertLine(); mv(-1, 0);
+            strCpy(&EDCH(line, 0), yanked);
     BCASE '+': if (isDirty) { edSvBlk(); }
             blkNum = min(999,blkNum+1); edRdBlk();
     BCASE '-': if (isDirty) { edSvBlk(); }
