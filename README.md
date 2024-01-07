@@ -3,15 +3,20 @@
 ![Editing](/images/editing.jpg)
 
 ## What is cf?
-- cf is NOT ColorForth, but it does use markers in the source to control its mode.
-- cf is a byte-coded system written in C.
+- cf is inspired by ColorForth, but it is NOT ColorForth.
+- Like ColorForth, cf uses markers in the source to control its mode.
 - cf uses the VM from c3. See this for details: https://github.com/CCurl/c3
-- cf has 6 modes: DEFINE, COMMENT, INLINE, COMPILE, MACHINE, and INTERPRET.
-- cf uses a either a marker code (in the whitespace) or a word to identify each mode.
-- cf includes a simple text editor that will color the code to identify how it will be processed.
-- cf is a work in progress.
+- cf has 6 modes: DEFINE, COMMENT, INLINE, COMPILE, INTERPRET, and MACHINE.
+- cf supports using a marker byte in the whitespace or a word to identify each mode.
+- cf includes a simple block editor that colors the file to identify how it will be processed.
+- cf is a work in progress. Please collaborate with me on it!
 
-### The markers:
+## Notes:
+- Words like IF/THEN are defined in block 0.
+- They are WHITE (INTERPRETED) because they generate code.
+- BEGIN, WHILE, UNTIL, and AGAIN are also interpreted.
+
+## The markers:
 
 |Mode       |Color   | Code  |Editor  | Word |
 | :--       | :--    | :--   | :--    | :--  |
@@ -23,7 +28,9 @@
 | COMPILE   | cyan   | 6     | ctrl-f | [[   |
 | INTERPRET | white  | 7     | ctrl-g | ]]   |
 
-## Notes:
-- Words like IF/THEN and BEGIN/WHILE are defined in block 0.
-- They are WHITE (INTERPRETED) because they generate code.
-- BEGIN, WHILE, AGAIN, and REPEAT are also interpreted.
+## Blocks
+- In cf, a block is a file with the name "block-NNN.cf". It has a maximum of BLOCK_SZ bytes.
+- BLOCK_SZ, in block.h, is set to 2000. It is easy to change as needed.
+
+## The Editor
+Talk about the editor here.
