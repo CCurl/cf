@@ -139,6 +139,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="block.c" />
     <ClCompile Include="cf.c" />
     <ClCompile Include="editor.c" />
     <ClCompile Include="vm.c" />

@@ -24,6 +24,9 @@
     <ClCompile Include="vm.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="block.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cf.h">

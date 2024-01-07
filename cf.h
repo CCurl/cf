@@ -8,6 +8,7 @@
 #include <stdarg.h>
 #include <time.h>
 #include "vm.h"
+#include "block.h"
 
 #ifdef _MSC_VER
 #include <conio.h>
@@ -34,8 +35,6 @@
 #define MLMODE   PURPLE
 #define COMPILE  CYAN
 #define INTERP   WHITE
-
-extern char theBlock[];
 
 extern void GotoXY(int, int);
 extern void Color(int, int);

@@ -1,15 +1,15 @@
 // editor.cpp - A simple block editor
 
 #include "cf.h"
+#include "block.h"
 
-#define LLEN       100
 #define NUM_LINES   20
-#define BLOCK_SZ    (NUM_LINES)*(LLEN)
+#define LLEN       (BLOCK_SZ/NUM_LINES)
 #define EDCH(l,o)   edBuf[(l*LLEN)+o]
 #define DIRTY(l)    isDirty=1; lineShow[l]=1
 
 enum { COMMAND = 1, INSERT, REPLACE, QUIT };
-char theBlock[BLOCK_SZ];
+char *theBlock;
 int line, off, blkNum, edMode;
 int isDirty, lineShow[NUM_LINES];
 char edBuf[BLOCK_SZ], tBuf[LLEN], mode[32], *msg = NULL;
@@ -21,11 +21,10 @@ void ClearEOL() { printString("\x1B[K"); }
 void CursorOn() { printString("\x1B[?25h"); }
 void CursorOff() { printString("\x1B[?25l"); }
 void Color(int c, int bg) { printStringF("\x1B[%d;%dm", (30+c), bg?bg:40); }
-void commandMode() { edMode = COMMAND; strCpy(mode, "command"); }
-void fillWith(char *x, int num, byte ch) { for (int i=0; i<num; i++) x[i]=ch; }
-int edKey() { return key(); }
-void insertMode() { edMode=INSERT; strCpy(mode, "insert"); }
+void commandMode() { edMode=COMMAND; strCpy(mode, "command"); }
+void insertMode()  { edMode=INSERT;  strCpy(mode, "insert"); }
 void replaceMode() { edMode=REPLACE; strCpy(mode, "replace"); }
+int edKey() { return key(); }
 
 void NormLO() {
     line = min(max(line, 0), NUM_LINES-1);
@@ -33,17 +32,13 @@ void NormLO() {
 }
 
 void showAll() {
-    for (int i = 0; i < NUM_LINES; i++) {
-        lineShow[i] = 1;
-    }
+    for (int i = 0; i < NUM_LINES; i++) { lineShow[i] = 1; }
 }
 
 char edChar(int l, int o, int changeMode) {
     char c = EDCH(l,o);
     if (c==0) { return c; }
-    if (BTW(c, RED, WHITE) && changeMode) {
-        Color(c, 0);
-    }
+    if (BTW(c, RED, WHITE) && changeMode) { Color(c, 0); }
     return BTW(c,32,126) ? c : ' ';
 }
 
@@ -118,11 +113,12 @@ void gotoEOL() {
 }
 
 int toBlock() {
-    fillWith(theBlock, BLOCK_SZ, 0);
+    fill(theBlock, 0, BLOCK_SZ);
     for (int l=0; l < NUM_LINES; l++) {
         char *y=&EDCH(l,0);
         strCat(theBlock,y);
     }
+    blockIsDirty(blkNum);
     return strLen(theBlock);
 }
 
@@ -134,7 +130,7 @@ void addLF(int l) {
 
 void toBuf() {
     int o = 0, l = 0, ch;
-    fillWith(edBuf, BLOCK_SZ, 0);
+    fill(edBuf, 0, BLOCK_SZ);
     for (int i = 0; i < BLOCK_SZ; i++) {
         ch = theBlock[i];
         if (ch == 0) { break; }
@@ -150,35 +146,20 @@ void toBuf() {
     for (int i = 0; i < NUM_LINES; i++) { addLF(i); }
 }
 
-void edRdBlk() {
-    char buf[24];
-    fillWith(theBlock, BLOCK_SZ, 0);
-    sprintf(buf, "block-%03d.cf", blkNum);
-    msg = " - noFile ";
-    FILE* fp = fopen(buf, "rb");
-    if (fp) {
-        int n = (int)fread(theBlock, 1, BLOCK_SZ, fp);
-        msg = tBuf;
-        sprintf(msg, " - loaded (%d chars) ", n);
-        fclose(fp);
-    }
+void edRdBlk(int force) {
+    if (force) { blockClear(blkNum); }
+    theBlock = blockRead(blkNum);
     toBuf();
     showAll();
     isDirty = 0;
 }
 
-void edSvBlk() {
-    int sz = toBlock();
-    char buf[24];
-    sprintf(buf, "block-%03d.cf", blkNum);
-    msg = " - err ";
-    FILE* fp = fopen(buf, "wb");
-    if (fp) {
-        fwrite(theBlock, 1, sz, fp);
-        msg = " - saved ";
-        fclose(fp);
+void edSvBlk(int force) {
+    if (isDirty || force) {
+        toBlock();
+        blockFlush(blkNum);
+        isDirty = 0;
     }
-    isDirty = 0;
 }
 
 void deleteChar() {
@@ -295,17 +276,15 @@ int processEditorChar(int c) {
     BCASE 'D': deleteLine();
     BCASE 'x': deleteChar();
     BCASE 'X': if (0 < off) { --off; deleteChar(); }
-    BCASE 'L': edRdBlk();
-    BCASE 'W': edSvBlk();
+    BCASE 'L': edRdBlk(1);
+    BCASE 'W': isDirty = 1; edSvBlk(1);
     BCASE 'Y': strCpy(yanked, &EDCH(line, 0));
     BCASE 'p': mv(1, -99); insertLine(); mv(-1, 0);
             strCpy(&EDCH(line, 0), yanked);
     BCASE 'P': mv(0, -99); insertLine(); mv(-1, 0);
             strCpy(&EDCH(line, 0), yanked);
-    BCASE '+': if (isDirty) { edSvBlk(); }
-            blkNum = min(999,blkNum+1); edRdBlk();
-    BCASE '-': if (isDirty) { edSvBlk(); }
-            blkNum = max(0, blkNum-1); edRdBlk();
+    BCASE '+': edSvBlk(0); ++blkNum; edRdBlk(0);
+    BCASE '-': edSvBlk(0); blkNum = max(0, blkNum-1); edRdBlk(0);
     BCASE 'Q': toBlock(); edMode = QUIT;
     }
     return 1;
@@ -317,7 +296,7 @@ void doEditor(cell_t blk) {
     msg = NULL;
     CLS();
     CursorOff();
-    edRdBlk();
+    edRdBlk(1);
     commandMode();
     showAll();
     showHelp();
