@@ -35,8 +35,8 @@ typedef struct { cell_t sp; se_t stk[STK_SZ+1]; } stk_t;
 typedef struct { cell_t xt; byte f; byte len; char name[NAME_LEN+1]; } dict_t;
 
 extern stk_t ds, rs;
-extern cell_t lstk[LSTK_SZ+1], lsp;
-extern cell_t fileStk[10], fileSp, input_fp, output_fp;
+extern cell_t lstk[LSTK_SZ+1], lsp, output_fp;
+extern cell_t inputStk[10], fileSp, input_fp, output_fp;
 extern cell_t state, base, reg[REGS_SZ], reg_base, t1, n1;
 extern char code[CODE_SZ], vars[VARS_SZ], tib[256], WD[32];
 extern char *here, *vhere, *in, *y;

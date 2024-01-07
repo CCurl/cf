@@ -3,20 +3,20 @@
 #include "vm.h"
 
 stk_t ds, rs;
-cell_t lstk[LSTK_SZ+1], lsp;
+cell_t lstk[LSTK_SZ+1], lsp, output_fp;
 cell_t state, base, reg[REGS_SZ], reg_base, t1, n1;
 char code[CODE_SZ], vars[VARS_SZ], tib[256], WD[32];
 char *here, *vhere, *in, *y;
 dict_t tempWords[10], *last;
 
 void push(cell_t x) { ds.stk[++DSP].i = (cell_t)(x); }
-cell_t pop() { return ds.stk[DSP--].i; }
-char *cpop() { return ds.stk[DSP--].c; }
-
 void fpush(flt_t x) { ds.stk[++DSP].f = (x); }
-flt_t fpop() { return ds.stk[DSP--].f; }
-
+void cpush(char *x) { ds.stk[++DSP].c = (x); }
 void rpush(char *x) { rs.stk[++RSP].c = (x); }
+
+cell_t pop() { return ds.stk[DSP--].i; }
+flt_t fpop() { return ds.stk[DSP--].f; }
+char *cpop() { return ds.stk[DSP--].c; }
 char *rpop() { return rs.stk[RSP--].c; }
 
 void CComma(cell_t x) { *(here++) = (char)x; }

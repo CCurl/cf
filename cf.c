@@ -10,14 +10,12 @@ int qKey() { return _kbhit(); }
 #include "linux.inc"
 #endif
 
-cell_t fileStk[10], fileSp, input_fp, output_fp;
+enum { EDIT=100, BLOAD, FOPEN, FCLOSE, FREAD, FWRITE };
 
-enum { EDIT=100, BLOAD };
-
-void printString(const char *s) { printf("%s", s); }
-void printChar(char c) { printf("%c", c); }
+void printString(const char *s) { fprintf((FILE*)output_fp, "%s", s); }
+void printChar(char c) { fputc(c, (FILE*)output_fp); }
 cell_t sysTime() { return (cell_t)clock(); }
-int chSt(int st) { state = st; return (int)st; }
+int changeState(int st) { state = st; return st; }
 
 #ifdef NEEDS_ALIGN
 cell_t Fetch(const byte *a) {
@@ -39,28 +37,22 @@ void Store(const char *a, cell_t v) { *(cell_t*)(a) = v; }
 #endif
 
 char *doUser(char *pc, char ir) {
+    char *c1, *c2;
     switch (ir) {
-        case EDIT: doEditor(pop());
-        RCASE BLOAD : {
-            char fn[32]; sprintf(fn, "block-%03d.cf", (int)pop());
-            FILE *fp = fopen(fn, "rb");
-            if (fp) {
-                if (input_fp) { fileStk[++fileSp] = input_fp; }
-                input_fp = (cell_t)fp;
-            } else { printStringF("-nf:%s-", fn); }
-        }
+        case EDIT:    doEditor(pop());
+        RCASE BLOAD:  c1=in; doOuter(blockRead(pop())); in=c1;
+        RCASE FOPEN : c2=cpop(); c1=cpop(); push((cell_t)fopen(c1,c2));
+        RCASE FCLOSE: c1=cpop(); fclose((FILE*)c1);
+        RCASE FREAD:  // xIn =in; doOuter(blockRead(pop())); in= xIn;
+        RCASE FWRITE: // xIn =in; doOuter(blockRead(pop())); in= xIn;
+        return pc; default: break;
     }
-
     return pc;
 }
 
-int checkState(int c, int set) {
-    if (BTW(c,RED,WHITE)) {
-        if (set) { state=c; }
-        // printStringF("(state-change:%d)",c);
-        return c;
-    }
-    return 0;
+int checkState(int c, int isSet) {
+    if (!BTW(c, RED, WHITE)) { return 0; }
+    return (isSet) ? changeState(c) : c;
 }
 
 int getWord(char *wd) {
@@ -78,11 +70,9 @@ int doCompile(const char* wd) {
     if (isNum(wd)) {
         cell_t val = pop();
         if (BTW(val,0,127)) {
-            CComma(LIT1);
-            CComma(val);
+            CComma(LIT1); CComma(val);
         } else {
-            CComma(LIT);
-            Comma(val);
+            CComma(LIT); Comma(val);
         }
         return 1;
     }
@@ -95,8 +85,7 @@ int doCompile(const char* wd) {
             CComma(*x++);
             while (*x != EXIT) { CComma(*(x++)); }
         } else {
-            CComma(CALL);
-            Comma(xt);
+            CComma(CALL); Comma(xt);
         }
         return 1;
     }
@@ -112,11 +101,8 @@ int doInterpret(const char* wd) {
         cell_t f=pop();
         cell_t xt=pop();
         //printf("-I:%s/%lx-",wd,xt);
-        CComma(CALL);
-        Comma(xt);
-        CComma(EXIT);
-        here = cp;
-        Run(here);
+        CComma(CALL); Comma(xt); CComma(EXIT);
+        here = cp; Run(here);
         return 1;
     }
 	printStringF("-I:%s?-", wd);
@@ -130,28 +116,28 @@ int doML(char *wd) {
 }
 
 int setState(char *wd) {
-    static int lastState=0;
-    if ((lastState) && (state==COMMENT) && !strEq(wd, ")")) { return 1; }
 
-    if (strEq(wd, "((")) { return chSt(COMMENT); }
-    if (strEq(wd, ":D")) { return chSt(DEFINE);  }
-    if (strEq(wd, ":I")) { return chSt(INLINE);  }
-    if (strEq(wd, "]]")) { return chSt(COMPILE); }
-    if (strEq(wd, "[[")) { return chSt(INTERP);  }
-    if (strEq(wd, ":M")) { return chSt(MLMODE);  }
+    if (strEq(wd, "((")) { return changeState(COMMENT); }
+    if (strEq(wd, ":D")) { return changeState(DEFINE);  }
+    if (strEq(wd, ":I")) { return changeState(INLINE);  }
+    if (strEq(wd, "]]")) { return changeState(COMPILE); }
+    if (strEq(wd, "[[")) { return changeState(INTERP);  }
+    if (strEq(wd, ":M")) { return changeState(MLMODE);  }
 
     // Auto state transitions for text-based usage
-    //if (strEq(wd, ":"))  { doDefine(0); return chSt(COMPILE); }
-    //if (strEq(wd, ":i")) { doDefine(0); last->f=2; return chSt(COMPILE); }
-    //if (strEq(wd, ":m")) { doDefine(0); last->f=2; return chSt(MLMODE); }
-    //if (strEq(wd, "["))  { return chSt(INTERP); }
-    //if (strEq(wd, "]"))  { return chSt(COMPILE); }
-    //if (strEq(wd, "("))  { lastState=(int)state; return chSt(COMMENT); }
-    //if (strEq(wd, ")"))  { int x=lastState; lastState=0; return chSt(x); }
+    // static int lastState=0;
+    // if ((lastState) && (state==COMMENT) && !strEq(wd, ")")) { return 1; }
+    // if (strEq(wd, ":"))  { doDefine(0); return changeState(COMPILE); }
+    // if (strEq(wd, ":i")) { doDefine(0); last->f=2; return changeState(COMPILE); }
+    // if (strEq(wd, ":m")) { doDefine(0); last->f=2; return changeState(MLMODE); }
+    // if (strEq(wd, "["))  { return changeState(INTERP); }
+    // if (strEq(wd, "]"))  { return changeState(COMPILE); }
+    // if (strEq(wd, "("))  { lastState=(int)state; return changeState(COMMENT); }
+    // if (strEq(wd, ")"))  { int x=lastState; lastState=0; return changeState(x); }
     return 0;
 }
 
-void doOuter(char* cp) {
+void doOuter(char *cp) {
     char buf[32];
     in = cp;
     while (getWord(buf)) {
@@ -180,7 +166,6 @@ void parseF(char *fmt, ...) {
 
 void initVM() {
     vmInit();
-    fileSp = 0;
     state = INTERP;
     char *m1i = ":I %s :M #%ld 3";       // MACHINE-INLINE/one
     char *m2i = ":I %s :M #%ld #%ld 3";  // MACHINE-INLINE/two
@@ -228,23 +213,21 @@ void initVM() {
 }
 
 void loop() {
-    cell_t fp = input_fp;
     char buf[128];
-    if (fp == 0) { fp = (cell_t)stdin; }
-    if (fp == (cell_t)stdin) { printString(" ok\r\n"); state=INTERP; }
-    if (fgets(buf, 128, (FILE *)fp) == buf) { doOuter(buf); }
-    else {
-        if (input_fp == (cell_t)stdin) { state = 999; return; }
-        fclose((FILE*)input_fp);
-        if (fileSp) { input_fp = fileStk[fileSp--]; }
-        else { input_fp = 0; }
+    printString(" ok\r\n");
+    state = INTERP;
+    if (fgets(buf, 128, stdin) != buf) {
+        state = 999;
+        return;
     }
+    doOuter(buf);
 }
 
 int main(int argc, char **argv) {
     initVM();
+    output_fp = (cell_t)stdout;
     // doEditor(0);
-    input_fp = (cell_t)fopen("block-000.cf","rt");
+    doOuter(blockRead(0));
     while (state != 999) { loop(); }
     return 1;
 }

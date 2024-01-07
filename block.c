@@ -16,8 +16,10 @@ static byte stat[NUM_BLOCKS];
 static int init = 0;
 
 void blockClear(cell_t blockNum) {
-	fill(BLKADDR(blockNum), 0, BLOCK_SZ);
-	stat[BLKNUM(blockNum)] = 0;
+	if (stat[BLKNUM(blockNum)] != BLOCK_FREE) {
+		fill(BLKADDR(blockNum), 0, BLOCK_SZ);
+		stat[BLKNUM(blockNum)] = BLOCK_FREE;
+	}
 }
 
 void blockIsDirty(cell_t blockNum) {
