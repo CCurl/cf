@@ -38,14 +38,18 @@ void Store(const char *a, cell_t v) { *(cell_t*)(a) = v; }
 
 char *doUser(char *pc, char ir) {
     char *c1, *c2;
+    cell_t n1, n2;
     switch (ir) {
-        case EDIT:    doEditor(pop());
+        case  EDIT:   doEditor(pop());
         RCASE BLOAD:  c1=in; doOuter(blockRead(pop())); in=c1;
-        RCASE FOPEN : c2=cpop(); c1=cpop(); push((cell_t)fopen(c1,c2));
+        RCASE FOPEN:  c2=cpop(); c1=cpop(); push((cell_t)fopen(c1,c2));
         RCASE FCLOSE: c1=cpop(); fclose((FILE*)c1);
-        RCASE FREAD:  // xIn =in; doOuter(blockRead(pop())); in= xIn;
-        RCASE FWRITE: // xIn =in; doOuter(blockRead(pop())); in= xIn;
-        return pc; default: break;
+        RCASE FREAD:  c2=cpop(); n2=pop(); n1=pop(); c1=cpop();
+                push((cell_t)fread(c1, n1, n2, (FILE*)c2));
+        RCASE FWRITE: c2=cpop(); n2=pop(); n1=pop(); c1=cpop();
+                push((cell_t)fwrite(c1, n1, n2, (FILE*)c2));
+                return pc;
+        default: break;
     }
     return pc;
 }
