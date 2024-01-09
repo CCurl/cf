@@ -47,5 +47,6 @@
     <None Include="LICENSE" />
     <None Include="lib.fs" />
     <None Include=".gitignore" />
+    <None Include="block-002.cf" />
   </ItemGroup>
 </Project>
