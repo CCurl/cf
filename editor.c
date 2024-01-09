@@ -149,6 +149,7 @@ void toBuf() {
 void edRdBlk(int force) {
     if (force) { blockClear(blkNum, 0); }
     theBlock = blockRead(blkNum);
+    blockIsText(blkNum);
     toBuf();
     showAll();
     isDirty = 0;
@@ -158,7 +159,7 @@ void edSvBlk(int force) {
     if (isDirty || force) {
         toBlock();
         blockIsDirty(blkNum);
-        blockFlush(blkNum, 0, 1);
+        blockFlush(blkNum, 0);
         isDirty = 0;
     }
 }
