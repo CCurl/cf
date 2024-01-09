@@ -2,70 +2,88 @@
 
 #include "cf.h"
 
-#define NUM_BLOCKS  1000
+#define CACHE_SZ      16
 
 #define BLOCK_FREE  0
 #define BLOCK_READ  1
 #define BLOCK_DIRTY 2  
 
-#define BLKNUM(bn)    (bn)
-#define BLKADDR(bn)   &blocks[BLKNUM(bn)][0]
+#define BLKNUM(bn)         (bn)
+#define BLK(bn)            (&cache[bn%CACHE_SZ])
+#define BLKADDR(bn)        &blocks[BLKNUM(bn)][0]
+#define SAMEBLK(blk, bn)   (blk->num==bn)
+#define ISDIRTY(blk)       (blk->stat==BLOCK_DIRTY)
 
-static byte blocks[NUM_BLOCKS][BLOCK_SZ];
-static byte stat[NUM_BLOCKS];
+typedef struct { int num; int stat; byte data[BLOCK_SZ]; } cache_t;
+
+static cache_t cache[CACHE_SZ];
 static int init = 0;
 
-void blockClear(cell_t blockNum) {
-	if (stat[BLKNUM(blockNum)] != BLOCK_FREE) {
-		fill(BLKADDR(blockNum), 0, BLOCK_SZ);
-		stat[BLKNUM(blockNum)] = BLOCK_FREE;
+void blockClear(cell_t blockNum, int force) {
+	if (blockNum < 0) { return; }
+	cache_t *blk=BLK(blockNum);
+	if (SAMEBLK(blk,blockNum) || force) {
+		blk->num = -1;
+		blk->stat = BLOCK_FREE;
+		fill(blk->data, 0, BLOCK_SZ);
 	}
 }
 
 void blockIsDirty(cell_t blockNum) {
-	stat[BLKNUM(blockNum)] = BLOCK_DIRTY;
+	if (blockNum < 0) { return; }
+	cache_t *blk=BLK(blockNum);
+	if (SAMEBLK(blk, blockNum)) { blk->stat = BLOCK_DIRTY; }
 }
 
-static void blockInit() {
-	if (!init) {
-		for (int i=0; i<NUM_BLOCKS; i++) { blockClear(i); }
+static void blockInit(int force) {
+	if (!init || force) {
+		for (int i=0; i<CACHE_SZ; i++) { blockClear(i, 1); }
 		init = 1;
 	}
 }
 
-void blockFlush(cell_t blockNum) {
-	if (stat[blockNum] != BLOCK_DIRTY) { return; }
+static void readWriteBlock(cache_t *blk, int isWrite, int isText) {
 	char fn[32];
-	byte *a = BLKADDR(blockNum);
-	blockInit();
-	sprintf(fn, "block-%03ld.cf", (long)blockNum);
-	FILE* fp = fopen(fn, "wb");
+	sprintf(fn, "block-%03d.cf", blk->num);
+	FILE* fp = fopen(fn, isWrite ? "wb" : "rb");
 	if (fp) {
-		fwrite(a, 1, BLOCK_SZ, fp);
+		if (isWrite) {
+			if (isText) { fputs(blk->data, fp); }
+			else { fwrite(blk->data, 1, BLOCK_SZ, fp); }
+		}
+		else { fread(blk->data, 1, BLOCK_SZ, fp); }
 		fclose(fp);
 	}
-	stat[BLKNUM(blockNum)] = BLOCK_READ;
+}
+
+void blockFlush(cell_t blockNum, int force, int isText) {
+	blockInit(0);
+	if (blockNum < 0) { return; }
+	cache_t *blk = BLK(blockNum);
+	if ((!SAMEBLK(blk,blockNum)) && (!force)) { return; }
+	if ((!ISDIRTY(blk)) && (!force)) { return; }
+	readWriteBlock(blk, 1, isText);
+	blk->stat = BLOCK_READ;
 }
 
 byte *blockRead(cell_t blockNum) {
-	char fn[32];
-	byte *a = BLKADDR(blockNum);
-	blockInit();
-	if (stat[BLKNUM(blockNum)]==BLOCK_DIRTY) {
-		blockFlush(blockNum);
+	blockInit(0);
+	if (blockNum < 0) { return NULL; }
+	cache_t *blk = BLK(blockNum);
+	if (!SAMEBLK(blk,blockNum)) {
+		blockFlush(blk->num, 0, 0);
+		blk->stat = BLOCK_FREE;
 	}
-	blockClear(blockNum);
-	sprintf(fn, "block-%03ld.cf", (long)blockNum);
-	FILE* fp = fopen(fn, "rb");
-	if (fp) {
-		fread(a, 1, BLOCK_SZ, fp);
-		fclose(fp);
+	if (blk->stat == BLOCK_FREE) {
+		blockClear(blockNum, 1);
+		blk->num = (int)blockNum;
+		readWriteBlock(blk, 0, 0);
+		blk->stat = BLOCK_READ;
 	}
-	stat[BLKNUM(blockNum)] = BLOCK_READ;
-	return a;
+	return blk->data;
 }
 
 void blockFlushAll() {
-	blockInit();
-	for (int i = 0; i < NUM_BLOCKS; i++) { blockFlush(i); }
+	blockInit(0);
+	for (int i = 0; i < CACHE_SZ; i++) { blockFlush(i, 0, 0); }
 }

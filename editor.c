@@ -147,7 +147,7 @@ void toBuf() {
 }
 
 void edRdBlk(int force) {
-    if (force) { blockClear(blkNum); }
+    if (force) { blockClear(blkNum, 0); }
     theBlock = blockRead(blkNum);
     toBuf();
     showAll();
@@ -157,7 +157,8 @@ void edRdBlk(int force) {
 void edSvBlk(int force) {
     if (isDirty || force) {
         toBlock();
-        blockFlush(blkNum);
+        blockIsDirty(blkNum);
+        blockFlush(blkNum, 0, 1);
         isDirty = 0;
     }
 }
@@ -272,17 +273,15 @@ int processEditorChar(int c) {
     BCASE 'R': replaceMode();
     BCASE 'c': deleteChar(); insertMode();
     BCASE 'C': c=off; while (c<LLEN) { EDCH(line, c++) = 0; }
-            isDirty=lineShow[line]=1; insertMode();
+            addLF(line); isDirty=lineShow[line]=1; insertMode();
     BCASE 'D': deleteLine();
     BCASE 'x': deleteChar();
     BCASE 'X': if (0 < off) { --off; deleteChar(); }
     BCASE 'L': edRdBlk(1);
     BCASE 'W': isDirty = 1; edSvBlk(1);
     BCASE 'Y': strCpy(yanked, &EDCH(line, 0));
-    BCASE 'p': mv(1, -99); insertLine(); mv(-1, 0);
-            strCpy(&EDCH(line, 0), yanked);
-    BCASE 'P': mv(0, -99); insertLine(); mv(-1, 0);
-            strCpy(&EDCH(line, 0), yanked);
+    BCASE 'p': mv(1,-99); insertLine(); mv(-1,0); strCpy(&EDCH(line,0), yanked);
+    BCASE 'P': mv(0,-99); insertLine(); mv(-1,0); strCpy(&EDCH(line,0), yanked);
     BCASE '+': edSvBlk(0); ++blkNum; edRdBlk(0);
     BCASE '-': edSvBlk(0); blkNum = max(0, blkNum-1); edRdBlk(0);
     BCASE 'Q': toBlock(); edMode = QUIT;
@@ -296,7 +295,7 @@ void doEditor(cell_t blk) {
     msg = NULL;
     CLS();
     CursorOff();
-    edRdBlk(1);
+    edRdBlk(0);
     commandMode();
     showAll();
     showHelp();

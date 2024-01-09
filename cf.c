@@ -80,10 +80,15 @@ int doCompile(const char* wd) {
         }
         return 1;
     }
+    t1 = isRegOp(wd);
+    if (t1) {
+        CComma(t1); CComma(wd[1] - '0');
+        return 1;
+    }
     if (doFind(wd)) {
         cell_t f = pop();
         cell_t xt = pop();
-        if (f == 2) {    // INLINE
+        if (f == IS_INLINE) {
             byte *x=(byte *)xt;
             // printf("-inl-%d-",*x);
             CComma(*x++);
@@ -100,6 +105,14 @@ int doCompile(const char* wd) {
 int doInterpret(const char* wd) {
     // printStringF("-interp:%s-", wd);
     if (isNum(wd)) { return 1; }
+    t1 = isRegOp(wd);
+    if (t1) {
+        *(here) = (char)t1;
+        *(here+1) = wd[1]-'0';
+        *(here+2) = EXIT;
+        Run(here);
+        return 1;
+    }
     if (doFind(wd)) {
         char *cp = here;
         cell_t f=pop();
@@ -149,7 +162,7 @@ void doOuter(char *cp) {
         switch (state) {
             case COMMENT:
             BCASE DEFINE:  doDefine(buf);
-            BCASE INLINE:  doDefine(buf); last->f=2;
+            BCASE INLINE:  doDefine(buf); last->f=IS_INLINE;
             BCASE COMPILE: if (!doCompile(buf)) return;
             BCASE INTERP:  if (!doInterpret(buf)) return;
             BCASE MLMODE:  if (!doML(buf)) return;
