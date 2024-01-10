@@ -56,7 +56,10 @@ The editor has 3 modes: COMMAND, INSERT and REPLACE
 | $        | Go to EOL (the End Of the Line) |
 | g        | Go to the beginning of the block |
 | G        | Go to the beginning of the last line of the block |
-|          | ColorForth markers |
+
+### ColorForth markers
+|  Key     | Action |
+| :--      | :--    |
 | [ctrl-a] | Insert a space if necessary. Place DEFINE marker. |
 | [ctrl-b] | Insert a space if necessary. Place COMMENT marker. |
 | [ctrl-c] | Insert a space if necessary. Place INLINE marker. |
