@@ -198,28 +198,93 @@ void initialWords() {
     // VM Opcodes
     char *m1i = ":I %s :M #%ld 3";       // MACHINE-INLINE/one
     parseF(m1i, ";", EXIT);
-    parseF(m1i, "@", FETCH);
-    parseF(m1i, "C@", CFETCH);
+    parseF(m1i, "EXIT", EXIT);
     parseF(m1i, "!", STORE);
     parseF(m1i, "C!", CSTORE);
-    parseF(m1i, "+", ADD);
-    parseF(m1i, "-", SUB);
-    parseF(m1i, "*", MULT);
-    parseF(m1i, "/MOD", SLMOD);
+    parseF(m1i, "@", FETCH);
+    parseF(m1i, "C@", CFETCH);
     parseF(m1i, "DUP", DUP);
     parseF(m1i, "SWAP", SWAP);
+    parseF(m1i, "OVER", OVER);
     parseF(m1i, "DROP", DROP);
+    parseF(m1i, "+", ADD);
+    parseF(m1i, "*", MULT);
+    parseF(m1i, "/MOD", SLMOD);
+    parseF(m1i, "-", SUB);
+    parseF(m1i, "1+", INC);
+    parseF(m1i, "1-", DEC);
+    parseF(m1i, "<", LT);
+    parseF(m1i, "=", EQ);
+    parseF(m1i, ">", GT);
+    parseF(m1i, "0=", EQ0);
+    parseF(m1i, ">R", RTO);
+    parseF(m1i, "R@", RFETCH);
+    parseF(m1i, "R>", RFROM);
     parseF(m1i, "DO", DO);
     parseF(m1i, "LOOP", LOOP);
+    parseF(m1i, "-LOOP", LOOP2);
+    parseF(m1i, "(I)", INDEX);
+    parseF(m1i, "INVERT", COM);
+    parseF(m1i, "AND", AND);
+    parseF(m1i, "OR", OR);
+    parseF(m1i, "XOR", XOR);
+    parseF(m1i, "TYPE", TYPE);
     parseF(m1i, "ZTYPE", ZTYPE);
-    parseF(m1i, "EXIT", EXIT);
+    // rX, sX, iX, dX, iX+, dX+ are hard-coded in c3.c
+    parseF(m1i, "+REGS", REG_NEW);
+    parseF(m1i, "-REGS", REG_FREE);
 
+    // CF specific opcodes
+    parseF(m1i, "EDIT",   EDIT);
+    parseF(m1i, "LOAD",   BLOAD);
+    parseF(m1i, "FOPEN",  FOPEN);
+    parseF(m1i, "FCLOSE", FCLOSE);
+    parseF(m1i, "FREAD",  FREAD);
+    parseF(m1i, "FWRITE", FWRITE);
+    parseF(m1i, "WORDS",  WORDS);
+
+    // System opcodes ...
     char *m2i = ":I %s :M #%ld #%ld 3";  // MACHINE-INLINE/two
-    parseF(m2i, ",",     SYS_OPS, COMMA);
-    parseF(m2i, "c,",    SYS_OPS, CCOMMA);
-    parseF(m2i, "(.)",   SYS_OPS, DOT);
-    parseF(m2i, "EMIT",  SYS_OPS, EMIT);
+    parseF(m2i, "(.)", SYS_OPS, DOT);
+    parseF(m2i, "ITOA", SYS_OPS, ITOA);
+    parseF(m2i, "ATOI", SYS_OPS, ATOI);
+    parseF(m2i, "CREATE", SYS_OPS, CREATE);
+    parseF(m2i, "'", SYS_OPS, FIND);
+    parseF(m2i, "NEXT-WORD", SYS_OPS, WORD);
     parseF(m2i, "CLOCK", SYS_OPS, TIMER);
+    parseF(m2i, "C,", SYS_OPS, CCOMMA);
+    parseF(m2i, ",", SYS_OPS, COMMA);
+    parseF(m2i, "KEY", SYS_OPS, KEY);
+    parseF(m2i, "?KEY", SYS_OPS, QKEY);
+    parseF(m2i, "EMIT", SYS_OPS, EMIT);
+    parseF(m2i, "QTYPE", SYS_OPS, QTYPE);
+
+    // String opcodes ...
+    parseF(m2i, "S-TRUNC", STR_OPS, TRUNC);
+    parseF(m2i, "LCASE", STR_OPS, LCASE);
+    parseF(m2i, "UCASE", STR_OPS, UCASE);
+    parseF(m2i, "S-CPY", STR_OPS, STRCPY);
+    parseF(m2i, "S-CAT", STR_OPS, STRCAT);
+    parseF(m2i, "S-CATC", STR_OPS, STRCATC);
+    parseF(m2i, "S-LEN", STR_OPS, STRLEN);
+    parseF(m2i, "S-EQ", STR_OPS, STREQ);
+    parseF(m2i, "S-EQ-I", STR_OPS, STREQI);
+    parseF(m2i, "S-LTRIM", STR_OPS, LTRIM);
+    parseF(m2i, "S-RTRIM", STR_OPS, RTRIM);
+
+    // Float opcodes ...
+    parseF(m2i, "F+", FLT_OPS, FADD);
+    parseF(m2i, "F-", FLT_OPS, FSUB);
+    parseF(m2i, "F*", FLT_OPS, FMUL);
+    parseF(m2i, "F/", FLT_OPS, FDIV);
+    parseF(m2i, "F=", FLT_OPS, FEQ);
+    parseF(m2i, "F<", FLT_OPS, FLT);
+    parseF(m2i, "F>", FLT_OPS, FGT);
+    parseF(m2i, "F>I", FLT_OPS, F2I);
+    parseF(m2i, "I>F", FLT_OPS, I2F);
+    parseF(m2i, "F.", FLT_OPS, FDOT);
+    parseF(m2i, "FSQRT", FLT_OPS, SQRT);
+    parseF(m2i, "FTANH", FLT_OPS, TANH);
 
     char *nci = ":I %s ]] %d c, ;";      // NUM-CCOMMA-INLINE
     parseF(nci, "LIT,",   LIT);
@@ -228,33 +293,31 @@ void initialWords() {
     parseF(nci, "JMPNZ,", JMPNZ);
 
     // VM Information Words
-    char *cni = ":I %s ]] #%ld ;";       // CONSTANT-INLINE
-    parseF(cni, "cell", CELL_SZ);
+    parseF(":D VERSION     ]] #%d ;", VERSION);
+    parseF(":D (SP)        ]] %zu ;", &DSP);
+    parseF(":D (RSP)       ]] %zu ;", &RSP);
+    parseF(":D (LSP)       ]] %zu ;", &lsp);
+    parseF(":D (HERE)      ]] %zu ;", &here);
+    parseF(":D (LAST)      ]] %zu ;", &last);
+    parseF(":D (STK)       ]] %zu ;", &ds.stk[0].i);
+    parseF(":D (RSTK)      ]] %zu ;", &rs.stk[0].c);
+    parseF(":D TIB         ]] %zu ;", &tib[0]);
+    parseF(":D >IN         ]] %zu ;", &in);
+    parseF(":D CODE        ]] %zu ;", &code[0]);
+    parseF(":D CODE-SZ     ]] #%d ;", CODE_SZ);
+    parseF(":D VARS        ]] %zu ;", &vars[0]);
+    parseF(":D VARS-SZ     ]] #%d ;", VARS_SZ);
+    parseF(":D (VHERE)     ]] %zu ;", &vhere);
+    parseF(":D (REGS)      ]] %zu ;", &reg[0]);
+    parseF(":D (OUTPUT_FP) ]] %zu ;", &output_fp);
+    parseF(":D STATE       ]] %zu ;", &state);
+    parseF(":D BASE        ]] %zu ;", &base);
+    parseF(":D WORD-SZ     ]] #%d ;", sizeof(dict_t));
+    parseF(":D BYE         ]] %d STATE ! ;", ALL_DONE);
+    parseF(":I CELL        ]] %d ;", CELL_SZ);
 
-    char *cnn = ":D %s ]] #%zu ;";       // CONSTANT-NORMAL
-    parseF(cnn, "(here)",   (cell_t)&here);
-    parseF(cnn, "(vhere)",  (cell_t)&vhere);
-    parseF(cnn, "(last)",   (cell_t)&last);
-    parseF(cnn, "state",    (cell_t)&state);
-    parseF(cnn, "base",     (cell_t)&base);
-    parseF(cnn, "code",     (cell_t)&code[0]);
-    parseF(cnn, "code-end", (cell_t)&code[CODE_SZ]);
-    parseF(cnn, "vars",     (cell_t)&vars[0]);
-    parseF(cnn, "vars-end", (cell_t)&vars[VARS_SZ]);
-
-    // CF specific words
-    parseF(m1i, "EDIT",   EDIT);
-    parseF(m1i, "LOAD",   BLOAD);
-    parseF(m1i, "WORDS",  WORDS);
-    parseF(m1i, "FOPEN",  FOPEN);
-    parseF(m1i, "FCLOSE", FCLOSE);
-    parseF(m1i, "FREAD",  FREAD);
-    parseF(m1i, "FWRITE", FWRITE);
-
-    doOuter(":I  NIP ]] SWAP DROP ;"
-        " :I  / ]] /MOD NIP ;"
-        " :D  bye ]]  999 state ! ;"
-    );
+    doOuter(":I NIP ]] SWAP DROP ;"
+        " :I / ]] /MOD NIP ;");
 }
 
 void loop() {
@@ -269,9 +332,9 @@ void loop() {
 }
 
 int main(int argc, char **argv) {
+    output_fp = (cell_t)stdout;
     vmInit();
     initialWords();
-    output_fp = (cell_t)stdout;
     // doEditor(0);
     doOuter(blockRead(0));
     while (state != 999) { loop(); }
