@@ -110,7 +110,6 @@ The editor has 3 modes: COMMAND, INSERT and REPLACE
 | [ctrl-l] | Move cursor right 1 character. |
 | [ctrl-x] | Move cursor left 1 character. Delete character. |
 | [esc]    | Cancel and change MODE to COMMAND |
-| [bs]     | Move left and delete char. |
 | [other]  | Insert the char and move the cursor right. |
 
 
@@ -125,5 +124,5 @@ The editor has 3 modes: COMMAND, INSERT and REPLACE
 | [ctrl-k] | Move cursor up 1 line. |
 | [ctrl-l] | Move cursor right 1 character. |
 | [ctrl-x] | Move cursor left 1 character. Delete character. |
-| [cr]     | Move the be beginning of the next line |
+| [cr]     | Move to the beginning of the next line |
 | [other]  | Insert the char and move the cursor right. |
