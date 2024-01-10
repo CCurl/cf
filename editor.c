@@ -4,9 +4,10 @@
 #include "block.h"
 
 #define NUM_LINES   20
-#define LLEN       (BLOCK_SZ/NUM_LINES)
+#define LLEN        (BLOCK_SZ/NUM_LINES)
 #define EDCH(l,o)   edBuf[(l*LLEN)+o]
 #define DIRTY(l)    isDirty=1; lineShow[l]=1
+#define ISCFMODE(c) (BTW(c, RED, WHITE))
 
 enum { COMMAND = 1, INSERT, REPLACE, QUIT };
 char *theBlock;
@@ -38,7 +39,7 @@ void showAll() {
 char edChar(int l, int o, int changeMode) {
     char c = EDCH(l,o);
     if (c==0) { return c; }
-    if (BTW(c, RED, WHITE) && changeMode) { Color(c, 0); }
+    if (ISCFMODE(c) && changeMode) { Color(c, 0); }
     return BTW(c,32,126) ? c : ' ';
 }
 
@@ -207,7 +208,7 @@ void joinLines() {
 }
 
 void replaceChar(char c, int force, int mov) {
-    if ((c<32) && (force==0)) { return; }
+    if (!BTW(c, 32, 126) && (!ISCFMODE(c)) && (!force)) { return; }
     for (int o=off-1; 0<=o; --o) {
         int ch = EDCH(line, o);
         if (ch && (ch != 10)) { break; }
@@ -219,25 +220,29 @@ void replaceChar(char c, int force, int mov) {
     if (mov) { mv(0, 1); }
 }
 
-int doInsertReplace(char c, int force) {
-    if (c == 8) {
-        mv(0, -1);
-        if (edMode == INSERT) { deleteChar(); }
-        return 1;
-    }
-    if (c == 13) {
+int doInsertReplace(char c) {
+    if (c== 8) { mv( 0, -1); return 1; }
+    if (c==10) { mv( 1,  0); return 1; }
+    if (c==11) { mv(-1,  0); return 1; }
+    if (c==12) { mv( 0,  1); return 1; }
+    if (c==24) { mv( 0, -1); deleteChar(); return; }
+    if (c==13) {
         if (edMode == REPLACE) { mv(1, -999); }
         else { insertLine(); }
         return 1;
     }
-    if (!BTW(c,32,126) && (!force)) { return 1; }
+    if (!BTW(c,32,126) && (!ISCFMODE(c))) { return 1; }
     if (edMode == INSERT) { insertSpace(); }
-    replaceChar(c, 0, 1);
+    replaceChar(c, 1, 1);
     return 1;
 }
 
 int doCTL(int c) {
-    if (c==8) { mv(0,-1);  }
+    if (c== 8) { mv( 0,-1); }
+    else if (c==10) { mv( 1, 0); }
+    else if (c==11) { mv(-1, 0); }
+    else if (c==12) { mv( 0, 1); }
+    else if (c==24) { mv(0, -1); deleteChar(); }
     else if (c==9) { mv(0,8); }
     else if (c==13) { mv(1,-999); }
     else if (BTW(c,RED,WHITE)) {
@@ -250,7 +255,7 @@ int doCTL(int c) {
 int processEditorChar(int c) {
     if (c==27) { commandMode(); return 1; }
     if (BTW(edMode,INSERT,REPLACE)) {
-        return doInsertReplace((char)c, 0);
+        return doInsertReplace((char)c);
     }
     if (c<32) { return doCTL(c); }
 
@@ -268,6 +273,7 @@ int processEditorChar(int c) {
     BCASE 'g': mv(-99,-99);
     BCASE 'G': mv(99,-999);
     BCASE 'i': insertMode();
+    BCASE 'I': mv(0, -99); insertMode();
     BCASE 'o': mv(1, -99); insertLine(); mv(-1, 0); insertMode();
     BCASE 'O': mv(0, -99); insertLine(); mv(-1, 0); insertMode();
     BCASE 'r': replaceChar(edKey(), 0, 1);
