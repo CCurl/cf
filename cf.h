@@ -44,6 +44,6 @@ extern void printString(const char* s);
 extern void printStringF(const char* fmt, ...);
 extern void printChar(char c);
 extern void doEditor(cell_t);
-extern void doOuter(char *);
+extern void doOuter(const char *src);
 
 #endif

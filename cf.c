@@ -10,7 +10,7 @@ int qKey() { return _kbhit(); }
 #include "linux.inc"
 #endif
 
-enum { EDIT=100, BLOAD, FOPEN, FCLOSE, FREAD, FWRITE };
+enum { EDIT=100, BLOAD, FOPEN, FCLOSE, FREAD, FWRITE, WORDS };
 
 void printString(const char *s) { fprintf((FILE*)output_fp, "%s", s); }
 void printChar(char c) { fputc(c, (FILE*)output_fp); }
@@ -36,6 +36,19 @@ cell_t Fetch(const char *a) { return *(cell_t*)(a); }
 void Store(const char *a, cell_t v) { *(cell_t*)(a) = v; }
 #endif
 
+void doWords() {
+    dict_t *dp = last;
+    int n = 0;
+    while (dp < (dict_t*)&code[CODE_SZ]) {
+        if (10<n) { printString("\r\n"); n = 0; }
+        printString(dp->name);
+        printChar(9);
+        ++n;
+        if (8 < dp->len) { ++n; }
+        ++dp;
+    }
+}
+
 char *doUser(char *pc, char ir) {
     char *c1, *c2;
     cell_t n1, n2;
@@ -48,8 +61,8 @@ char *doUser(char *pc, char ir) {
                 push((cell_t)fread(c1, n1, n2, (FILE*)c2));
         RCASE FWRITE: c2=cpop(); n2=pop(); n1=pop(); c1=cpop();
                 push((cell_t)fwrite(c1, n1, n2, (FILE*)c2));
-                return pc;
-        default: break;
+        RCASE WORDS:  doWords();
+        return pc; default: break;
     }
     return pc;
 }
@@ -154,9 +167,9 @@ int setState(char *wd) {
     return 0;
 }
 
-void doOuter(char *cp) {
+void doOuter(const char *src) {
     char buf[32];
-    in = cp;
+    in = (char*)src;
     while (getWord(buf)) {
         if (setState(buf)) { continue; }
         switch (state) {
@@ -181,16 +194,10 @@ void parseF(char *fmt, ...) {
     doOuter(buf);
 }
 
-void initVM() {
-    vmInit();
-    state = INTERP;
+void initialWords() {
+    // VM Opcodes
     char *m1i = ":I %s :M #%ld 3";       // MACHINE-INLINE/one
-    char *m2i = ":I %s :M #%ld #%ld 3";  // MACHINE-INLINE/two
-    char *cni = ":I %s ]] #%ld ;";       // CONSTANT-INLINE
-    char *cnn = ":D %s ]] #%zu ;";       // CONSTANT-NORMAL
-
     parseF(m1i, ";", EXIT);
-    parseF(m1i, "EXIT", EXIT);
     parseF(m1i, "@", FETCH);
     parseF(m1i, "C@", CFETCH);
     parseF(m1i, "!", STORE);
@@ -204,29 +211,50 @@ void initVM() {
     parseF(m1i, "DROP", DROP);
     parseF(m1i, "DO", DO);
     parseF(m1i, "LOOP", LOOP);
-    parseF(m2i, "(.)", SYS_OPS, DOT);
-    parseF(m2i, "EMIT", SYS_OPS, EMIT);
-    parseF(m2i, "CLOCK", SYS_OPS, TIMER);
-    parseF(m2i, ",", SYS_OPS, COMMA);
-    parseF(m2i, "c,", SYS_OPS, CCOMMA);
-    parseF(m1i, "edit", EDIT);
-    parseF(m1i, "load", BLOAD);
+    parseF(m1i, "ZTYPE", ZTYPE);
+    parseF(m1i, "EXIT", EXIT);
 
+    char *m2i = ":I %s :M #%ld #%ld 3";  // MACHINE-INLINE/two
+    parseF(m2i, ",",     SYS_OPS, COMMA);
+    parseF(m2i, "c,",    SYS_OPS, CCOMMA);
+    parseF(m2i, "(.)",   SYS_OPS, DOT);
+    parseF(m2i, "EMIT",  SYS_OPS, EMIT);
+    parseF(m2i, "CLOCK", SYS_OPS, TIMER);
+
+    char *nci = ":I %s ]] %d c, ;";      // NUM-CCOMMA-INLINE
+    parseF(nci, "LIT,",   LIT);
+    parseF(nci, "JMP,",   JMP);
+    parseF(nci, "JMPZ, ", JMPZ);
+    parseF(nci, "JMPNZ,", JMPNZ);
+
+    // VM Information Words
+    char *cni = ":I %s ]] #%ld ;";       // CONSTANT-INLINE
     parseF(cni, "cell", CELL_SZ);
-    parseF(cnn, "(here)",(cell_t)&here);
-    parseF(cnn, "(vhere)",(cell_t)&vhere);
-    parseF(cnn, "(last)",(cell_t)&last);
-    parseF(cnn, "state",(cell_t)&state);
-    parseF(cnn, "base",(cell_t)&base);
-    parseF(cnn, "vars",(cell_t)&vars[0]);
-    parseF(cnn, "vars-end",(cell_t)&vars[VARS_SZ]);
-    doOuter(":I  LIT,   ]] 2 c, ;");
-    doOuter(":I  JMP,   ]] 5 c, ;");
-    doOuter(":I  JMPZ,  ]] 6 c, ;");
-    doOuter(":I  JMPNZ, ]] 7 c, ;");
-    doOuter(":I  NIP ]] SWAP DROP ;");
-    doOuter(":I  /   ]] /MOD NIP ;");
-    doOuter(":D  bye ]]  999 state ! ;");
+
+    char *cnn = ":D %s ]] #%zu ;";       // CONSTANT-NORMAL
+    parseF(cnn, "(here)",   (cell_t)&here);
+    parseF(cnn, "(vhere)",  (cell_t)&vhere);
+    parseF(cnn, "(last)",   (cell_t)&last);
+    parseF(cnn, "state",    (cell_t)&state);
+    parseF(cnn, "base",     (cell_t)&base);
+    parseF(cnn, "code",     (cell_t)&code[0]);
+    parseF(cnn, "code-end", (cell_t)&code[CODE_SZ]);
+    parseF(cnn, "vars",     (cell_t)&vars[0]);
+    parseF(cnn, "vars-end", (cell_t)&vars[VARS_SZ]);
+
+    // CF specific words
+    parseF(m1i, "EDIT",   EDIT);
+    parseF(m1i, "LOAD",   BLOAD);
+    parseF(m1i, "WORDS",  WORDS);
+    parseF(m1i, "FOPEN",  FOPEN);
+    parseF(m1i, "FCLOSE", FCLOSE);
+    parseF(m1i, "FREAD",  FREAD);
+    parseF(m1i, "FWRITE", FWRITE);
+
+    doOuter(":I  NIP ]] SWAP DROP ;"
+        " :I  / ]] /MOD NIP ;"
+        " :D  bye ]]  999 state ! ;"
+    );
 }
 
 void loop() {
@@ -241,7 +269,8 @@ void loop() {
 }
 
 int main(int argc, char **argv) {
-    initVM();
+    vmInit();
+    initialWords();
     output_fp = (cell_t)stdout;
     // doEditor(0);
     doOuter(blockRead(0));

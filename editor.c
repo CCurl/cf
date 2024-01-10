@@ -194,7 +194,7 @@ void insertLine() {
     toBlock();
     toBuf();
     showAll();
-    mv(1,-99);
+    // mv(1,-99);
     isDirty = 1;
 }
 
@@ -221,14 +221,9 @@ void replaceChar(char c, int force, int mov) {
 }
 
 int doInsertReplace(char c) {
-    if (c== 8) { mv( 0, -1); return 1; }
-    if (c==10) { mv( 1,  0); return 1; }
-    if (c==11) { mv(-1,  0); return 1; }
-    if (c==12) { mv( 0,  1); return 1; }
-    if (c==24) { mv( 0, -1); deleteChar(); return; }
     if (c==13) {
         if (edMode == REPLACE) { mv(1, -999); }
-        else { insertLine(); }
+        else { insertLine(); mv(1,-99); }
         return 1;
     }
     if (!BTW(c,32,126) && (!ISCFMODE(c))) { return 1; }
@@ -237,14 +232,19 @@ int doInsertReplace(char c) {
     return 1;
 }
 
+int doCommon(int c) {
+    int l = line, o = off;
+    if (c == 8) { mv(0, -1); }                     // <ctrl-h>
+    else if (c ==  9) { mv(0, 8); }                // <tab>
+    else if (c == 10) { mv(1, 0); }                // <ctrl-j>
+    else if (c == 11) { mv(-1, 0); }               // <ctrl-k>
+    else if (c == 12) { mv(0, 1); }                // <ctrl-l>
+    else if (c == 24) { mv(0, -1); deleteChar(); } // <ctrl-x>
+    return ((l!=line) || (o!=off)) ? 1 : 0;
+}
+
 int doCTL(int c) {
-    if (c== 8) { mv( 0,-1); }
-    else if (c==10) { mv( 1, 0); }
-    else if (c==11) { mv(-1, 0); }
-    else if (c==12) { mv( 0, 1); }
-    else if (c==24) { mv(0, -1); deleteChar(); }
-    else if (c==9) { mv(0,8); }
-    else if (c==13) { mv(1,-999); }
+    if (c==13) { mv(1,-999); }
     else if (BTW(c,RED,WHITE)) {
         if (edChar(line, off, 0)!=' ') {  insertSpace(); }
         replaceChar(c, 1, 0);
@@ -254,14 +254,15 @@ int doCTL(int c) {
 
 int processEditorChar(int c) {
     if (c==27) { commandMode(); return 1; }
+    if (doCommon(c)) { return 1; }
     if (BTW(edMode,INSERT,REPLACE)) {
         return doInsertReplace((char)c);
     }
     if (c<32) { return doCTL(c); }
 
     switch (c) {
-    case  'h': mv(0,-1);
-    BCASE ' ': mv(0, 1);
+    case  ' ': mv(0, 1);
+    BCASE 'h': mv(0,-1);
     BCASE 'l': mv(0,1);
     BCASE 'j': mv(1,0);
     BCASE 'k': mv(-1,0);
@@ -274,8 +275,8 @@ int processEditorChar(int c) {
     BCASE 'G': mv(99,-999);
     BCASE 'i': insertMode();
     BCASE 'I': mv(0, -99); insertMode();
-    BCASE 'o': mv(1, -99); insertLine(); mv(-1, 0); insertMode();
-    BCASE 'O': mv(0, -99); insertLine(); mv(-1, 0); insertMode();
+    BCASE 'o': mv(1, -99); insertLine(); insertMode();
+    BCASE 'O': mv(0, -99); insertLine(); insertMode();
     BCASE 'r': replaceChar(edKey(), 0, 1);
     BCASE 'R': replaceMode();
     BCASE 'c': deleteChar(); insertMode();
@@ -287,8 +288,8 @@ int processEditorChar(int c) {
     BCASE 'L': edRdBlk(1);
     BCASE 'W': isDirty = 1; edSvBlk(1);
     BCASE 'Y': strCpy(yanked, &EDCH(line, 0));
-    BCASE 'p': mv(1,-99); insertLine(); mv(-1,0); strCpy(&EDCH(line,0), yanked);
-    BCASE 'P': mv(0,-99); insertLine(); mv(-1,0); strCpy(&EDCH(line,0), yanked);
+    BCASE 'p': mv(1,-99); insertLine(); strCpy(&EDCH(line,0), yanked);
+    BCASE 'P': mv(0,-99); insertLine(); strCpy(&EDCH(line,0), yanked);
     BCASE '+': edSvBlk(0); ++blkNum; edRdBlk(0);
     BCASE '-': edSvBlk(0); blkNum = max(0, blkNum-1); edRdBlk(0);
     BCASE 'Q': toBlock(); edMode = QUIT;
