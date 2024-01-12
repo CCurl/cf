@@ -155,30 +155,29 @@ int setState(char *wd) {
     if (strEq(wd, ":M")) { return changeState(MLMODE);  }
 
     // Auto state transitions for text-based usage
+    if (strEq(wd, ":"))  { doDefine(0); return changeState(COMPILE); }
+    if (strEq(wd, "["))  { return changeState(INTERP); }
+    if (strEq(wd, "]"))  { return changeState(COMPILE); }
     // static int lastState=0;
     // if ((lastState) && (state==COMMENT) && !strEq(wd, ")")) { return 1; }
-    // if (strEq(wd, ":"))  { doDefine(0); return changeState(COMPILE); }
     // if (strEq(wd, ":i")) { doDefine(0); last->f=2; return changeState(COMPILE); }
     // if (strEq(wd, ":m")) { doDefine(0); last->f=2; return changeState(MLMODE); }
-    // if (strEq(wd, "["))  { return changeState(INTERP); }
-    // if (strEq(wd, "]"))  { return changeState(COMPILE); }
     // if (strEq(wd, "("))  { lastState=(int)state; return changeState(COMMENT); }
     // if (strEq(wd, ")"))  { int x=lastState; lastState=0; return changeState(x); }
     return 0;
 }
 
 void doOuter(const char *src) {
-    char buf[32];
     in = (char*)src;
-    while (getWord(buf)) {
-        if (setState(buf)) { continue; }
+    while (getWord(WD)) {
+        if (setState(WD)) { continue; }
         switch (state) {
             case COMMENT:
-            BCASE DEFINE:  doDefine(buf);
-            BCASE INLINE:  doDefine(buf); last->f=IS_INLINE;
-            BCASE COMPILE: if (!doCompile(buf)) return;
-            BCASE INTERP:  if (!doInterpret(buf)) return;
-            BCASE MLMODE:  if (!doML(buf)) return;
+            BCASE DEFINE:  doDefine(WD);
+            BCASE INLINE:  doDefine(WD); last->f=IS_INLINE;
+            BCASE COMPILE: if (!doCompile(WD)) return;
+            BCASE INTERP:  if (!doInterpret(WD)) return;
+            BCASE MLMODE:  if (!doML(WD)) return;
             break; default: printStringF("-state?-"); break;
         }
     }
@@ -192,6 +191,27 @@ void parseF(char *fmt, ...) {
     vsnprintf(buf, 200, fmt, args);
     va_end(args);
     doOuter(buf);
+}
+
+void loop() {
+    char buf[128];
+    printString(" ok\r\n");
+    state = INTERP;
+    if (fgets(buf, 128, stdin) != buf) {
+        state = 999;
+        return;
+    }
+    doOuter(buf);
+}
+
+int main(int argc, char **argv) {
+    output_fp = (cell_t)stdout;
+    vmInit();
+    initialWords();
+    // doEditor(0);
+    // doOuter(blockRead(0));
+    while (state != 999) { loop(); }
+    return 1;
 }
 
 void initialWords() {
@@ -235,16 +255,16 @@ void initialWords() {
     parseF(m1i, "-REGS", REG_FREE);
 
     // CF specific opcodes
-    parseF(m1i, "EDIT",   EDIT);
-    parseF(m1i, "LOAD",   BLOAD);
-    parseF(m1i, "FOPEN",  FOPEN);
+    parseF(m1i, "EDIT", EDIT);
+    parseF(m1i, "LOAD", BLOAD);
+    parseF(m1i, "FOPEN", FOPEN);
     parseF(m1i, "FCLOSE", FCLOSE);
-    parseF(m1i, "FREAD",  FREAD);
+    parseF(m1i, "FREAD", FREAD);
     parseF(m1i, "FWRITE", FWRITE);
-    parseF(m1i, "WORDS",  WORDS);
+    parseF(m1i, "WORDS", WORDS);
 
     // System opcodes ...
-    char *m2i = ":I %s :M #%ld #%ld 3";  // MACHINE-INLINE/two
+    char* m2i = ":I %s :M #%ld #%ld 3";  // MACHINE-INLINE/two
     parseF(m2i, "(.)", SYS_OPS, DOT);
     parseF(m2i, "ITOA", SYS_OPS, ITOA);
     parseF(m2i, "ATOI", SYS_OPS, ATOI);
@@ -286,11 +306,12 @@ void initialWords() {
     parseF(m2i, "FSQRT", FLT_OPS, SQRT);
     parseF(m2i, "FTANH", FLT_OPS, TANH);
 
-    char *nci = ":I %s ]] %d c, ;";      // NUM-CCOMMA-INLINE
-    parseF(nci, "LIT,",   LIT);
-    parseF(nci, "JMP,",   JMP);
+    char* nci = ":I %s ]] %d c, ;";      // NUM-CCOMMA-INLINE
+    parseF(nci, "LIT,", LIT);
+    parseF(nci, "JMP,", JMP);
     parseF(nci, "JMPZ, ", JMPZ);
     parseF(nci, "JMPNZ,", JMPNZ);
+    parseF(nci, "ZTYPE,", ZTYPE);
 
     // VM Information Words
     parseF(":D VERSION     ]] #%d ;", VERSION);
@@ -317,26 +338,30 @@ void initialWords() {
     parseF(":I CELL        ]] %d ;", CELL_SZ);
 
     doOuter(":I NIP ]] SWAP DROP ;"
-        " :I / ]] /MOD NIP ;");
-}
+        " :I / ]] /MOD NIP ;"
+        " :I . ]] (.) :I space ]] 32 emit ;"
+        " :D here  ]] (here) @ ;"
+        " :D vhere ]] (vhere) @ ;"
+        " :D begin ]] here ;"
+        " :D again ]] JMP, , ;"
+        " :D while ]] JMPNZ, , ;"
+        " :D until ]] JMPZ, , ;"
+        " :D if   ]] JMPZ, here 0 , ;"
+        " :D then ]] here swap ! ;"
+        " :I I ]] (I) @ ;"
+    );
 
-void loop() {
-    char buf[128];
-    printString(" ok\r\n");
-    state = INTERP;
-    if (fgets(buf, 128, stdin) != buf) {
-        state = 999;
-        return;
-    }
-    doOuter(buf);
-}
-
-int main(int argc, char **argv) {
-    output_fp = (cell_t)stdout;
-    vmInit();
-    initialWords();
-    // doEditor(0);
-    doOuter(blockRead(0));
-    while (state != 999) { loop(); }
-    return 1;
+    doOuter(":D T3 (( -- zstr end )) ]] +regs"
+        " >in @ 1+ s6 vhere DUP s8 s9"
+        " [[ begin ]] r6 c@ dup s1 [[ IF ]] i6 [[ THEN ]]"
+        "   r1 0= r1 '\"' = or"
+        "   [[ IF ]] r6 >in ! 0 r8+ c! r9 r8 -regs EXIT [[ THEN ]]"
+        "   r1 r8+ c!"
+        " [[ again ]] ;");
+    doOuter(":D [\"] ]] T3 drop ;");
+    doOuter(":D [.\"] ]] T3 drop ztype ;");
+    doOuter(":D \"  ]] T3 (vhere) ! LIT, , ;");
+    doOuter(":D .\" ]] \" ZTYPE, ;");
+    // using ." in a word ...
+    doOuter(":D version [[ .\" cf version 0.1%n\" ]] ; [[ version ");
 }

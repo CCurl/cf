@@ -1,6 +1,4 @@
 Core words
-key  47 14 3       ?key  47 15 3
-1+   20    3       1-    21    3
 here (here) @ ;    last  (last) @ ;
 vhere(vhere) @ ;   allot vhere + (vhere) ! ;
 ifJMPZ, here 0 , ; then  here swap ! ;
@@ -13,6 +11,8 @@
 bmclock swap 0 do loop elapsed ;
 bm2clock swapbegin1-whiledrop elapsed ;
 YN'N' SWAPifdrop 'Y'thenemit ;
+
+
 
 
 

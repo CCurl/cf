@@ -45,5 +45,6 @@ extern void printStringF(const char* fmt, ...);
 extern void printChar(char c);
 extern void doEditor(cell_t);
 extern void doOuter(const char *src);
+extern void initialWords();
 
 #endif
