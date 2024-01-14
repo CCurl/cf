@@ -8,6 +8,6 @@ extern void blockIsDirty(cell_t blockNum);
 extern void blockClear(cell_t blockNum, int force);
 extern void blockFlush(cell_t blockNum, int force);
 extern void blockFlushAll();
-extern byte *blockRead(cell_t blockNum);
+extern char *blockRead(cell_t blockNum);
 
-#endif __BLOCK_H__
+#endif // __BLOCK_H__

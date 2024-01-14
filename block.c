@@ -14,7 +14,7 @@ enum { BLOCK_FREE=0, BLOCK_READ, BLOCK_DIRTY };
 enum { BLOCK_TEXT=0, BLOCK_BINARY };
 
 typedef struct {
-	int num; int stat; int type; byte data[BLOCK_SZ];
+	int num; int stat; int type; char data[BLOCK_SZ];
 } cache_t;
 
 static cache_t cache[CACHE_SZ];
@@ -80,7 +80,7 @@ void blockFlush(cell_t blockNum, int force) {
 	blk->stat = BLOCK_READ;
 }
 
-byte *blockRead(cell_t blockNum) {
+char *blockRead(cell_t blockNum) {
 	blockInit(0);
 	if (blockNum < 0) { return NULL; }
 	cache_t *blk = BLK(blockNum);
