@@ -160,7 +160,7 @@ void edSvBlk(int force) {
     if (isDirty || force) {
         toBlock();
         blockIsDirty(blkNum);
-        blockFlush(blkNum, 0);
+        blockWrite(blkNum, 0);
         isDirty = 0;
     }
 }
