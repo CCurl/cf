@@ -8,6 +8,7 @@
 #include <stdarg.h>
 #include <time.h>
 #include "vm.h"
+#include "block.h"
 
 #ifdef _MSC_VER
 #include <conio.h>
@@ -35,8 +36,6 @@
 #define COMPILE  CYAN
 #define INTERP   WHITE
 
-extern char theBlock[];
-
 extern void GotoXY(int, int);
 extern void Color(int, int);
 extern int qKey();
@@ -45,6 +44,7 @@ extern void printString(const char* s);
 extern void printStringF(const char* fmt, ...);
 extern void printChar(char c);
 extern void doEditor(cell_t);
-extern void doOuter(char *);
+extern void doOuter(const char *src);
+extern void initialWords();
 
 #endif

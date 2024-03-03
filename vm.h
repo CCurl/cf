@@ -35,8 +35,8 @@ typedef struct { cell_t sp; se_t stk[STK_SZ+1]; } stk_t;
 typedef struct { cell_t xt; byte f; byte len; char name[NAME_LEN+1]; } dict_t;
 
 extern stk_t ds, rs;
-extern cell_t lstk[LSTK_SZ+1], lsp;
-extern cell_t fileStk[10], fileSp, input_fp, output_fp;
+extern cell_t lstk[LSTK_SZ+1], lsp, output_fp;
+extern cell_t inputStk[10], fileSp, input_fp, output_fp;
 extern cell_t state, base, reg[REGS_SZ], reg_base, t1, n1;
 extern char code[CODE_SZ], vars[VARS_SZ], tib[256], WD[32];
 extern char *here, *vhere, *in, *y;
@@ -55,18 +55,19 @@ enum {
 
 // NB: these skip #3 (EXIT), so they can be marked as INLINE
 enum { // System opcodes
-    INLINE=0, IMMEDIATE, DOT, ITOA=4, ATOI,
-    COLONDEF, ENDWORD, CREATE, FIND, WORD, TIMER,
-    CCOMMA, COMMA, KEY, QKEY, EMIT, QTYPE
+    INLINE=0, IMMEDIATE, DOT, ITOA=4, ATOI,          //  0 -  5
+    COLONDEF, ENDWORD, CREATE, FIND, WORD, TIMER,    //  6 - 11
+    CCOMMA, COMMA, KEY, QKEY, EMIT, QTYPE            // 12 - 17
 };
 
 enum { // String opcodes
-    TRUNC=0, LCASE, UCASE, STRCPY=4, STRCAT, STRCATC, STRLEN, STREQ, STREQI, LTRIM, RTRIM
+    TRUNC=0, LCASE, UCASE, STRCPY=4, STRCAT,         //  0 -  5
+    STRCATC, STRLEN, STREQ, STREQI, LTRIM, RTRIM     //  6 - 11
 };
 
 enum { // Floating point opcdes
-    FADD=0, FSUB, FMUL, FDIV=4, FEQ, FLT, FGT, F2I, I2F, FDOT,
-    SQRT, TANH
+    FADD=0, FSUB, FMUL, FDIV=4, FEQ,                 //  0 -  5
+    FLT, FGT, F2I, I2F, FDOT, SQRT, TANH             //  6 - 12
 };
 
 enum { STOP_LOAD = 99, ALL_DONE = 999, VERSION = 99 };
