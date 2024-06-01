@@ -146,24 +146,17 @@ int doML(char *wd) {
 }
 
 int setState(char *wd) {
-
-    if (strEq(wd, "((")) { return changeState(COMMENT); }
     if (strEq(wd, ":D")) { return changeState(DEFINE);  }
     if (strEq(wd, ":I")) { return changeState(INLINE);  }
-    if (strEq(wd, "]]")) { return changeState(COMPILE); }
-    if (strEq(wd, "[[")) { return changeState(INTERP);  }
     if (strEq(wd, ":M")) { return changeState(MLMODE);  }
+    if (strEq(wd, "["))  { return changeState(INTERP); }
+    if (strEq(wd, "("))  { return changeState(COMMENT); }
+    if (strEq(wd, ")"))  { return changeState(COMPILE); }
+    if (strEq(wd, "]"))  { return changeState(COMPILE); }
 
     // Auto state transitions for text-based usage
-    if (strEq(wd, ":"))  { doDefine(0); return changeState(COMPILE); }
-    if (strEq(wd, "["))  { return changeState(INTERP); }
-    if (strEq(wd, "]"))  { return changeState(COMPILE); }
-    // static int lastState=0;
-    // if ((lastState) && (state==COMMENT) && !strEq(wd, ")")) { return 1; }
-    // if (strEq(wd, ":i")) { doDefine(0); last->f=2; return changeState(COMPILE); }
-    // if (strEq(wd, ":m")) { doDefine(0); last->f=2; return changeState(MLMODE); }
-    // if (strEq(wd, "("))  { lastState=(int)state; return changeState(COMMENT); }
-    // if (strEq(wd, ")"))  { int x=lastState; lastState=0; return changeState(x); }
+    if (strEq(wd, ":"))  { doDefine(0);  return changeState(COMPILE); }
+    if (strEq(wd, ";"))  { CComma(EXIT); return changeState(INTERP); }
     return 0;
 }
 
@@ -178,7 +171,7 @@ void doOuter(const char *src) {
             BCASE COMPILE: if (!doCompile(WD)) return;
             BCASE INTERP:  if (!doInterpret(WD)) return;
             BCASE MLMODE:  if (!doML(WD)) return;
-            break; default: printStringF("-state?-"); break;
+            break; default: printString("-state?-"); break;
         }
     }
 }
@@ -306,7 +299,7 @@ void initialWords() {
     parseF(m2i, "FSQRT", FLT_OPS, SQRT);
     parseF(m2i, "FTANH", FLT_OPS, TANH);
 
-    char* nci = ":I %s ]] %d c, ;";      // NUM-CCOMMA-INLINE
+    char* nci = ":I %s ] %d c, ;";      // NUM-CCOMMA-INLINE
     parseF(nci, "LIT,", LIT);
     parseF(nci, "JMP,", JMP);
     parseF(nci, "JMPZ, ", JMPZ);
@@ -314,54 +307,54 @@ void initialWords() {
     parseF(nci, "ZTYPE,", ZTYPE);
 
     // VM Information Words
-    parseF(":D VERSION     ]] #%d ;", VERSION);
-    parseF(":D (SP)        ]] %zu ;", &DSP);
-    parseF(":D (RSP)       ]] %zu ;", &RSP);
-    parseF(":D (LSP)       ]] %zu ;", &lsp);
-    parseF(":D (HERE)      ]] %zu ;", &here);
-    parseF(":D (LAST)      ]] %zu ;", &last);
-    parseF(":D (STK)       ]] %zu ;", &ds.stk[0].i);
-    parseF(":D (RSTK)      ]] %zu ;", &rs.stk[0].c);
-    parseF(":D TIB         ]] %zu ;", &tib[0]);
-    parseF(":D >IN         ]] %zu ;", &in);
-    parseF(":D CODE        ]] %zu ;", &code[0]);
-    parseF(":D CODE-SZ     ]] #%d ;", CODE_SZ);
-    parseF(":D VARS        ]] %zu ;", &vars[0]);
-    parseF(":D VARS-SZ     ]] #%d ;", VARS_SZ);
-    parseF(":D (VHERE)     ]] %zu ;", &vhere);
-    parseF(":D (REGS)      ]] %zu ;", &reg[0]);
-    parseF(":D (OUTPUT_FP) ]] %zu ;", &output_fp);
-    parseF(":D STATE       ]] %zu ;", &state);
-    parseF(":D BASE        ]] %zu ;", &base);
-    parseF(":D WORD-SZ     ]] #%d ;", sizeof(dict_t));
-    parseF(":D BYE         ]] %d STATE ! ;", ALL_DONE);
-    parseF(":I CELL        ]] %d ;", CELL_SZ);
+    parseF(":D VERSION     ] #%d ;", VERSION);
+    parseF(":D (SP)        ] %zu ;", &DSP);
+    parseF(":D (RSP)       ] %zu ;", &RSP);
+    parseF(":D (LSP)       ] %zu ;", &lsp);
+    parseF(":D (HERE)      ] %zu ;", &here);
+    parseF(":D (LAST)      ] %zu ;", &last);
+    parseF(":D (STK)       ] %zu ;", &ds.stk[0].i);
+    parseF(":D (RSTK)      ] %zu ;", &rs.stk[0].c);
+    parseF(":D TIB         ] %zu ;", &tib[0]);
+    parseF(":D >IN         ] %zu ;", &in);
+    parseF(":D CODE        ] %zu ;", &code[0]);
+    parseF(":D CODE-SZ     ] #%d ;", CODE_SZ);
+    parseF(":D VARS        ] %zu ;", &vars[0]);
+    parseF(":D VARS-SZ     ] #%d ;", VARS_SZ);
+    parseF(":D (VHERE)     ] %zu ;", &vhere);
+    parseF(":D (REGS)      ] %zu ;", &reg[0]);
+    parseF(":D (OUTPUT_FP) ] %zu ;", &output_fp);
+    parseF(":D STATE       ] %zu ;", &state);
+    parseF(":D BASE        ] %zu ;", &base);
+    parseF(":D WORD-SZ     ] #%d ;", sizeof(dict_t));
+    parseF(":D BYE         ] %d STATE ! ;", ALL_DONE);
+    parseF(":I CELL        ] %d ;", CELL_SZ);
 
-    doOuter(":I NIP ]] SWAP DROP ;"
-        " :I / ]] /MOD NIP ;"
-        " :I . ]] (.) :I space ]] 32 emit ;"
-        " :D here  ]] (here) @ ;"
-        " :D vhere ]] (vhere) @ ;"
-        " :D begin ]] here ;"
-        " :D again ]] JMP, , ;"
-        " :D while ]] JMPNZ, , ;"
-        " :D until ]] JMPZ, , ;"
-        " :D if   ]] JMPZ, here 0 , ;"
-        " :D then ]] here swap ! ;"
-        " :I I ]] (I) @ ;"
+    doOuter(":I NIP ] SWAP DROP ;"
+        " :I / ] /MOD NIP ;"
+        " :I . ] (.) :I space ] 32 emit ;"
+        " :D here  ] (here) @ ;"
+        " :D vhere ] (vhere) @ ;"
+        " :D begin ] here ;"
+        " :D again ] JMP, , ;"
+        " :D while ] JMPNZ, , ;"
+        " :D until ] JMPZ, , ;"
+        " :D if   ] JMPZ, here 0 , ;"
+        " :D then ] here swap ! ;"
+        " :I I ] (I) @ ;"
     );
 
-    doOuter(":D T3 (( -- zstr end )) ]] +regs"
+    doOuter(":D T3 ( -- zstr end ) ] +regs"
         " >in @ 1+ s6 vhere DUP s8 s9"
-        " [[ begin ]] r6 c@ dup s1 [[ IF ]] i6 [[ THEN ]]"
+        " [ begin ] r6 c@ dup s1 [ IF ] i6 [ THEN ]"
         "   r1 0= r1 '\"' = or"
-        "   [[ IF ]] r6 >in ! 0 r8+ c! r9 r8 -regs EXIT [[ THEN ]]"
+        "   [ IF ] r6 >in ! 0 r8+ c! r9 r8 -regs EXIT [ THEN ]"
         "   r1 r8+ c!"
-        " [[ again ]] ;");
-    doOuter(":D [\"] ]] T3 drop ;");
-    doOuter(":D [.\"] ]] T3 drop ztype ;");
-    doOuter(":D \"  ]] T3 (vhere) ! LIT, , ;");
-    doOuter(":D .\" ]] \" ZTYPE, ;");
+        " [ again ] ;");
+    doOuter(":D [\"] ] T3 drop ;");
+    doOuter(":D [.\"] ] T3 drop ztype ;");
+    doOuter(":D \"  ] T3 (vhere) ! LIT, , ;");
+    doOuter(":D .\" ] \" ZTYPE, ;");
     // using ." in a word ...
-    doOuter(":D version [[ .\" cf version 0.1%n\" ]] ; [[ version ");
+    doOuter(":D version [ .\" cf version 0.1%n\" ] ; [ version ");
 }
