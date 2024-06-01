@@ -76,6 +76,7 @@ char tib[128], wd[32], *toIn, wordAdded;
 	X(SEE,     "see",       0, doSee(); ) \
 	X(COUNT,   "count",     0, t=pop(); push(t+1); push(*(byte *)t); ) \
 	X(TYPE,    "type",      0, t=pop(); char *y=(char*)pop(); for (int i = 0; i<t; i++) emit(y[i]); ) \
+	X(ADDW,    "add-word",  0, addWord(0); ) \
 	X(QUOTE,   "\"",        0, quote(); ) \
 	X(DOTQT,   ".\"",       0, quote(); comma(COUNT); comma(TYPE); ) \
 	X(RAND,    "rand",      0, doRand(); ) \
