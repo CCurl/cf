@@ -7,7 +7,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <time.h>
-#include "block.h"
+// #include "block.h"
 
 #ifdef _MSC_VER
 #include <conio.h>
@@ -56,6 +56,7 @@
 #endif
 
 typedef long cell;
+typedef long cell_t;
 typedef unsigned long ucell;
 typedef unsigned short ushort;
 typedef unsigned char byte;
