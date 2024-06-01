@@ -269,7 +269,7 @@ void dotS() {
 void quote() {
 	comma(LIT2);
 	commaCell((cell)&vars[vhere]);
-	ushort start=vhere;
+	ushort start = vhere;
 	vars[vhere++] = 0; // Length byte
 	if (*toIn) { ++toIn; }
 	while (*toIn) {
@@ -378,10 +378,12 @@ int setState(char *wd) {
 	if (strEq(wd, ":D")) { return changeState(DEFINE);  }
 	if (strEq(wd, ":I")) { return changeState(INLINE);  }
 	if (strEq(wd, ":M")) { return changeState(MLMODE);  }
-	if (strEq(wd, "["))  { return changeState(INTERP); }
+	if (strEq(wd, "["))  { return changeState(INTERP);  }
 	if (strEq(wd, "]"))  { return changeState(COMPILE); }
 	if (strEq(wd, "("))  { return changeState(COMMENT); }
 	if (strEq(wd, ")"))  { return changeState(COMPILE); }
+	if (strEq(wd, "((")) { return changeState(COMMENT); }
+	if (strEq(wd, "))")) { return changeState(INTERP);  }
 
 	// Auto state transitions for text-based usage
 	if (strEq(wd, ":"))  { addWord(0);  return changeState(COMPILE); }
@@ -468,7 +470,10 @@ void Init() {
 
 // REP - Read/Execute/Print (no Loop)
 void REP() {
-	if ((inputFp == 0) && (state==INTERP)) { printf(" ok\n"); }
+	if (inputFp == 0) {
+		if (state==INTERP) { printString(" ok\n"); }
+		else { printString(" ... "); }
+	}
 	if (fileGets(tib, sizeof(tib), inputFp)) {
 		doOuter(tib+1);
 		return;
@@ -481,13 +486,10 @@ void REP() {
 int main(int argc, char *argv[]) {
 	Init();
 	if (argc>1) {
-		cell tmp = filePop();
-		fileLoad(argv[1]+1);
 		// load init block first (if necessary)
-		if (tmp && inputFp) {
-			filePush(inputFp);
-			inputFp = tmp;
-		}
+		cell tmp = fileOpen(argv[1]-1, " rt");
+		if (tmp && inputFp) { filePush(tmp); }
+		else { inputFp = tmp; }
 	}
 	while (1) { REP(); };
 	return 0;

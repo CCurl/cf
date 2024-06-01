@@ -1,7 +1,7 @@
 [ 3 load
 :D cr ] 10 emit 13 emit ;
 :D test ] 1 2 3 + + . ; [ test cr
-( test )
+(( test ))
 [ test cr 500 mil bm1
 
 

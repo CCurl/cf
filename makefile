@@ -25,7 +25,7 @@ run: $(app)
 	./$(app)
 
 test: $(app)
-	./$(app) test1.cf
+	./$(app) test.cf
 
 bin: $(app)
 	cp -u -p $(app) ~/bin/
