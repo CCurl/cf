@@ -1,360 +1,476 @@
-// cf.c - A ColorForth inspired system
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <time.h>
 #include "cf.h"
 
-#if _MSC_VER
-#include <conio.h>
-int key() { return _getch(); }
-int qKey() { return _kbhit(); }
-#elif IS_LINUX
-#include "linux.inc"
-#endif
+#define LASTPRIM      BYE
+#define NCASE         goto next; case
+#define BCASE         break; case
+#define here          code[0]
+#define last          code[1]
+#define vhere         code[2]
+#define base          code[3]
+#define state         code[4]
+#define lex           code[5]
+#define TOS           stk[sp].i
+#define NOS           stk[sp-1].i
+#define L0            lstk[lsp]
+#define L1            lstk[lsp-1]
+#define L2            lstk[lsp-2]
 
-enum { EDIT=100, BLOAD, FOPEN, FCLOSE, FREAD, FWRITE, WORDS };
+SE_T stk[STK_SZ+1];
+ushort code[CODE_SZ+1];
+byte dict[DICT_SZ+1], vars[VARS_SZ+1];
+short sp, rsp, lsp, aSp;
+cell A, B, S, D, lstk[LSTK_SZ], rstk[STK_SZ+1];
+char tib[128], wd[32], *toIn, wordAdded;
 
-void printString(const char *s) { fprintf((FILE*)output_fp, "%s", s); }
-void printChar(char c) { fputc(c, (FILE*)output_fp); }
-cell_t sysTime() { return (cell_t)clock(); }
-int changeState(int st) { state = st; return st; }
+#define PRIMS \
+	X(EXIT,    "exit",      0, if (0<rsp) { pc = (ushort)rpop(); } else { return; } ) \
+	X(DUP,     "dup",       0, t=TOS; push(t); ) \
+	X(SWAP,    "swap",      0, t=TOS; TOS=NOS; NOS=t; ) \
+	X(DROP,    "drop",      0, pop(); ) \
+	X(OVER,    "over",      0, t=NOS; push(t); ) \
+	X(FET,     "@",         0, TOS = fetchCell(TOS); ) \
+	X(CFET,    "c@",        0, TOS = *(byte *)TOS; ) \
+	X(WFET,    "w@",        0, TOS = fetchWord(TOS); ) \
+	X(STO,     "!",         0, t=pop(); n=pop(); storeCell(t, n); ) \
+	X(CSTO,    "c!",        0, t=pop(); n=pop(); *(byte*)t=(byte)n; ) \
+	X(WSTO,    "w!",        0, t=pop(); n=pop(); storeWord(t, n); ) \
+	X(ADD,     "+",         0, t=pop(); TOS += t; ) \
+	X(SUB,     "-",         0, t=pop(); TOS -= t; ) \
+	X(MUL,     "*",         0, t=pop(); TOS *= t; ) \
+	X(DIV,     "/",         0, t=pop(); TOS /= t; ) \
+	X(SLMOD,   "/mod",      0, t=TOS; n = NOS; TOS = n/t; NOS = n%t; ) \
+	X(INC,     "1+",        0, ++TOS; ) \
+	X(DEC,     "1-",        0, --TOS; ) \
+	X(LT,      "<",         0, t=pop(); TOS = (TOS < t); ) \
+	X(EQ,      "=",         0, t=pop(); TOS = (TOS == t); ) \
+	X(GT,      ">",         0, t=pop(); TOS = (TOS > t); ) \
+	X(EQ0,     "0=",        0, TOS = (TOS == 0) ? 1 : 0; ) \
+	X(AND,     "and",       0, t=pop(); TOS &= t; ) \
+	X(OR,      "or",        0, t=pop(); TOS |= t; ) \
+	X(XOR,     "xor",       0, t=pop(); TOS ^= t; ) \
+	X(COM,     "com",       0, TOS = ~TOS; ) \
+	X(FOR,     "for",       0, lsp+=3; L2=pc; L0=0; L1=pop(); ) \
+	X(INDEX,   "i",         0, push(L0); ) \
+	X(NEXT,    "next",      0, if (++L0<L1) { pc=(ushort)L2; } else { lsp=(lsp<3) ? 0 : lsp-3; } ) \
+	X(AGET,    "a",         0, push(A); ) \
+	X(ASET,    ">a",        0, A=pop(); ) \
+	X(AINC,    "a+",        0, push(A++); ) \
+	X(BGET,    "b",         0, push(B); ) \
+	X(BINC,    "b+",        0, push(B++); ) \
+	X(BSET,    ">b",        0, B=pop(); ) \
+	X(SGET,    "s",         0, push(S); ) \
+	X(SINC,    "s+",        0, push(S++); ) \
+	X(SSET,    ">s",        0, S=pop(); ) \
+	X(DGET,    "d",         0, push(D); ) \
+	X(DINC,    "d+",        0, push(D++); ) \
+	X(DSET,    ">d",        0, D=pop(); ) \
+	X(TOR,     ">r",        0, rpush(pop()); ) \
+	X(RAT,     "r@",        0, push(rstk[rsp]); ) \
+	X(RFROM,   "r>",        0, push(rpop()); ) \
+	X(EMIT,    "emit",      0, t=pop(); emit((char)t); ) \
+	X(COLON,   ":",         1, execIt(); addWord(0); state = 1; ) \
+	X(SEMI,    ";",         1, comma(EXIT); state = 0; cH=here; ) \
+	X(IMMED,   "immediate", 1, { DE_T *dp = (DE_T*)&dict[last]; dp->fl=1; } ) \
+	X(ADDWORD, "addword",   0, execIt(); addWord(0); comma(LIT2); commaCell(vhere+(cell)vars); ) \
+	X(CLK,     "timer",     0, push(clock()); ) \
+	X(SEE,     "see",       1, doSee(); ) \
+	X(COUNT,   "count",     0, t=pop(); push(t+1); push(*(byte *)t); ) \
+	X(TYPE,    "type",      0, t=pop(); char *y=(char*)pop(); for (int i = 0; i<t; i++) emit(y[i]); ) \
+	X(QUOTE,   "\"",        1, quote(); ) \
+	X(DOTQT,   ".\"",       1, quote(); comma(COUNT); comma(TYPE); ) \
+	X(RAND,    "rand",      0, doRand(); ) \
+	X(FLOPEN,  "fopen",     0, t=pop(); n=pop(); push(fileOpen((char*)n, (char*)t)); ) \
+	X(FLCLOSE, "fclose",    0, t=pop(); fileClose(t); ) \
+	X(FLREAD,  "fread",     0, t=pop(); n=pop(); TOS = fileRead((char*)TOS, n, t); ) \
+	X(FLWRITE, "fwrite",    0, t=pop(); n=pop(); TOS = fileWrite((char*)TOS, n, t); ) \
+	X(FLGETS,  "fgets",     0, t=pop(); n=pop(); TOS = fileGets((char*)TOS, (int)n, t); ) \
+	X(FLLOAD,  "fload",     0, t=pop(); fileLoad((char*)t); ) \
+	X(LOAD,    "load",      0, t=pop(); blockLoad((int)t); ) \
+	X(LOADED,  "loaded?",   0, t=pop(); pop(); if (t) { fileClose(inputFp); inputFp=filePop(); } ) \
+	X(ITOA,    "to-string", 0, t=pop(); push((cell)iToA(t, base)); ) \
+	X(DOTS,    ".s",        0, dotS(); ) \
+	X(FETC,    "@c",        0, TOS = code[(ushort)TOS]; ) \
+	X(STOC,    "!c",        0, t=pop(); n=pop(); code[(ushort)t] = (ushort)n; /**/) \
+	X(FIND,    "find",      1, { DE_T *dp = (DE_T*)findWord(0); push(dp?dp->xt:0); push((cell)dp); } ) \
+	X(SYSTEM,  "system",    0, t=pop(); system((char*)t+1); ) \
+	X(BYE,     "bye",       0, exit(0); )
 
-#ifdef NEEDS_ALIGN
-cell_t Fetch(const byte *a) {
-    cell_t x = *(a++);
-    x = (x<<8) | *(a++);
-    x = (x<<8) | *(a++);
-    x = (x<<8) | *(a);
-}
+#define X(op, name, imm, cod) op,
 
-void Store(const byte *a, cell_t v) {
-    *(a++) = (v%0xff); v=v>>8;
-    *(a++) = (v%0xff); v=v>>8;
-    *(a++) = (v%0xff); v=v>>8;
-    *(a) = (v%0xff);
-}
-#else
-cell_t Fetch(const char *a) { return *(cell_t*)(a); }
-void Store(const char *a, cell_t v) { *(cell_t*)(a) = v; }
-#endif
+enum _PRIM  {
+	STOP, LIT1, LIT2, JMP, JMPZ, JMPNZ,
+	PRIMS
+};
 
-void doWords() {
-    dict_t *dp = last;
-    int n = 0;
-    while (dp < (dict_t*)&code[CODE_SZ]) {
-        if (10<n) { printString("\r\n"); n = 0; }
-        printString(dp->name);
-        printChar(9);
-        ++n;
-        if (8 < dp->len) { ++n; }
-        ++dp;
-    }
-}
+#undef X
+#define X(op, name, imm, cod) { op, name, imm },
 
-char *doUser(char *pc, char ir) {
-    char *c1, *c2;
-    cell_t n1, n2;
-    switch (ir) {
-        case  EDIT:   doEditor(pop());
-        RCASE BLOAD:  c1=in; doOuter(blockRead(pop())); in=c1;
-        RCASE FOPEN:  c2=cpop(); c1=cpop(); push((cell_t)fopen(c1,c2));
-        RCASE FCLOSE: c1=cpop(); fclose((FILE*)c1);
-        RCASE FREAD:  c2=cpop(); n2=pop(); n1=pop(); c1=cpop();
-                push((cell_t)fread(c1, n1, n2, (FILE*)c2));
-        RCASE FWRITE: c2=cpop(); n2=pop(); n1=pop(); c1=cpop();
-                push((cell_t)fwrite(c1, n1, n2, (FILE*)c2));
-        RCASE WORDS:  doWords();
-        return pc; default: break;
-    }
-    return pc;
-}
+typedef struct { short op; const char *name; byte imm; } PRIM_T;
+PRIM_T prims[] = {
+	PRIMS
+	{0, 0, 0}
+};
 
-int checkState(int c, int isSet) {
-    if (!BTW(c, RED, WHITE)) { return 0; }
-    return (isSet) ? changeState(c) : c;
-}
+void sys_load();
+void push(cell x) { if (sp < STK_SZ) { stk[++sp].i = x; } }
+cell pop() { return (0<sp) ? stk[sp--].i : 0; }
+void rpush(cell x) { if (rsp < RSTK_SZ) { rstk[++rsp] = x; } }
+cell rpop() { return (0<rsp) ? rstk[rsp--] : 0; }
+void storeCell(cell a, cell val) { *(cell*)(a) = val; }
+void storeWord(cell a, cell val) { *(ushort*)(a) = (ushort)val; }
+cell fetchCell(cell a) { return *(cell*)(a); }
+cell fetchWord(cell a) { return *(ushort*)(a); }
+int lower(char c) { return btwi(c, 'A', 'Z') ? c + 32 : c; }
+int strLen(const char *s) { int l = 0; while (s[l]) { l++; } return l; }
+void emit(char c) { printf("%c", c); }
 
-int getWord(char *wd) {
-    int len = 0;
-    if (DSP < 0) { printString("-under-"); DSP=0; }
-    if (STK_SZ < DSP) { printString("-over-"); DSP=STK_SZ; }
-    while (*in && (*in < 33)) { checkState(*(in++), 1); }
-    while (32 < *in) { wd[len++] = *(in++); }
-    wd[len] = 0;
-    return len;
-}
-
-int doCompile(const char* wd) {
-    // printStringF("-com:%s-", wd);
-    if (isNum(wd)) {
-        cell_t val = pop();
-        if (BTW(val,0,127)) {
-            CComma(LIT1); CComma(val);
-        } else {
-            CComma(LIT); Comma(val);
-        }
-        return 1;
-    }
-    t1 = isRegOp(wd);
-    if (t1) {
-        CComma(t1); CComma(wd[1] - '0');
-        return 1;
-    }
-    if (doFind(wd)) {
-        cell_t f = pop();
-        cell_t xt = pop();
-        if (f == IS_INLINE) {
-            byte *x=(byte *)xt;
-            // printf("-inl-%d-",*x);
-            CComma(*x++);
-            while (*x != EXIT) { CComma(*(x++)); }
-        } else {
-            CComma(CALL); Comma(xt);
-        }
-        return 1;
-    }
-	printStringF("-C:%s?-", wd);
-    return 0;
-}
-
-int doInterpret(const char* wd) {
-    // printStringF("-interp:%s-", wd);
-    if (isNum(wd)) { return 1; }
-    t1 = isRegOp(wd);
-    if (t1) {
-        *(here) = (char)t1;
-        *(here+1) = wd[1]-'0';
-        *(here+2) = EXIT;
-        Run(here);
-        return 1;
-    }
-    if (doFind(wd)) {
-        char *cp = here;
-        cell_t f=pop();
-        cell_t xt=pop();
-        //printf("-I:%s/%lx-",wd,xt);
-        CComma(CALL); Comma(xt); CComma(EXIT);
-        here = cp; Run(here);
-        return 1;
-    }
-	printStringF("-I:%s?-", wd);
-    return 0;
-}
-
-int doML(char *wd) {
-	if (isNum(wd)) { CComma(pop()); return 1; }
-	printStringF("-M:%s?-", wd);
+int strEqI(const char *s, const char *d) {
+	while (lower(*s) == lower(*d)) { if (*s == 0) { return 1; } s++; d++; }
 	return 0;
 }
 
-int setState(char *wd) {
-    if (strEq(wd, ":D")) { return changeState(DEFINE);  }
-    if (strEq(wd, ":I")) { return changeState(INLINE);  }
-    if (strEq(wd, ":M")) { return changeState(MLMODE);  }
-    if (strEq(wd, "["))  { return changeState(INTERP); }
-    if (strEq(wd, "("))  { return changeState(COMMENT); }
-    if (strEq(wd, ")"))  { return changeState(COMPILE); }
-    if (strEq(wd, "]"))  { return changeState(COMPILE); }
-
-    // Auto state transitions for text-based usage
-    if (strEq(wd, ":"))  { doDefine(0);  return changeState(COMPILE); }
-    if (strEq(wd, ";"))  { CComma(EXIT); return changeState(INTERP); }
-    return 0;
+void strCpy(char *d, const char *s) {
+	while (*s) { *(d++) = *(s++); }
+	*(d) = 0;
 }
 
-void doOuter(const char *src) {
-    in = (char*)src;
-    while (getWord(WD)) {
-        if (setState(WD)) { continue; }
-        switch (state) {
-            case COMMENT:
-            BCASE DEFINE:  doDefine(WD);
-            BCASE INLINE:  doDefine(WD); last->f=IS_INLINE;
-            BCASE COMPILE: if (!doCompile(WD)) return;
-            BCASE INTERP:  if (!doInterpret(WD)) return;
-            BCASE MLMODE:  if (!doML(WD)) return;
-            break; default: printString("-state?-"); break;
+void comma(x) { code[here++] = x; }
+void commaCell(cell n) {
+	storeCell((cell)&code[here], n);
+	here += sizeof(cell) / 2;
+}
+
+int nextWord() {
+	int l = 0;
+	while (btwi(*toIn, 1, 32)) { ++toIn; }
+	while (btwi(*toIn, 33, 126)) { wd[l++] = *(toIn++); }
+	wd[l] = 0;
+	return l;
+}
+
+DE_T *addWord(const char *w) {
+	if (!w) { nextWord(); w = wd; }
+	int ln = strLen(w);
+	int sz = ln + 7;          // xt + sz + fl + lx + ln + null
+	if (sz & 1) { ++sz; }
+	ushort newLast=last - sz;
+	DE_T *dp = (DE_T*)&dict[newLast];
+	dp->sz = sz;
+	dp->xt=here;
+	dp->fl = 0;
+	dp->lx = (byte)lex;
+	dp->ln = ln;
+	strCpy(dp->nm, w);
+	last=newLast;
+	// printf("-add:%d,[%s],%d (%d)-\n", newLast, dp->nm, dp->lx, dp->xt);
+	return dp;
+}
+
+DE_T *findWord(const char *w) {
+	if (!w) { nextWord(); w = wd; }
+	int len = strLen(w);
+	int cw = last;
+	while (cw < DICT_SZ) {
+		DE_T *dp = (DE_T*)&dict[cw];
+		// printf("-%d,(%s)-", cw, dp->nm);
+		if ((len == dp->ln) && strEqI(dp->nm, w)) { return dp; }
+		cw += dp->sz;
+	}
+	return (DE_T*)0;
+}
+
+int findXT(int xt) {
+	int cw = last;
+	while (cw < DICT_SZ) {
+		DE_T *dp = (DE_T*)&dict[cw];
+		// printf("-%d,(%s)-", cw, dp->nm);
+		if (dp->xt == xt) { return cw; }
+		cw += dp->sz;
+	}
+	return 0;
+}
+
+int findPrevXT(int xt) {
+	int prevXT=here;
+	int cw = last;
+	while (cw < DICT_SZ) {
+		DE_T *dp = (DE_T*)&dict[cw];
+		if (dp->xt == xt) { return prevXT; }
+		prevXT=dp->xt;
+		cw += dp->sz;
+	}
+	return here;
+}
+
+void doSee() {
+	DE_T *dp = findWord(0);
+	if (!dp) { printf("-nf:%s-", wd); return; }
+	if (dp->xt < LASTPRIM) { printf("%s is a primitive (%hX).\n", wd, dp->xt); return; }
+	cell x = (cell)dp-(cell)dict;
+	int stop = findPrevXT(dp->xt)-1;
+	int i = dp->xt;
+	printf("\n%04lX: %s (%04hX to %04X)", x, dp->nm, dp->xt, stop);
+	while (i <= stop) {
+		int op = code[i++];
+		x = code[i];
+		printf("\n%04X: %04X\t", i-1, op);
+		switch (op) {
+			case  STOP: printf("stop"); i++;
+			BCASE LIT1: printf("lit1 %ld (%lX)", x, x); i++;
+			BCASE LIT2: x = fetchCell((cell)&code[i]);
+				printf("lit2 %ld (%lX)", x, x);
+				i += CELL_SZ / 2;
+			BCASE JMP:   printf("jmp %04lX", x);   i++;
+			BCASE JMPZ:  printf("jmpz %04lX (IF)", x);     i++;
+			BCASE JMPNZ: printf("jmpnz %04lX (WHILE)", x); i++; break;
+			default: x = findXT(op); 
+				printf("%s", x ? ((DE_T*)&dict[(ushort)x])->nm : "??");
+		}
+	}
+}
+
+char *iToA(cell N, int b) {
+	static char buf[65];
+	ucell X = (ucell)N;
+	int isNeg = 0, len = 0;
+	if (b == 0) { b = (int)base; }
+	if ((b == 10) && (N < 0)) { isNeg = 1; X = -N; }
+	char c, *cp = &buf[64];
+	*(cp) = 0;
+	do {
+		c = (char)(X % b) + '0';
+		X /= b;
+		c = (c > '9') ? c+7 : c;
+		*(--cp) = c;
+		++len;
+	} while (X);
+	if (isNeg) { *(--cp) = '-'; }
+	*(--cp) = len;
+	return cp;
+}
+
+void dotS() {
+    printf("( ");
+    for (int i = 1; i <= sp; i++) { printf("%s ", iToA(stk[i].i, base)+1); }
+    printf(")");
+}
+
+void quote() {
+	comma(LIT2);
+	commaCell((cell)&vars[vhere]);
+	ushort start=vhere;
+	vars[vhere++] = 0; // Length byte
+	if (*toIn) { ++toIn; }
+	while (*toIn) {
+		if (*toIn == '"') { ++toIn; break; }
+		vars[vhere++] = *(toIn++);
+		++vars[start];
+	}
+	vars[vhere++] = 0; // NULL terminator
+}
+
+void dotQuote() {
+	quote(); comma(COUNT); comma(TYPE);
+}
+
+void doRand() {
+	static cell sd = 0;
+	if (!sd) { sd = (cell)code  *clock(); }
+	sd = (sd << 13) ^ sd;
+	sd = (sd >> 17) ^ sd;
+	sd = (sd <<  5) ^ sd;
+	push(sd);
+}
+
+extern void Exec(int start);
+ushort cH, cL, cS, cV;
+void execIt() {
+	// printf("-cH:%d,here:%d-\n",cH, here);
+	if (cH < here) {
+		comma(0);
+		here=cH;
+		vhere=cV;
+		Exec(cH);
+	}
+}
+
+#undef X
+#define X(op, name, imm, code) NCASE op: code
+
+void Exec(int start) {
+	cell t, n;
+	ushort pc = start, wc;
+	next:
+	wc = code[pc++];
+	switch(wc) {
+		case  STOP:  return;
+		NCASE LIT1:  push(code[pc++]);
+		NCASE LIT2:  push(fetchCell((cell)&code[pc])); pc += CELL_SZ/2;
+		NCASE JMP:   pc=code[pc];
+		NCASE JMPZ:  if (pop()==0) { pc=code[pc]; } else { ++pc; }
+		NCASE JMPNZ: if (pop()) { pc=code[pc]; } else { ++pc; }
+		PRIMS
+		default: if (code[pc] != EXIT) { rpush(pc); }
+				 pc = wc;
+				 goto next;
+	}
+}
+
+int isNum(const char *w, int b) {
+	cell n=0, isNeg=0;
+	if ((w[0]==39) && (w[2]==39) && (w[3]==0)) { push(w[1]); return 1; }
+	if (w[0]=='%') { b= 2; ++w; }
+	if (w[0]=='#') { b=10; ++w; }
+	if (w[0]=='$') { b=16; ++w; }
+	if ((b==10) && (w[0]=='-')) { isNeg=1; ++w; }
+	if (w[0]==0) { return 0; }
+	char c = lower(*(w++));
+	while (c) {
+		n = (n*b);
+		if (btwi(c,'0','9') &&  btwi(c,'0','0'+b-1)) { n+=(c-'0'); }
+		else if (btwi(c,'a','a'+b-11)) { n+=(c-'a'+10); }
+		else return 0;
+		c = lower(*(w++));
+	}
+	if (isNeg) { n = -n; }
+	push(n);
+	return 1;
+}
+
+int parseWord(char *w) {
+	if (!w) { w = &wd[0]; }
+	// printf("-pw:%s-",w);
+
+	if (isNum(w, 10)) {
+		long n = pop();
+		if (btwi(n, 0, 0xffff)) {
+			comma(LIT1); comma((ushort)n);
+		} else {
+			comma(LIT2);
+			commaCell(n);
+		}
+		return 1;
+	}
+
+	DE_T *de = findWord(w);
+	if (de) {
+		if (de->fl == 1) {   // IMMEDIATE
+			int h = here+100;
+			code[h]   = de->xt;
+			code[h+1] = EXIT;
+			Exec(h);
+		} else {
+			comma(de->xt);
+		}
+		return 1;
+	 }
+
+	return 0;
+}
+
+int parseLine(const char *ln) {
+    cH=here, cL=last, cS=state, cV=vhere;
+	toIn = (char *)ln;
+	// printf("-pl:%s-",ln);
+	while (nextWord()) {
+		if (!parseWord(wd)) {
+			printf("-%s?-", wd);
+			here=cH;
+			vhere=cV;
+			last=cL;
+			state=0;
+			return 0;
+		}
+	}
+	if ((cL==last) && (cS==0) && (state==0)) execIt();
+	return 1;
+}
+
+void parseF(const char *fmt, ...) {
+	char buf[128];
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(buf, 128, fmt, args);
+	va_end(args);
+	parseLine(buf);
+}
+
+void baseSys() {
+	for (int i = 0; prims[i].name; i++) {
+		DE_T *w = addWord(prims[i].name);
+		w->xt=prims[i].op;
+		w->fl = prims[i].imm;
+	}
+
+	parseF(": version   #%d ;", VERSION);
+	parseF(": (jmp)     #%d ;", JMP);
+	parseF(": (jmpz)    #%d ;", JMPZ);
+	parseF(": (jmpnz)   #%d ;", JMPNZ);
+	parseF(": (lit1)    #%d ;", LIT1);
+	parseF(": (lit2)    #%d ;", LIT2);
+	parseF(": (exit)    #%d ;", EXIT);
+
+	parseF(": (here)    #%d ;", 0);
+	parseF(": (last)    #%d ;", 1);
+	parseF(": (vhere)   #%d ;", 2);
+	parseF(": base      #%d ;", 3);
+	parseF(": state     #%d ;", 4);
+	parseF(": (lex)     #%d ;", 5);
+
+	parseF(addrFmt, "code", &code[0]);
+	parseF(addrFmt, "vars", &vars[0]);
+	parseF(addrFmt, "dict", &dict[0]);
+	parseF(addrFmt, ">in",  &toIn);
+
+	parseF(": code-sz #%d ;", CODE_SZ);
+	parseF(": vars-sz #%d ;", VARS_SZ);
+	parseF(": dict-sz #%d ;", DICT_SZ);
+	parseF(": cell    #%d ;", CELL_SZ);
+	sys_load();
+}
+
+void Init() {
+	for (int t=0; t<CODE_SZ; t++) { code[t]=0; }
+	for (int t=0; t<VARS_SZ; t++) { vars[t]=0; }
+	for (int t=0; t<DICT_SZ; t++) { dict[t]=0; }
+	sp = rsp = lsp = aSp = state = 0;
+	last=DICT_SZ;
+	base = 10;
+	here = LASTPRIM+1;
+	fileInit();
+	baseSys();
+}
+
+// REP - Read/Execute/Print (no Loop)
+void REP() {
+	if ((inputFp == 0) && (state==0)) { printf(" ok\n"); }
+	if (fileGets(tib, sizeof(tib), inputFp)) {
+		parseLine(tib+1);
+		return;
+	}
+	if (inputFp == 0) { exit(0); }
+	fileClose(inputFp);
+	inputFp = filePop();
+}
+
+int main(int argc, char *argv[]) {
+	char fn[32];
+	Init();
+	if (argc>1) {
+        cell tmp = inputFp;
+		strCpy(fn+1, argv[1]);
+		fileLoad(fn);
+        // load init block first (if necessary)
+        if (tmp && inputFp) {
+            filePop();
+            filePush(inputFp);
+            inputFp = tmp;
         }
-    }
-}
-
-void parseF(char *fmt, ...) {
-    char *buf = (char*)last;
-    buf -= 256;
-    va_list args;
-    va_start(args, fmt);
-    vsnprintf(buf, 200, fmt, args);
-    va_end(args);
-    doOuter(buf);
-}
-
-void loop() {
-    char buf[128];
-    printString(" ok\r\n");
-    state = INTERP;
-    if (fgets(buf, 128, stdin) != buf) {
-        state = 999;
-        return;
-    }
-    doOuter(buf);
-}
-
-int main(int argc, char **argv) {
-    output_fp = (cell_t)stdout;
-    vmInit();
-    initialWords();
-    // doEditor(0);
-    // doOuter(blockRead(0));
-    while (state != 999) { loop(); }
-    return 1;
-}
-
-void initialWords() {
-    // VM Opcodes
-    char *m1i = ":I %s :M #%ld 3";       // MACHINE-INLINE/one
-    parseF(m1i, ";", EXIT);
-    parseF(m1i, "EXIT", EXIT);
-    parseF(m1i, "!", STORE);
-    parseF(m1i, "C!", CSTORE);
-    parseF(m1i, "@", FETCH);
-    parseF(m1i, "C@", CFETCH);
-    parseF(m1i, "DUP", DUP);
-    parseF(m1i, "SWAP", SWAP);
-    parseF(m1i, "OVER", OVER);
-    parseF(m1i, "DROP", DROP);
-    parseF(m1i, "+", ADD);
-    parseF(m1i, "*", MULT);
-    parseF(m1i, "/MOD", SLMOD);
-    parseF(m1i, "-", SUB);
-    parseF(m1i, "1+", INC);
-    parseF(m1i, "1-", DEC);
-    parseF(m1i, "<", LT);
-    parseF(m1i, "=", EQ);
-    parseF(m1i, ">", GT);
-    parseF(m1i, "0=", EQ0);
-    parseF(m1i, ">R", RTO);
-    parseF(m1i, "R@", RFETCH);
-    parseF(m1i, "R>", RFROM);
-    parseF(m1i, "DO", DO);
-    parseF(m1i, "LOOP", LOOP);
-    parseF(m1i, "-LOOP", LOOP2);
-    parseF(m1i, "(I)", INDEX);
-    parseF(m1i, "INVERT", COM);
-    parseF(m1i, "AND", AND);
-    parseF(m1i, "OR", OR);
-    parseF(m1i, "XOR", XOR);
-    parseF(m1i, "TYPE", TYPE);
-    parseF(m1i, "ZTYPE", ZTYPE);
-    // rX, sX, iX, dX, iX+, dX+ are hard-coded in c3.c
-    parseF(m1i, "+REGS", REG_NEW);
-    parseF(m1i, "-REGS", REG_FREE);
-
-    // CF specific opcodes
-    parseF(m1i, "EDIT", EDIT);
-    parseF(m1i, "LOAD", BLOAD);
-    parseF(m1i, "FOPEN", FOPEN);
-    parseF(m1i, "FCLOSE", FCLOSE);
-    parseF(m1i, "FREAD", FREAD);
-    parseF(m1i, "FWRITE", FWRITE);
-    parseF(m1i, "WORDS", WORDS);
-
-    // System opcodes ...
-    char* m2i = ":I %s :M #%ld #%ld 3";  // MACHINE-INLINE/two
-    parseF(m2i, "(.)", SYS_OPS, DOT);
-    parseF(m2i, "ITOA", SYS_OPS, ITOA);
-    parseF(m2i, "ATOI", SYS_OPS, ATOI);
-    parseF(m2i, "CREATE", SYS_OPS, CREATE);
-    parseF(m2i, "'", SYS_OPS, FIND);
-    parseF(m2i, "NEXT-WORD", SYS_OPS, WORD);
-    parseF(m2i, "CLOCK", SYS_OPS, TIMER);
-    parseF(m2i, "C,", SYS_OPS, CCOMMA);
-    parseF(m2i, ",", SYS_OPS, COMMA);
-    parseF(m2i, "KEY", SYS_OPS, KEY);
-    parseF(m2i, "?KEY", SYS_OPS, QKEY);
-    parseF(m2i, "EMIT", SYS_OPS, EMIT);
-    parseF(m2i, "QTYPE", SYS_OPS, QTYPE);
-
-    // String opcodes ...
-    parseF(m2i, "S-TRUNC", STR_OPS, TRUNC);
-    parseF(m2i, "LCASE", STR_OPS, LCASE);
-    parseF(m2i, "UCASE", STR_OPS, UCASE);
-    parseF(m2i, "S-CPY", STR_OPS, STRCPY);
-    parseF(m2i, "S-CAT", STR_OPS, STRCAT);
-    parseF(m2i, "S-CATC", STR_OPS, STRCATC);
-    parseF(m2i, "S-LEN", STR_OPS, STRLEN);
-    parseF(m2i, "S-EQ", STR_OPS, STREQ);
-    parseF(m2i, "S-EQ-I", STR_OPS, STREQI);
-    parseF(m2i, "S-LTRIM", STR_OPS, LTRIM);
-    parseF(m2i, "S-RTRIM", STR_OPS, RTRIM);
-
-    // Float opcodes ...
-    parseF(m2i, "F+", FLT_OPS, FADD);
-    parseF(m2i, "F-", FLT_OPS, FSUB);
-    parseF(m2i, "F*", FLT_OPS, FMUL);
-    parseF(m2i, "F/", FLT_OPS, FDIV);
-    parseF(m2i, "F=", FLT_OPS, FEQ);
-    parseF(m2i, "F<", FLT_OPS, FLT);
-    parseF(m2i, "F>", FLT_OPS, FGT);
-    parseF(m2i, "F>I", FLT_OPS, F2I);
-    parseF(m2i, "I>F", FLT_OPS, I2F);
-    parseF(m2i, "F.", FLT_OPS, FDOT);
-    parseF(m2i, "FSQRT", FLT_OPS, SQRT);
-    parseF(m2i, "FTANH", FLT_OPS, TANH);
-
-    char* nci = ":I %s ] %d c, ;";      // NUM-CCOMMA-INLINE
-    parseF(nci, "LIT,", LIT);
-    parseF(nci, "JMP,", JMP);
-    parseF(nci, "JMPZ, ", JMPZ);
-    parseF(nci, "JMPNZ,", JMPNZ);
-    parseF(nci, "ZTYPE,", ZTYPE);
-
-    // VM Information Words
-    parseF(":D VERSION     ] #%d ;", VERSION);
-    parseF(":D (SP)        ] %zu ;", &DSP);
-    parseF(":D (RSP)       ] %zu ;", &RSP);
-    parseF(":D (LSP)       ] %zu ;", &lsp);
-    parseF(":D (HERE)      ] %zu ;", &here);
-    parseF(":D (LAST)      ] %zu ;", &last);
-    parseF(":D (STK)       ] %zu ;", &ds.stk[0].i);
-    parseF(":D (RSTK)      ] %zu ;", &rs.stk[0].c);
-    parseF(":D TIB         ] %zu ;", &tib[0]);
-    parseF(":D >IN         ] %zu ;", &in);
-    parseF(":D CODE        ] %zu ;", &code[0]);
-    parseF(":D CODE-SZ     ] #%d ;", CODE_SZ);
-    parseF(":D VARS        ] %zu ;", &vars[0]);
-    parseF(":D VARS-SZ     ] #%d ;", VARS_SZ);
-    parseF(":D (VHERE)     ] %zu ;", &vhere);
-    parseF(":D (REGS)      ] %zu ;", &reg[0]);
-    parseF(":D (OUTPUT_FP) ] %zu ;", &output_fp);
-    parseF(":D STATE       ] %zu ;", &state);
-    parseF(":D BASE        ] %zu ;", &base);
-    parseF(":D WORD-SZ     ] #%d ;", sizeof(dict_t));
-    parseF(":D BYE         ] %d STATE ! ;", ALL_DONE);
-    parseF(":I CELL        ] %d ;", CELL_SZ);
-
-    doOuter(":I NIP ] SWAP DROP ;"
-        " :I / ] /MOD NIP ;"
-        " :I . ] (.) :I space ] 32 emit ;"
-        " :D here  ] (here) @ ;"
-        " :D vhere ] (vhere) @ ;"
-        " :D begin ] here ;"
-        " :D again ] JMP, , ;"
-        " :D while ] JMPNZ, , ;"
-        " :D until ] JMPZ, , ;"
-        " :D if   ] JMPZ, here 0 , ;"
-        " :D then ] here swap ! ;"
-        " :I I ] (I) @ ;"
-    );
-
-    doOuter(":D T3 ( -- zstr end ) ] +regs"
-        " >in @ 1+ s6 vhere DUP s8 s9"
-        " [ begin ] r6 c@ dup s1 [ IF ] i6 [ THEN ]"
-        "   r1 0= r1 '\"' = or"
-        "   [ IF ] r6 >in ! 0 r8+ c! r9 r8 -regs EXIT [ THEN ]"
-        "   r1 r8+ c!"
-        " [ again ] ;");
-    doOuter(":D [\"] ] T3 drop ;");
-    doOuter(":D [.\"] ] T3 drop ztype ;");
-    doOuter(":D \"  ] T3 (vhere) ! LIT, , ;");
-    doOuter(":D .\" ] \" ZTYPE, ;");
-    // using ." in a word ...
-    doOuter(":D version [ .\" cf version 0.1%n\" ] ; [ version ");
+	}
+	while (1) { REP(); };
+	return 0;
 }
