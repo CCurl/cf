@@ -1,4 +1,4 @@
-( block 2 - editor )
+(( block 2 - editor ))
 
 [ 5 load ( screen )
 [ 3 load ( strings )
@@ -17,8 +17,7 @@
 : block-sz rows cols * ;
 
 [ 30 >rows 100 >cols
-: block [ (lit2) c, vhere , ] ;
-[ block-sz allot
+[ var block  block-sz allot
 
 : rc->pos ( -- )   row cols * col + >pos ;
 : pos->rc ( -- )   pos cols /mod >row >col ;
@@ -32,15 +31,13 @@
     dup 0=  if exit then
     dup 7 > if exit then
 	dup 30 + fg ;
-: footer ->foot ." block " blk . 32 mod if drop '*' then emit ;
-: show    ( -- )   1 dup ->rc  block >a
-	rows for 
-	    cols for
-		    a+ c@ set-color
-			dup 32 < if drop 32 then emit
-		next
-		cr
-	next footer ;
+: footer ->foot ." block " blk . bl mod if drop '*' then emit ;
+: show-row  cols for
+		a+ c@ set-color
+		dup bl < if drop bl then emit
+	next ;
+: show    ( -- ) 1 dup ->rc  block >a
+	rows for show-row cr next footer ;
 
 : dump ( from num-- )  for dup c@ . 1+ next  drop ;
 : test-block a >r  block >a
@@ -63,6 +60,5 @@
 : save-block block-fn fopen-wb >a
     a [ if ] block block-sz a fwrite  a fclose [ then ] ;
 
-( 2 >blk )
 : ed ( -- )  read-block show 0 >pos ;
-( 1 >mod ed ) [
+(( 2 >blk  1 >mod ed ))

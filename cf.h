@@ -28,12 +28,12 @@
 #define WHITE    7
 
 #define DEFINE   RED
-#define COMMENT  GREEN
-#define INLINE   ORANGE
-#define XXXXX    BLUE
+#define COMPILE  GREEN
+#define INTERP   ORANGE
+#define XXXXX2   BLUE
 #define MLMODE   PURPLE
-#define COMPILE  CYAN
-#define INTERP   WHITE
+#define XXXXX1   CYAN
+#define COMMENT  WHITE
 
 #define VERSION       240602
 #define CODE_SZ       0xFFFF
