@@ -28,7 +28,7 @@ static void readBlock(int blk) {
 	if (fp) {
 		fileRead(data, BLOCK_SZ, fp);
 		fileClose(fp);
-		printf("-readblock:%d-",blk);
+		// printf("-readblock:%d-",blk);
 	}
 	blockDirty(blk, 0);
 	data[BLOCK_SZ-1] = 0;
@@ -43,6 +43,7 @@ void flushBlock(int blk, int force) {
 	cell fp = fileOpen(fn, " wb");
 	data[BLOCK_SZ-1] = 0;
 	if (fp) {
+		printf("-writeBlock(%d)-",blk);
 		fileWrite(data, BLOCK_SZ, fp);
 		fileClose(fp);
 	}

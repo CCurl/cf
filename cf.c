@@ -469,10 +469,11 @@ void baseSys() {
 	parseF(addrFmt, "dict", &dict[0]);
 	parseF(addrFmt, ">in",  &toIn);
 
-	parseF(": code-sz #%d ;", CODE_SZ);
-	parseF(": vars-sz #%d ;", VARS_SZ);
-	parseF(": dict-sz #%d ;", DICT_SZ);
-	parseF(": cell    #%d ;", CELL_SZ);
+	parseF(": code-sz  #%d ;", CODE_SZ);
+	parseF(": vars-sz  #%d ;", VARS_SZ);
+	parseF(": dict-sz  #%d ;", DICT_SZ);
+    parseF(": block-sz #%d ;", BLOCK_SZ);
+	parseF(": cell     #%d ;", CELL_SZ);
 	sys_load();
 }
 
@@ -515,5 +516,6 @@ int main(int argc, char *argv[]) {
 		else { inputFp = tmp; }
 	}
 	while (1) { REP(); };
+    flushBlocks();
 	return 0;
 }
