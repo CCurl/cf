@@ -29,10 +29,13 @@ char tib[128], wd[32], *toIn, wordAdded;
 #define BOARDPRIMS
 
 #define FILEPRIMS \
+	X(BLKDATA, "block",     TOS=blockData(TOS); ) \
+	X(FLUALL,  "flush-all", flushBlocks(); ) \
+	X(BLKFLU,  "flush",     t=pop(); n=pop(); flushBlock((int)n, (int)t); ) \
 	X(FLOPEN,  "fopen",     t=pop(); n=pop(); push(fileOpen((char*)n, (char*)t)); ) \
 	X(FLCLOSE, "fclose",    t=pop(); fileClose(t); ) \
-	X(FLREAD,  "fread",     t=pop(); n=pop(); TOS = fileRead((char*)TOS, n, t); ) \
-	X(FLWRITE, "fwrite",    t=pop(); n=pop(); TOS = fileWrite((char*)TOS, n, t); ) \
+	X(FLREAD,  "fread",     t=pop(); n=pop(); TOS = fileRead((byte*)TOS, n, t); ) \
+	X(FLWRITE, "fwrite",    t=pop(); n=pop(); TOS = fileWrite((byte*)TOS, n, t); ) \
 	X(FLGETS,  "fgets",     t=pop(); n=pop(); TOS = fileGets((char*)TOS, (int)n, t); ) \
 	X(FLLOAD,  "fload",     t=pop(); fileLoad((char*)t); ) \
 	X(LOAD,    "load",      t=pop(); blockLoad((int)t); ) \
@@ -98,6 +101,10 @@ char tib[128], wd[32], *toIn, wordAdded;
 	X(STOC,    "!c",        t=pop(); n=pop(); code[(ushort)t] = (ushort)n; /**/) \
 	X(FIND,    "find",      { DE_T *dp = (DE_T*)findWord(0); push(dp?dp->xt:0); push((cell)dp); } ) \
 	X(SYSTEM,  "system",    t=pop(); system((char*)t+1); ) \
+	X(STREQ,   "streq",     t=pop(); TOS=strEq((char*)t, (char*)TOS); ) \
+	X(STREQI,  "streqi",    t=pop(); TOS=strEqI((char*)t, (char*)TOS); ) \
+	X(STRCPY,  "strcpy",    t=pop(); n=pop(); strCpy((char*)n, (char*)t); ) \
+	X(STRLEN,  "strlen",    TOS=strlen((char*)TOS); ) \
 	FILEPRIMS BOARDPRIMS \
 	X(BYE,     "bye",       exit(0); )
 
@@ -126,11 +133,11 @@ void storeCell(cell a, cell val) { *(cell*)(a) = val; }
 void storeWord(cell a, cell val) { *(ushort*)(a) = (ushort)val; }
 cell fetchCell(cell a) { return *(cell*)(a); }
 cell fetchWord(cell a) { return *(ushort*)(a); }
-int lower(char c) { return btwi(c, 'A', 'Z') ? c + 32 : c; }
-int strLen(const char *s) { int l = 0; while (s[l]) { l++; } return l; }
 void emit(char c) { fputc(c, outputFp ? (FILE*)outputFp : stdout); }
 int changeState(char c) { state = c; return c; }
 void printString(char *s) { fputs(s, outputFp ? (FILE*)outputFp : stdout); }
+int strLen(const char *s) { int l = 0; while (s[l]) { l++; } return l; }
+int lower(char c) { return btwi(c, 'A', 'Z') ? c + 32 : c; }
 
 int strEq(const char *s, const char *d) {
 	while (*s == *d) { if (*s == 0) { return 1; } s++; d++; }
@@ -145,6 +152,10 @@ int strEqI(const char *s, const char *d) {
 void strCpy(char *d, const char *s) {
 	while (*s) { *(d++) = *(s++); }
 	*(d) = 0;
+}
+
+void fill(byte *addr, cell num, byte ch) {
+	while (num--) { *(addr++) = ch; }
 }
 
 void comma(x) { code[here++] = x; }
@@ -466,11 +477,13 @@ void baseSys() {
 }
 
 void Init() {
-	for (int t=0; t<CODE_SZ; t++) { code[t]=0; }
+	fill((byte*)&code[0], (CODE_SZ+1) * sizeof(ushort), 0);
+	fill(&vars[0], (VARS_SZ+1), 0);
+	fill(&dict[0], (DICT_SZ+1), 0);
 	for (int t=0; t<VARS_SZ; t++) { vars[t]=0; }
 	for (int t=0; t<DICT_SZ; t++) { dict[t]=0; }
 	sp = rsp = lsp = aSp = state = 0;
-	last=DICT_SZ;
+	last = DICT_SZ;
 	base = 10;
 	here = LASTPRIM+1;
 	fileInit();
@@ -494,6 +507,7 @@ void REP() {
 
 int main(int argc, char *argv[]) {
 	Init();
+	initBlocks();
 	if (argc>1) {
 		// load init block first (if necessary)
 		cell tmp = fileOpen(argv[1]-1, " rt");

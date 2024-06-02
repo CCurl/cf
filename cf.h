@@ -43,7 +43,9 @@
 #define RSTK_SZ           63
 #define LSTK_SZ           60
 #define FSTK_SZ           10
-#define btwi(n,l,h)   ((l<=n) && (n<=h))
+#define BLOCK_SZ        2048
+#define NUM_BLOCKS       100
+#define btwi(n,l,h)   (((l)<=n) && (n<=(h)))
 
 #if __LONG_MAX__ > __INT32_MAX__
 #define CELL_SZ   8
@@ -64,19 +66,28 @@ typedef union { FLT_T f; cell i; } SE_T;
 typedef struct { ushort xt; byte sz, fl, lx, ln; char nm[32]; } DE_T;
 
 // These are defined by c4.c
-extern int strLen(const char *s);
+extern int  strLen(const char *s);
+extern int  strEq(const char *d, const char *s);
+extern int  strEqI(const char *d, const char *s);
+extern void strCpy(char *d, const char *s);
+extern void fill(byte *addr, cell num, byte ch);
 
-// c4.c needs these
+// cf.c needs these
 extern cell inputFp, outputFp;
 extern void fileInit();
 extern void filePush(cell fh);
 extern cell filePop();
 extern cell fileOpen(char *name, char *mode);
 extern void fileClose(cell fh);
-extern cell fileRead(char *buf, int sz, cell fh);
-extern cell fileWrite(char *buf, int sz, cell fh);
+extern cell fileRead(byte *buf, int sz, cell fh);
+extern cell fileWrite(byte *buf, int sz, cell fh);
 extern int  fileGets(char *buf, int sz, cell fh);
 extern void fileLoad(char *name);
 extern void blockLoad(int blk);
+
+extern void initBlocks();
+extern void flushBlocks();
+extern void flushBlock(int blk, int force);
+extern cell blockData(int blk);
 
 #endif

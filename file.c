@@ -28,8 +28,8 @@ static char fn[32];
 void fileInit() { fileSp = 0; inputFp = 0; }
 cell fileOpen(char *name, char *mode) { return (cell)fopen(name+1, mode+1); }
 void fileClose(cell fh) { fclose((FILE*)fh); }
-cell fileRead(char *buf, int sz, cell fh) { return fread(buf, 1, sz, (FILE*)fh); }
-cell fileWrite(char *buf, int sz, cell fh) { return fwrite(buf, 1, sz, (FILE*)fh); }
+cell fileRead(byte *buf, int sz, cell fh) { return fread(buf, 1, sz, (FILE*)fh); }
+cell fileWrite(byte *buf, int sz, cell fh) { return fwrite(buf, 1, sz, (FILE*)fh); }
 
 int  fileGets(char *buf, int sz, cell fh) {
     buf[0] = 0; // length
