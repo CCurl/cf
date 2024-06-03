@@ -24,7 +24,7 @@ ushort code[CODE_SZ+1];
 byte dict[DICT_SZ+1], vars[VARS_SZ+1];
 short sp, rsp, lsp, aSp;
 cell A, B, S, D, lstk[LSTK_SZ], rstk[RSTK_SZ+1];
-char tib[128], wd[32], *toIn, wordAdded;
+char *tib, wd[32], *toIn, wordAdded;
 
 #define BOARDPRIMS
 
@@ -260,12 +260,11 @@ void doSee() {
 }
 
 char *iToA(cell N, int b) {
-	static char buf[65];
 	ucell X = (ucell)N;
 	int isNeg = 0, len = 0;
 	if (b == 0) { b = (int)base; }
 	if ((b == 10) && (N < 0)) { isNeg = 1; X = -N; }
-	char c, *cp = &buf[64];
+	char c, *cp = (char*)blockData(0)+BLOCK_SZ-1;
 	*(cp) = 0;
 	do {
 		c = (char)(X % b) + '0';
@@ -498,7 +497,7 @@ void REP() {
 		if (state==INTERP) { printString(" ok\n"); }
 		else { printString(" ... "); }
 	}
-	if (fileGets(tib, sizeof(tib), inputFp)) {
+	if (fileGets(tib, BLOCK_SZ, inputFp)) {
 		doOuter(tib+1);
 		return;
 	}
@@ -510,6 +509,7 @@ void REP() {
 int main(int argc, char *argv[]) {
 	Init();
 	initBlocks();
+    tib = (char*)blockData(0);
 	if (argc>1) {
 		// load init block first (if necessary)
 		cell tmp = fileOpen(argv[1]-1, " rt");
