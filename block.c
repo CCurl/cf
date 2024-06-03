@@ -7,15 +7,16 @@
 static byte blocks[BLOCK_SZ*NUM_BLOCKS];
 static byte dirty[NUM_BLOCKS];
 
-void blockDirty(int blk, byte val) {
+cell blockData(int blk) {
+	return VALID(blk) ? (cell)&blocks[blk*BLOCK_SZ] : 0;
+}
+
+void blockDirty(int blk, int val) {
 	if (VALID(blk)) { dirty[blk]=val; }
 }
 
-cell blockData(int blk) {
-	if (VALID(blk)) {
-		return (cell)&blocks[blk*BLOCK_SZ];
-	}
-	return 0;
+int blockDirtyQ(int blk) {
+	return VALID(blk) ? dirty[blk] : 0;
 }
 
 static void readBlock(int blk) {
@@ -34,7 +35,7 @@ static void readBlock(int blk) {
 	data[BLOCK_SZ-1] = 0;
 }
 
-void flushBlock(int blk, int force) {
+static void flushBlock(int blk, int force) {
 	char fn[32];
 	byte *data = (byte*)blockData(blk);
 	if (data == NULL) { return; }
@@ -43,7 +44,7 @@ void flushBlock(int blk, int force) {
 	cell fp = fileOpen(fn, " wb");
 	data[BLOCK_SZ-1] = 0;
 	if (fp) {
-		printf("-writeBlock(%d)-",blk);
+		printf("-flushBlock(%d)-",blk);
 		fileWrite(data, BLOCK_SZ, fp);
 		fileClose(fp);
 	}

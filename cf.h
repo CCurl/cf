@@ -7,7 +7,6 @@
 #include <string.h>
 #include <stdarg.h>
 #include <time.h>
-// #include "block.h"
 
 #ifdef _MSC_VER
 #include <conio.h>
@@ -86,8 +85,9 @@ extern void fileLoad(char *name);
 extern void blockLoad(int blk);
 
 extern void initBlocks();
-extern void flushBlocks();
-extern void flushBlock(int blk, int force);
 extern cell blockData(int blk);
+extern void blockDirty(int blk, int val);
+extern int  blockDirtyQ(int blk);
+extern void flushBlocks();
 
 #endif

@@ -29,9 +29,10 @@ char tib[128], wd[32], *toIn, wordAdded;
 #define BOARDPRIMS
 
 #define FILEPRIMS \
-	X(BLKDATA, "block",     TOS=blockData(TOS); ) \
-	X(FLUALL,  "flush-all", flushBlocks(); ) \
-	X(BLKFLU,  "flush",     t=pop(); n=pop(); flushBlock((int)n, (int)t); ) \
+	X(BLOCK,   "block",     TOS=blockData(TOS); ) \
+	X(DIRTY,   "dirty",     t=pop(); n=pop(); blockDirty((int)n, (int)t); ) \
+	X(DIRTYQ,  "dirty?",    TOS = blockDirtyQ((int)TOS); ) \
+	X(FLUSH,   "flush",     flushBlocks(); ) \
 	X(FLOPEN,  "fopen",     t=pop(); n=pop(); push(fileOpen((char*)n, (char*)t)); ) \
 	X(FLCLOSE, "fclose",    t=pop(); fileClose(t); ) \
 	X(FLREAD,  "fread",     t=pop(); n=pop(); TOS = fileRead((byte*)TOS, n, t); ) \
