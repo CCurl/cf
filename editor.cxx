@@ -1,10 +1,10 @@
 // editor.cpp - A simple block editor
 
 #include "cf.h"
-#include "block.h"
 
-#define NUM_LINES   20
-#define LLEN        (BLOCK_SZ/NUM_LINES)
+#define NUM_LINES    20
+#define LLEN        100
+#define EDCH(l,o)   edBuf[(l*LLEN)+o]
 #define EDCH(l,o)   edBuf[(l*LLEN)+o]
 #define DIRTY(l)    isDirty=1; lineShow[l]=1
 #define ISCFMODE(c) (BTW(c, RED, WHITE))

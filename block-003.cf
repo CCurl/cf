@@ -1,1 +1,8 @@
-[ 3 . 3 . 3 .
+( strings )
+
+[ find cmove loaded?
+
+3 >lex
+
+: cmove  ( src dst num-- ) d >r s >r  swap >d swap >s  for s+ c@ d+ c! next  r> >s r> >d ;
+: cmove> ( src dst num-- ) d >r s >r  swap >d swap >s  for s- c@ d- c! next  r> >s r> >d ;

@@ -4,7 +4,6 @@
 #include <time.h>
 #include "cf.h"
 
-#define LASTPRIM      BYE
 #define NCASE         goto next; case
 #define BCASE         break; case
 #define here          code[0]
@@ -29,7 +28,7 @@ char *tib, wd[32], *toIn, wordAdded;
 #define BOARDPRIMS
 
 #define FILEPRIMS \
-	X(BLOCK,   "block",     TOS=blockData(TOS); ) \
+	X(BLOCK,   "block",     TOS=(cell)blockData((int)TOS); ) \
 	X(DIRTY,   "dirty",     t=pop(); n=pop(); blockDirty((int)n, (int)t); ) \
 	X(DIRTYQ,  "dirty?",    TOS = blockDirtyQ((int)TOS); ) \
 	X(FLUSH,   "flush",     flushBlocks(); ) \
@@ -48,6 +47,8 @@ char *tib, wd[32], *toIn, wordAdded;
 	X(SWAP,    "swap",      t=TOS; TOS=NOS; NOS=t; ) \
 	X(DROP,    "drop",      pop(); ) \
 	X(OVER,    "over",      t=NOS; push(t); ) \
+	X(FETC,    "@c",        TOS = code[(ushort)TOS]; ) \
+	X(STOC,    "!c",        t=pop(); n=pop(); code[(ushort)t] = (ushort)n; /**/) \
 	X(FET,     "@",         TOS = fetchCell(TOS); ) \
 	X(CFET,    "c@",        TOS = *(byte *)TOS; ) \
 	X(WFET,    "w@",        TOS = fetchWord(TOS); ) \
@@ -80,9 +81,11 @@ char *tib, wd[32], *toIn, wordAdded;
 	X(BSET,    ">b",        B=pop(); ) \
 	X(SGET,    "s",         push(S); ) \
 	X(SINC,    "s+",        push(S++); ) \
+	X(SDEC,    "s-",        push(S--); ) \
 	X(SSET,    ">s",        S=pop(); ) \
 	X(DGET,    "d",         push(D); ) \
 	X(DINC,    "d+",        push(D++); ) \
+	X(DDEC,    "d-",        push(D--); ) \
 	X(DSET,    ">d",        D=pop(); ) \
 	X(TOR,     ">r",        rpush(pop()); ) \
 	X(RAT,     "r@",        push(rstk[rsp]); ) \
@@ -90,29 +93,29 @@ char *tib, wd[32], *toIn, wordAdded;
 	X(EMIT,    "emit",      t=pop(); emit((char)t); ) \
 	X(CLK,     "timer",     push(clock()); ) \
 	X(SEE,     "see",       doSee(); ) \
-	X(COUNT,   "count",     t=pop(); push(t+1); push(*(byte *)t); ) \
-	X(TYPE,    "type",      t=pop(); char *y=(char*)pop(); for (int i = 0; i<t; i++) emit(y[i]); ) \
+	X(COUNT,   "count",     t=pop(); push(t+1); push(*(byte*)t); ) \
+	X(TYPE,    "type",      t=pop(); char *y=(char*)pop(); for (int i=0; i<t; i++) emit(y[i]); ) \
 	X(ADDW,    "add-word",  addWord(0); ) \
 	X(QUOTE,   "\"",        quote(); ) \
 	X(DOTQT,   ".\"",       quote(); comma(COUNT); comma(TYPE); ) \
 	X(RAND,    "rand",      doRand(); ) \
 	X(ITOA,    "to-string", t=pop(); push((cell)iToA(t, base)); ) \
 	X(DOTS,    ".s",        dotS(); ) \
-	X(FETC,    "@c",        TOS = code[(ushort)TOS]; ) \
-	X(STOC,    "!c",        t=pop(); n=pop(); code[(ushort)t] = (ushort)n; /**/) \
 	X(FIND,    "find",      { DE_T *dp = (DE_T*)findWord(0); push(dp?dp->xt:0); push((cell)dp); } ) \
 	X(SYSTEM,  "system",    t=pop(); system((char*)t+1); ) \
 	X(STREQ,   "streq",     t=pop(); TOS=strEq((char*)t, (char*)TOS); ) \
 	X(STREQI,  "streqi",    t=pop(); TOS=strEqI((char*)t, (char*)TOS); ) \
 	X(STRCPY,  "strcpy",    t=pop(); n=pop(); strCpy((char*)n, (char*)t); ) \
 	X(STRLEN,  "strlen",    TOS=strlen((char*)TOS); ) \
+	X(KEY,     "key",       push(key()); ) \
+	X(QKEY,    "?key",      push(qKey()); ) \
 	FILEPRIMS BOARDPRIMS \
 	X(BYE,     "bye",       exit(0); )
 
 #define X(op, name, cod) op,
 
 enum _PRIM  {
-	STOP, LIT1, LIT2, JMP, JMPZ, NJMPZ, JMPNZ, 
+	STOP, LIT1, LIT2, JMP, JMPZ, NJMPZ, JMPNZ,
 	PRIMS
 };
 
@@ -234,7 +237,7 @@ int findPrevXT(int xt) {
 void doSee() {
 	DE_T *dp = findWord(0);
 	if (!dp) { printf("-nf:%s-", wd); return; }
-	if (dp->xt < LASTPRIM) { printf("%s is a primitive ($%hX).\n", wd, dp->xt); return; }
+	if (dp->xt <= BYE) { printf("%s is a primitive ($%hX).\n", wd, dp->xt); return; }
 	cell x = (cell)dp-(cell)dict;
 	int stop = findPrevXT(dp->xt)-1;
 	int i = dp->xt;
@@ -253,7 +256,7 @@ void doSee() {
 			BCASE JMPZ:  printf("jmpz %04lX (if)", x);     i++;
 			BCASE NJMPZ: printf("njmpz %04lX (-if)", x);   i++;
 			BCASE JMPNZ: printf("jmpnz %04lX (while)", x); i++; break;
-			default: x = findXT(op); 
+			default: x = findXT(op);
 				printf("%s", x ? ((DE_T*)&dict[(ushort)x])->nm : "??");
 		}
 	}
@@ -469,11 +472,12 @@ void baseSys() {
 	parseF(addrFmt, "dict", &dict[0]);
 	parseF(addrFmt, ">in",  &toIn);
 
-	parseF(": code-sz  #%d ;", CODE_SZ);
-	parseF(": vars-sz  #%d ;", VARS_SZ);
-	parseF(": dict-sz  #%d ;", DICT_SZ);
-    parseF(": block-sz #%d ;", BLOCK_SZ);
-	parseF(": cell     #%d ;", CELL_SZ);
+	parseF(": code-sz    #%d ;", CODE_SZ);
+	parseF(": vars-sz    #%d ;", VARS_SZ);
+	parseF(": dict-sz    #%d ;", DICT_SZ);
+	parseF(": block-sz   #%d ;", BLOCK_SZ);
+	parseF(": block-max  #%d ;", NUM_BLOCKS);
+	parseF(": cell       #%d ;", CELL_SZ);
 	sys_load();
 }
 
@@ -486,7 +490,7 @@ void Init() {
 	sp = rsp = lsp = aSp = state = 0;
 	last = DICT_SZ;
 	base = 10;
-	here = LASTPRIM+1;
+	here = BYE+1;
 	fileInit();
 	baseSys();
 }
@@ -509,7 +513,7 @@ void REP() {
 int main(int argc, char *argv[]) {
 	Init();
 	initBlocks();
-    tib = (char*)blockData(0);
+	tib = (char*)blockData(0);
 	if (argc>1) {
 		// load init block first (if necessary)
 		cell tmp = fileOpen(argv[1]-1, " rt");
@@ -517,6 +521,6 @@ int main(int argc, char *argv[]) {
 		else { inputFp = tmp; }
 	}
 	while (1) { REP(); };
-    flushBlocks();
+	flushBlocks();
 	return 0;
 }

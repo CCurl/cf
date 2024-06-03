@@ -1,6 +1,11 @@
-// Support for Linux
+#include "cf.h"
 
-#define isPC
+#define LINUX
+
+//#ifdef IS_LINUX // Support for Linux
+#ifdef LINUX // Support for Linux
+
+#include <stdio.h>
 #include <termios.h>
 #include <unistd.h>
 #include <sys/time.h>
@@ -37,7 +42,9 @@ int qKey() {
 }
 int key() {
     ttyMode(1);
-    int x = getchar();
+    int x = fgetc(stdin);
     ttyMode(0);
     return x;
 }
+
+#endif

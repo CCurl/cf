@@ -12,11 +12,11 @@
 #include <conio.h>
 #endif
 
-#ifdef LINUX
-#include <sys/time.h>
-#include <unistd.h>
-#include <termios.h>
-#endif
+// #ifdef IS_LINUX
+// #include <sys/time.h>
+// #include <unistd.h>
+// #include <termios.h>
+// #endif
 
 #define RED      1
 #define GREEN    2
@@ -42,8 +42,8 @@
 #define RSTK_SZ           63
 #define LSTK_SZ           60
 #define FSTK_SZ           10
-#define BLOCK_SZ        2048
-#define NUM_BLOCKS       100
+#define BLOCK_SZ        2500
+#define NUM_BLOCKS       400
 #define btwi(n,l,h)   (((l)<=n) && (n<=(h)))
 
 #if __LONG_MAX__ > __INT32_MAX__
@@ -72,6 +72,8 @@ extern void strCpy(char *d, const char *s);
 extern void fill(byte *addr, cell num, byte ch);
 
 // cf.c needs these
+extern int  key();
+extern int  qKey();
 extern cell inputFp, outputFp;
 extern void fileInit();
 extern void filePush(cell fh);
@@ -84,10 +86,10 @@ extern int  fileGets(char *buf, int sz, cell fh);
 extern void fileLoad(char *name);
 extern void blockLoad(int blk);
 
-extern void initBlocks();
-extern cell blockData(int blk);
-extern void blockDirty(int blk, int val);
-extern int  blockDirtyQ(int blk);
-extern void flushBlocks();
+extern void  initBlocks();
+extern byte *blockData(int blk);
+extern void  blockDirty(int blk, int val);
+extern int   blockDirtyQ(int blk);
+extern void  flushBlocks();
 
 #endif

@@ -12,9 +12,9 @@
 : while (jmpnz) , , ;
 : until (jmpz)  , , ;
 : if (jmpz) , here 0 , ;
-: -if (njmpz) , here 0 , ;
 : else (jmp) , here swap 0 , here swap !c ;
 : then here swap !c ;
+: -if (njmpz) , here 0 , ;
 : allot vhere + (vhere) !c ;
 : ,v  vhere ->vars ! cell allot ;
 : hex     $10 base !c ;
@@ -59,15 +59,12 @@
 : const add-word  (lit2) , ,cell (exit) , ;
 : var   vhere ->vars const cell allot ;
 : m1      here 20 !c       last 21 !c       vhere 22 !c ;
-: f1      20 @c (here) !c  21 @c (last) !c  22 @c (vhere) !c ;
 : marker  here 23 !c       last 24 !c       vhere 25 !c ;
 : forget  23 @c (here) !c  24 @c (last) !c  25 @c (vhere) !c  0 >lex ;
-marker
+: f1      20 @c (here) !c  21 @c (last) !c  22 @c (vhere) !c ;
+[ marker
 : .02 '.' emit dup 10 < [ if ] 0 (.) [ then ] (.) ;
 : .ver version 100 /mod 100 /mod (.) .02 .02 ;
 : hi [ ." c4 - v" ] .ver [ ."  - Chris Curl." ] cr ;
-hi forget
-(( 6 load ))
-(( 3 load ))
-(( 5 load ))
-(( 0 >lex ))
+[ hi forget
+[ 6 load
