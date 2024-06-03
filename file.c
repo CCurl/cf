@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include "cf.h"
 
 // #define NO_FILE

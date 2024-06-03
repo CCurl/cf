@@ -3,20 +3,15 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
 #include <time.h>
 
 #ifdef _MSC_VER
-#include <conio.h>
+#define IS_WINDOWS 1
 #endif
-
-// #ifdef IS_LINUX
-// #include <sys/time.h>
-// #include <unistd.h>
-// #include <termios.h>
-// #endif
 
 #define RED      1
 #define GREEN    2
@@ -74,6 +69,7 @@ extern void fill(byte *addr, cell num, byte ch);
 // cf.c needs these
 extern int  key();
 extern int  qKey();
+extern void ttyMode(int isRaw);
 extern cell inputFp, outputFp;
 extern void fileInit();
 extern void filePush(cell fh);

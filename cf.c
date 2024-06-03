@@ -1,7 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <time.h>
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <stdarg.h>
+//#include <time.h>
 #include "cf.h"
 
 #define NCASE         goto next; case
@@ -102,7 +102,7 @@ char *tib, wd[32], *toIn, wordAdded;
 	X(ITOA,    "to-string", t=pop(); push((cell)iToA(t, base)); ) \
 	X(DOTS,    ".s",        dotS(); ) \
 	X(FIND,    "find",      { DE_T *dp = (DE_T*)findWord(0); push(dp?dp->xt:0); push((cell)dp); } ) \
-	X(SYSTEM,  "system",    t=pop(); system((char*)t+1); ) \
+	X(SYSTEM,  "system",    ttyMode(0); t=pop(); system((char*)t+1); ttyMode(1); ) \
 	X(STREQ,   "streq",     t=pop(); TOS=strEq((char*)t, (char*)TOS); ) \
 	X(STREQI,  "streqi",    t=pop(); TOS=strEqI((char*)t, (char*)TOS); ) \
 	X(STRCPY,  "strcpy",    t=pop(); n=pop(); strCpy((char*)n, (char*)t); ) \
@@ -412,7 +412,7 @@ int setState(char *wd) {
 }
 
 void doOuter(const char *src) {
-	DE_T *dp;
+	// DE_T *dp;
 	int isErr = 0;
 	toIn = (char*)src;
 	while (nextWord()) {
@@ -512,6 +512,7 @@ void REP() {
 
 int main(int argc, char *argv[]) {
 	Init();
+	ttyMode(1);
 	initBlocks();
 	tib = (char*)blockData(0);
 	if (argc>1) {
