@@ -9,7 +9,7 @@
 #define LLEN           100
 #define NUM_LINES      (BLOCK_SZ/LLEN)
 #define MAX_LINE       ((BLOCK_SZ/LLEN)-1)
-#define LO2pos(L,O)    (LLEN*(L))+(O)
+#define LO2pos(L,O)    ((LLEN*(L))+(O))
 #define pos2Line(P)    ((P)/LLEN)
 #define pos2Offset(P)  ((P)%LLEN)
 #define EDCH(L,O)      theBlock[LO2pos(L,O)]
@@ -32,6 +32,7 @@ char yanked[LLEN];
 void GotoXY(int x, int y) { printStringF("\x1B[%d;%dH", y, x); }
 void CLS() { printString("\x1B[2J"); GotoXY(1, 1); }
 void ClearEOL() { printString("\x1B[K"); }
+void CursorShape(int n) { printStringF("\x1B[%d q", n); }
 void CursorOn() { printString("\x1B[?25h"); }
 void CursorOff() { printString("\x1B[?25l"); }
 void Color(int c, int bg) { printStringF("\x1B[%d;%dm", (30+c), bg?bg:40); }
@@ -170,7 +171,7 @@ int doCommand() {
 int doCommon(int c) {
     int l = line, o = off;
     if (c == 8) { mv(0, -1); }                     // <ctrl-h>
-    else if (c ==  9) { mv(0, 8); }                // <tab>
+    else if (c ==  9) { mv(0, 10); }               // <tab>
     else if (c == 10) { mv(1, 0); }                // <ctrl-j>
     else if (c == 11) { mv(-1, 0); }               // <ctrl-k>
     else if (c == 12) { mv(0, 1); }                // <ctrl-l>
@@ -220,7 +221,6 @@ int processEditorChar(int c) {
     BCASE 'a': mv(0, 1); insertMode();
     BCASE 'A': gotoEOL(); mv(0,1); insertMode();
     BCASE 'J': joinLines();
-    BCASE '$': gotoEOL();
     BCASE 'g': mv(-line,-off);
     BCASE 'G': mv(99,99);
     BCASE 'i': insertMode();
@@ -252,11 +252,13 @@ void doEditor(int blk) {
     line = off = pos = 0;
     msg = NULL;
     CLS();
+    CursorShape(2);
     CursorOff();
     edRdBlk(0);
     normalMode();
     showHelp();
     while (edMode != QUIT) {
+        CursorOff();
         NormLO();
         showEditor();
         showStatus();
@@ -265,6 +267,7 @@ void doEditor(int blk) {
     }
     GotoXY(1, NUM_LINES + 7);
     CursorOn();
+    CursorShape(5);
 }
 
 #endif // __EDITOR__
