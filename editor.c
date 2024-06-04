@@ -65,8 +65,7 @@ void showStatus() {
 void showHelp() {
     GotoXY(1, NUM_LINES+1);
     Color(WHITE, 0);
-    printString("\r\n  (^A) Define (^B) Compile (^C) Interpret (^D) N/A");
-    printString("\r\n  (^E) N/A (^F) N/A (^G) Comment");
+    printString("\r\n  (^A) Define (^B) Compile (^C) Interpret (^G) Comment");
 }
 
 void showEditor() {
@@ -110,12 +109,9 @@ void edSvBlk(int force) {
 }
 
 void deleteChar() {
-    int x = LO2pos(line, off);
-
-    for (int o=off; o<(LLEN-1); o++) {
-        POSCH(x) = POSCH(x+1); x++;
-    }
-    POSCH(x) = 32;
+    int x = pos;
+    while ((x+1)<BLOCK_SZ) { POSCH(x) = POSCH(x+1); ++x; }
+    POSCH(pos) = 32;
     DIRTY();
 }
 
@@ -204,6 +200,8 @@ void yankLine(int L) {
     }
 }
 
+void deleteToEOL(int c) { while (c < LLEN) { EDCH(line, c++) = 32; } }
+
 void pasteLine(int L) {
     for (int x=0; x<LLEN; x++) {
         EDCH(L,x) = yanked[x];
@@ -236,8 +234,7 @@ int processEditorChar(int c) {
     BCASE 'r': replaceChar(edKey(), 0, 1);
     BCASE 'R': replaceMode();
     BCASE 'c': deleteChar(); insertMode();
-    BCASE 'C': c=off; while (c<LLEN) { EDCH(line, c++) = 32; }
-            DIRTY(); insertMode();
+    BCASE 'C': deleteToEOL(off); DIRTY(); insertMode();
     BCASE 'D': yankLine(line); deleteLine();
     BCASE 'x': deleteChar();
     BCASE 'X': if (0 < off) { mv(0, -1); deleteChar(); }
