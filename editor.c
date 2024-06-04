@@ -278,22 +278,22 @@ int processEditorChar(int c) {
     BCASE 'l': mv(0,1);
     BCASE 'j': mv(1,0);
     BCASE 'k': mv(-1,0);
-    BCASE '_': mv(0,-99);
+    BCASE '_': mv(0,-off);
     BCASE 'a': mv(0, 1); insertMode();
-    BCASE 'A': gotoEOL(); insertMode();
+    BCASE 'A': gotoEOL(); mv(0,1); insertMode();
     BCASE 'J': joinLines();
     BCASE '$': gotoEOL();
-    BCASE 'g': mv(-99,-99);
-    BCASE 'G': mv(99,-999);
+    BCASE 'g': mv(-line,-off);
+    BCASE 'G': mv(99,99);
     BCASE 'i': insertMode();
-    BCASE 'I': mv(0, -99); insertMode();
-    BCASE 'o': mv(1, -99); insertLine(); insertMode();
-    BCASE 'O': mv(0, -99); insertLine(); insertMode();
+    BCASE 'I': mv(0, -off); insertMode();
+    BCASE 'o': mv(1, -off); insertLine(); insertMode();
+    BCASE 'O': mv(0, -off); insertLine(); insertMode();
     BCASE 'r': replaceChar(edKey(), 0, 1);
     BCASE 'R': replaceMode();
     BCASE 'c': deleteChar(); insertMode();
-    BCASE 'C': c=off; while (c<LLEN) { EDCH(line, c++) = 0; }
-            addLF(line); DIRTY(); insertMode();
+    BCASE 'C': c=off; while (c<LLEN) { EDCH(line, c++) = 32; }
+            DIRTY(); insertMode();
     BCASE 'D': deleteLine();
     BCASE 'x': deleteChar();
     BCASE 'X': if (0 < off) { --off; deleteChar(); }
