@@ -24,6 +24,7 @@ static void readBlock(int blk) {
 	byte *data = blockData(blk);
 	if (data == NULL) { return; }
 	fill(data, BLOCK_SZ, 0);
+	blockDirty(blk, 0);
 	sprintf(fn, " block-%03d.cf", blk);
 	cell fp = fileOpen(fn, " rb");
 	if (fp) {
@@ -31,7 +32,6 @@ static void readBlock(int blk) {
 		fileClose(fp);
 		// printf("-readblock(%d)-",blk);
 	}
-	blockDirty(blk, 0);
 }
 
 void blockReload(int blk) { readBlock(blk); }

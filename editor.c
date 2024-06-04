@@ -14,11 +14,16 @@
 #define ISDIRTY()   blockDirtyQ(blkNum)
 #define ISCFMODE(c) (btwi(c, RED, WHITE))
 
+#ifndef min
+#define min(a,b)    ((a)<(b))?(a):(b)
+#define max(a,b)    ((b)<(a))?(a):(b)
+#endif
+
 enum { COMMAND = 1, INSERT, REPLACE, QUIT };
 char *theBlock;
 int line, off, blkNum, edMode, pos;
 int lineShow[NUM_LINES];
-char edBuf[BLOCK_SZ], tBuf[LLEN], mode[32], *msg = NULL;
+char tBuf[LLEN], mode[32], *msg = NULL;
 char yanked[LLEN];
 
 void GotoXY(int x, int y) { printStringF("\x1B[%d;%dH", y, x); }
@@ -55,36 +60,13 @@ char edChar(int l, int o, int changeMode) {
 }
 
 void showCursor() {
-    char c = EDCH(line, off);
+    // char c = EDCH(line, off);
     GotoXY(off + 1, line + 1);
-    GotoXY(off + 1, line + 1);
-    Color(0, 47);
-    if (c == 0) c = 'X';
-    if (c < 32) c += ('a'-1);
-    printChar(c);
-}
-
-int getPrevColor(int l) {
-    int col=0;
-    char *y = &EDCH(l,0);
-    while ((col == 0) && (edBuf <= y)) {
-        if (btwi(*y,RED,WHITE)) { col=*y; }
-        else { --y; }
-    }
-    return (col) ? col : INTERP;
-}
-
-void showLine(int l) {
-    // if (!lineShow[l]) { return; }
-    lineShow[l] = 0;
-    Color(getPrevColor(l), 0);
-    GotoXY(1, l+1);
-    for (int o = 0; o < LLEN; o++) {
-        int c = edChar(l, o, 1);
-        if (c) { printChar(c); }
-        else { ClearEOL(); break; }
-    }
-    if (l == line) { showCursor(); }
+    CursorOn();
+    // Color(0, 47);
+    // if (c == 0) c = '.';
+    // if (c < 32) c += ('a'-1);
+    // printChar(c);
 }
 
 void showStatus() {
@@ -109,21 +91,32 @@ void showHelp() {
 }
 
 void showEditor() {
-    for (int i = 0; i < NUM_LINES; i++) { showLine(i); }
+    int x = 0;
+    GotoXY(1,1);
+    for (int i = 0; i < NUM_LINES; i++) {
+        for (int j = 0; j < LLEN; j++) {
+            int c = theBlock[x++];
+            if (ISCFMODE(c)) { Color(c, 0); }
+            c = btwi(c,33,126) ? c : 32;
+            printChar(c);
+        }
+        printString("\r\n");
+    }
+    //showCursor();
 }
 
 void mv(int l, int o) {
-    lineShow[line] = 1;
+    // lineShow[line] = 1;
     line += l;
     off += o;
     pos = LO2pos(line, off);
     NormLO();
-    lineShow[line] = 1;
+    // lineShow[line] = 0;
 }
 
 void gotoEOL() {
-    mv(0, -99);
-    while (EDCH(line, off) != 10) { ++off; }
+    off = LLEN-1;
+    while ((0<=off) && (EDCH(line, off) < 33)) { --off; }
 }
 
 int toBlock() {
@@ -162,7 +155,7 @@ void toBuf() {
 
 void edRdBlk(int force) {
     if (force) { blockReload(blkNum); }
-    theBlock = blockData(blkNum);
+    theBlock = (char*)blockData(blkNum);
     // blockIsText(blkNum);
     // toBuf();
     showAll();
@@ -207,7 +200,7 @@ void insertLine() {
     int f = LO2pos(line+1, 0);
     int t = BLOCK_SZ - 1;
     while (f < t) { POSCH(t) = POSCH(t - LLEN); t--; }
-    for (f = f; f < LLEN; f++) { POSCH(f) = 32; }
+    for (f=1; f<LLEN; f++) { EDCH(line+1,f) = 32; }
     // insertSpace();
     // EDCH(line, off)=10;
     // toBlock();
@@ -329,6 +322,7 @@ void doEditor(int blk) {
     while (edMode != QUIT) {
         showEditor();
         showStatus();
+        showCursor();
         processEditorChar(edKey());
     }
     GotoXY(1, NUM_LINES + 7);

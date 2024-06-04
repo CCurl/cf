@@ -16,6 +16,9 @@ void printChar(const char ch) { fputc(ch, outputFp ? (FILE*)outputFp : stdout); 
 #include <unistd.h>
 #include <sys/time.h>
 
+void printString(const char* str) { fputs(str, outputFp ? (FILE*)outputFp : stdout); }
+void printChar(const char ch) { fputc(ch, outputFp ? (FILE*)outputFp : stdout); }
+
 void ttyMode(int isRaw) {
     static struct termios origt, rawt;
     static int curMode = -1;
@@ -36,7 +39,7 @@ void ttyMode(int isRaw) {
 int qKey() {
     struct timeval tv;
     fd_set rdfs;
-    // ttyMode(1);
+    ttyMode(1);
     tv.tv_sec = 0;
     tv.tv_usec = 0;
     FD_ZERO(&rdfs);
@@ -47,7 +50,7 @@ int qKey() {
     return x;
 }
 int key() {
-    // ttyMode(1);
+    ttyMode(1);
     int x = fgetc(stdin);
     // ttyMode(0);
     return x;

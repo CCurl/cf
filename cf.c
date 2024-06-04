@@ -111,7 +111,7 @@ char *tib, wd[32], *toIn, wordAdded;
 	X(KEY,     "key",       push(key()); ) \
 	X(QKEY,    "?key",      push(qKey()); ) \
 	FILEPRIMS BOARDPRIMS \
-	X(BYE,     "bye",       exit(0); )
+	X(BYE,     "bye",       ttyMode(0); exit(0); )
 
 #define X(op, name, cod) op,
 
@@ -506,11 +506,14 @@ void Init() {
 
 // REP - Read/Execute/Print (no Loop)
 void REP() {
+	tib = (char*)&vars[VARS_SZ]-256;
 	if (inputFp == 0) {
+        ttyMode(0);
 		if (state==INTERP) { printString(" ok\n"); }
 		else { printString(" ... "); }
 	}
 	if (fileGets(tib, BLOCK_SZ, inputFp)) {
+        if (inputFp == 0) { ttyMode(1); }
 		doOuter(tib+1);
 		return;
 	}
@@ -523,7 +526,6 @@ int main(int argc, char *argv[]) {
 	Init();
 	ttyMode(1);
 	initBlocks();
-	tib = (char*)blockData(0);
 	if (argc>1) {
 		// load init block first (if necessary)
 		cell tmp = fileOpen(argv[1]-1, " rt");
@@ -532,5 +534,6 @@ int main(int argc, char *argv[]) {
 	}
 	while (1) { REP(); };
 	flushBlocks();
+	ttyMode(0);
 	return 0;
 }

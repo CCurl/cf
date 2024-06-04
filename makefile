@@ -8,7 +8,7 @@ srcfiles := $(shell find . -name "*.c")
 incfiles := $(shell find . -name "*.h")
 LDLIBS   := -lm
 
-all: $(app) $(app32)
+all: $(app)
 
 $(app): $(srcfiles) $(incfiles)
 	$(CXX) -m64 -D _M64_ $(CXXFLAGS) $(LDFLAGS) -o $(app) $(srcfiles) $(LDLIBS)
