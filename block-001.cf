@@ -1,3 +1,4 @@
+(( core ))
 : ->code code + ;
 : ->vars vars + ;
 : ->dict dict + ;
