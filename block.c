@@ -41,13 +41,13 @@ static void flushBlock(int blk, int force) {
 	byte *data = blockData(blk);
 	if (data == NULL) { return; }
 	if ((force==0) && (dirty[blk]==0)) { return; }
-	printf("-flushBlock(%d)-",blk);
-//	sprintf(fn, " block-%03d.cf", blk);
-//	cell fp = fileOpen(fn, " wb");
-//	if (fp) {
-//		fileWrite(data, BLOCK_SZ, fp);
-//		fileClose(fp);
-//	}
+	// printf("-flushBlock(%d)-\n",blk);
+	sprintf(fn, " block-%03d.cf", blk);
+	cell fp = fileOpen(fn, " wb");
+	if (fp) {
+		fileWrite(data, BLOCK_SZ, fp);
+		fileClose(fp);
+	}
 	blockDirty(blk, 0);
 }
 

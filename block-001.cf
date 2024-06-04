@@ -67,4 +67,4 @@
 : .ver version 100 /mod 100 /mod (.) .02 .02 ;
 : hi [ ." c4 - v" ] .ver [ ."  - Chris Curl." ] cr ;
 [ hi forget
-[ 6 load
+[ : ed 0 edit ; 6 load

@@ -111,7 +111,7 @@ char *tib, wd[32], *toIn, wordAdded;
 	X(KEY,     "key",       push(key()); ) \
 	X(QKEY,    "?key",      push(qKey()); ) \
 	FILEPRIMS BOARDPRIMS \
-	X(BYE,     "bye",       ttyMode(0); exit(0); )
+	X(BYE,     "bye",       ttyMode(0); flushBlocks(); exit(0); )
 
 #define X(op, name, cod) op,
 
