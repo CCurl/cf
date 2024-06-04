@@ -40,6 +40,7 @@
 #define BLOCK_SZ        2500
 #define NUM_BLOCKS       400
 #define btwi(n,l,h)   (((l)<=n) && (n<=(h)))
+#define BCASE         break; case
 
 #if __LONG_MAX__ > __INT32_MAX__
 #define CELL_SZ   8
@@ -65,10 +66,13 @@ extern int  strEq(const char *d, const char *s);
 extern int  strEqI(const char *d, const char *s);
 extern void strCpy(char *d, const char *s);
 extern void fill(byte *addr, cell num, byte ch);
+extern void printStringF(const char* fmt, ...);
 
 // cf.c needs these
 extern int  key();
 extern int  qKey();
+extern void printString(const char *str);
+extern void printChar(const char ch);
 extern void ttyMode(int isRaw);
 extern cell inputFp, outputFp;
 extern void fileInit();
@@ -81,11 +85,13 @@ extern cell fileWrite(byte *buf, int sz, cell fh);
 extern int  fileGets(char *buf, int sz, cell fh);
 extern void fileLoad(char *name);
 extern void blockLoad(int blk);
+extern void doEditor(int blk);
 
 extern void  initBlocks();
 extern byte *blockData(int blk);
 extern void  blockDirty(int blk, int val);
 extern int   blockDirtyQ(int blk);
+extern void  blockReload(int blk);
 extern void  flushBlocks();
 
 #endif

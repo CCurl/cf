@@ -32,6 +32,7 @@ char *tib, wd[32], *toIn, wordAdded;
 	X(DIRTY,   "dirty",     t=pop(); n=pop(); blockDirty((int)n, (int)t); ) \
 	X(DIRTYQ,  "dirty?",    TOS = blockDirtyQ((int)TOS); ) \
 	X(FLUSH,   "flush",     flushBlocks(); ) \
+	X(EDIT,    "edit",      doEditor((int)pop()); ) \
 	X(FLOPEN,  "fopen",     t=pop(); n=pop(); push(fileOpen((char*)n, (char*)t)); ) \
 	X(FLCLOSE, "fclose",    t=pop(); fileClose(t); ) \
 	X(FLREAD,  "fread",     t=pop(); n=pop(); TOS = fileRead((byte*)TOS, n, t); ) \
@@ -139,7 +140,6 @@ cell fetchCell(cell a) { return *(cell*)(a); }
 cell fetchWord(cell a) { return *(ushort*)(a); }
 void emit(char c) { fputc(c, outputFp ? (FILE*)outputFp : stdout); }
 int changeState(char c) { state = c; return c; }
-void printString(char *s) { fputs(s, outputFp ? (FILE*)outputFp : stdout); }
 int strLen(const char *s) { int l = 0; while (s[l]) { l++; } return l; }
 int lower(char c) { return btwi(c, 'A', 'Z') ? c + 32 : c; }
 
@@ -433,13 +433,22 @@ void doOuter(const char *src) {
 	}
 }
 
-void parseF(const char *fmt, ...) {
+void parseF(const char* fmt, ...) {
 	char buf[128];
 	va_list args;
 	va_start(args, fmt);
 	vsnprintf(buf, 128, fmt, args);
 	va_end(args);
 	doOuter(buf);
+}
+
+void printStringF(const char* fmt, ...) {
+	char buf[128];
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(buf, 128, fmt, args);
+	va_end(args);
+	printString(buf);
 }
 
 void sys_load() {

@@ -5,6 +5,8 @@
 int qKey() { return _kbhit(); }
 int key() { return _getch(); }
 void ttyMode(int isRaw) {}
+void printString(const char* str) { fputs(str, outputFp ? (FILE*)outputFp : stdout); }
+void printChar(const char ch) { fputc(ch, outputFp ? (FILE*)outputFp : stdout); }
 #endif
 
 #ifdef IS_LINUX // Support for Linux

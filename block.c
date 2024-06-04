@@ -34,18 +34,20 @@ static void readBlock(int blk) {
 	blockDirty(blk, 0);
 }
 
+void blockReload(int blk) { readBlock(blk); }
+
 static void flushBlock(int blk, int force) {
 	char fn[32];
 	byte *data = blockData(blk);
 	if (data == NULL) { return; }
 	if ((force==0) && (dirty[blk]==0)) { return; }
-	sprintf(fn, " block-%03d.cf", blk);
-	cell fp = fileOpen(fn, " wb");
-	if (fp) {
-		// printf("-flushBlock(%d)-",blk);
-		fileWrite(data, BLOCK_SZ, fp);
-		fileClose(fp);
-	}
+	printf("-flushBlock(%d)-",blk);
+//	sprintf(fn, " block-%03d.cf", blk);
+//	cell fp = fileOpen(fn, " wb");
+//	if (fp) {
+//		fileWrite(data, BLOCK_SZ, fp);
+//		fileClose(fp);
+//	}
 	blockDirty(blk, 0);
 }
 
