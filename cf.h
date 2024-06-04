@@ -11,6 +11,11 @@
 
 #ifdef _MSC_VER
 #define IS_WINDOWS 1
+#define IS_PC      1
+#endif
+
+#ifdef IS_LINUX
+#define IS_PC      1
 #endif
 
 #define RED      1
@@ -61,12 +66,15 @@ typedef union { FLT_T f; cell i; } SE_T;
 typedef struct { ushort xt; byte sz, fl, lx, ln; char nm[32]; } DE_T;
 
 // These are defined by c4.c
+extern void Init();
+extern void REP();
 extern int  strLen(const char *s);
 extern int  strEq(const char *d, const char *s);
 extern int  strEqI(const char *d, const char *s);
 extern void strCpy(char *d, const char *s);
 extern void fill(byte *addr, cell num, byte ch);
 extern void printStringF(const char* fmt, ...);
+extern void Color(int c, int bg);
 
 // cf.c needs these
 extern int  key();

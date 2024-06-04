@@ -35,7 +35,6 @@ void ClearEOL() { printString("\x1B[K"); }
 void CursorShape(int n) { printStringF("\x1B[%d q", n); }
 void CursorOn() { printString("\x1B[?25h"); }
 void CursorOff() { printString("\x1B[?25l"); }
-void Color(int c, int bg) { printStringF("\x1B[%d;%dm", (30+c), bg?bg:40); }
 void normalMode() { edMode=NORMAL; strCpy(mode, "normal"); }
 void insertMode()  { edMode=INSERT;  strCpy(mode, "insert"); }
 void replaceMode() { edMode=REPLACE; strCpy(mode, "replace"); }
@@ -97,10 +96,17 @@ void gotoEOL() {
 void edRdBlk(int force) {
     if (force) { blockReload(blkNum); }
     theBlock = (char*)blockData(blkNum);
+    for (int p = 0; p < BLOCK_SZ; p++) { if ((POSCH(p) == 0) || (POSCH(p) == 10)) { POSCH(p) = 32; } }
 }
 
 void edSvBlk(int force) {
-    if (force) { DIRTY(); }
+    if ((ISDIRTY()==0) && (force==0)) { return; }
+    // Try to clean up the block for standard text editors
+    for (int p = 0; p < BLOCK_SZ; p++) { if ((POSCH(p) == 0) || (POSCH(p) == 10)) { POSCH(p) = 32; } }
+    for (int ln = 0; ln < NUM_LINES; ln++) {
+        for (int o = LLEN-1; 0 <= o; o--) { if (EDCH(ln,o)==32) { EDCH(ln,o)=10; break; } }
+    }
+    DIRTY();
 }
 
 void deleteChar() {
@@ -123,10 +129,10 @@ void deleteLine() {
 }
 
 void insertSpace() {
-    for (int o=LLEN-1; off<o; o--) {
-        EDCH(line,o) = EDCH(line, o-1);
+    for (int o=BLOCK_SZ-1; pos<o; o--) {
+        POSCH(o) = POSCH(o-1);
     }
-    EDCH(line,off)=32;
+    POSCH(pos)=32;
 }
 
 void insertLine() {

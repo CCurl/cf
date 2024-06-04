@@ -142,6 +142,7 @@ void emit(char c) { fputc(c, outputFp ? (FILE*)outputFp : stdout); }
 int changeState(char c) { state = c; return c; }
 int strLen(const char *s) { int l = 0; while (s[l]) { l++; } return l; }
 int lower(char c) { return btwi(c, 'A', 'Z') ? c + 32 : c; }
+void Color(int c, int bg) { printStringF("\x1B[%d;%dm", (30 + c), bg ? bg : 40); }
 
 int strEq(const char *s, const char *d) {
 	while (*s == *d) { if (*s == 0) { return 1; } s++; d++; }
@@ -267,7 +268,7 @@ char *iToA(cell N, int b) {
 	int isNeg = 0, len = 0;
 	if (b == 0) { b = (int)base; }
 	if ((b == 10) && (N < 0)) { isNeg = 1; X = -N; }
-	char c, *cp = (char*)blockData(0)+BLOCK_SZ-1;
+	char c, *cp = (char*)&vars[VARS_SZ-1];
 	*(cp) = 0;
 	do {
 		c = (char)(X % b) + '0';
@@ -509,31 +510,18 @@ void REP() {
 	tib = (char*)&vars[VARS_SZ]-256;
 	if (inputFp == 0) {
         ttyMode(0);
-		if (state==INTERP) { printString(" ok\n"); }
-		else { printString(" ... "); }
+		Color(state, 0);
+		printStringF(" ok\n");
 	}
-	if (fileGets(tib, BLOCK_SZ, inputFp)) {
+	tib[0] = 0;
+	if (fileGets(tib, 100, inputFp)) {
         if (inputFp == 0) { ttyMode(1); }
+		if (tib[tib[0]] == 10) { tib[tib[0]] = 0; }
+		// printf("--%s--\n", tib+1);
 		doOuter(tib+1);
 		return;
 	}
 	if (inputFp == 0) { exit(0); }
 	fileClose(inputFp);
 	inputFp = filePop();
-}
-
-int main(int argc, char *argv[]) {
-	Init();
-	ttyMode(1);
-	initBlocks();
-	if (argc>1) {
-		// load init block first (if necessary)
-		cell tmp = fileOpen(argv[1]-1, " rt");
-		if (tmp && inputFp) { filePush(tmp); }
-		else { inputFp = tmp; }
-	}
-	while (1) { REP(); };
-	flushBlocks();
-	ttyMode(0);
-	return 0;
 }

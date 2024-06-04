@@ -57,3 +57,23 @@ int key() {
 }
 
 #endif
+
+#ifdef IS_PC
+
+int main(int argc, char* argv[]) {
+    Init();
+    ttyMode(1);
+    initBlocks();
+    if (argc > 1) {
+        // load init block first (if necessary)
+        cell tmp = fileOpen(argv[1] - 1, " rt");
+        if (tmp && inputFp) { filePush(tmp); }
+        else { inputFp = tmp; }
+    }
+    while (1) { REP(); };
+    flushBlocks();
+    ttyMode(0);
+    return 0;
+}
+
+#endif
