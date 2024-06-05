@@ -166,7 +166,7 @@ int accept(char *buf) {
         if ((c==27) || (c==3)) { buf[0]=0; return 0; }
         else if (c==13) { buf[ln]=0; return ln; }
         else if ((c==127) || (c==8)) {
-            if (0<ln) { --ln; printStringF("%c%c",8,8); }
+            if (0<ln) { --ln; printStringF("%c %c",8,8); }
         }
         else if (btwi(c,32,126)) { buf[ln++]=c; printChar(c); }
     }
