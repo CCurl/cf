@@ -34,7 +34,8 @@
 #define XXXXX1   CYAN
 #define COMMENT  WHITE
 
-#define VERSION       240602
+#define VERSION       240605
+
 #define CODE_SZ       0xFFFF
 #define VARS_SZ       0xFFFF
 #define DICT_SZ       0xFFFF
