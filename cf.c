@@ -139,10 +139,10 @@ void storeWord(cell a, cell val) { *(ushort*)(a) = (ushort)val; }
 cell fetchCell(cell a) { return *(cell*)(a); }
 cell fetchWord(cell a) { return *(ushort*)(a); }
 void emit(char c) { fputc(c, outputFp ? (FILE*)outputFp : stdout); }
-int changeState(char c) { state = c; return c; }
 int strLen(const char *s) { int l = 0; while (s[l]) { l++; } return l; }
 int lower(char c) { return btwi(c, 'A', 'Z') ? c + 32 : c; }
 void Color(int c, int bg) { printStringF("\x1B[%d;%dm", (30 + c), bg ? bg : 40); }
+int changeState(char c) { state = c; Color(c, 0); return c; }
 
 int strEq(const char *s, const char *d) {
 	while (*s == *d) { if (*s == 0) { return 1; } s++; d++; }
@@ -170,7 +170,7 @@ void commaCell(cell n) {
 }
 
 void checkState(char c) {
-	if (btwi(c, RED, WHITE)) { state = c; }
+	if (btwi(c, RED, WHITE)) { changeState(c); }
 }
 
 int nextWord() {

@@ -111,7 +111,7 @@ void edSvBlk(int force) {
 void deleteChar() {
     int x = pos;
     while ((x+1)<BLOCK_SZ) { POSCH(x) = POSCH(x+1); ++x; }
-    POSCH(pos) = 32;
+    // POSCH(pos) = 32;
     DIRTY();
 }
 
