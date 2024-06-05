@@ -1,20 +1,25 @@
-[ 3 load
-:D cr ] 10 emit 13 emit ;
-:D test ] 1 2 3 + + . ; [ test cr
-(( test ))
-[ test cr 500 mil bm1
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(( core )) ->codecode + ;->varsvars + ; ->dictdict + ; here (here)  @c ;                 
+last (last) @c ;vhere(vhere) @c ; lex (lex)  @c ; >lex (lex)   !c ;                       
+,here dup 1+ (here) !c !c ;begin  here ; again (jmp)  , , ; while (jmpnz) , , ;           
+until (jmpz)  , , ; if (jmpz) , here 0 , ; else (jmp) , here swap 0 , here swap !c ;         
+then here swap !c ; -if (njmpz) , here 0 , ; allot vhere + (vhere) !c ;                      
+,v vhere ->vars ! cell allot ; hex$10 base !c ; binary%10 base !c ; decimal#10 base !c ;   
+cells cell * ; nip swap  drop ; tuck swap over ; ?dup -ifdupthen; 2dup over over ;   
+min 2dup >ifswapthendrop ; max 2dup < if swap then drop ; 2+ 1+ 1+ ;                 
+negate com 1+ ; abs dup 0 < if negate then ; mod /mod drop ; +! tuck @ + swap ! ;      
+bl 32 ; space bl emit ; (.) to-string count type ; . (.) space ; cr 13 emit 10 emit ;    
+tab 9 emit ; ? @ . ; ->xt w@ ; ->size 2+ c@ ; ->flags 3 + c@ ; ->lex 4 + c@ ;          
+->len 5 + ;  : ->name 6 + ; lex-match?( a--f )->lex lex =  lex 0=  or ;                    
+words a >r  0 dup >a >r  last ->dict begin dup lex-match? if dup ->len count type            
+   r> 1+ >r  dup ->len c@ 7 > if a+ drop then a+ 8 > if cr 0 >a else tab then then        
+  dup ->size + dup dict-sz ->dict < while drop '(' emit r> . ." words)" r> >a ;               
+,1 dup $ffff and , $10000 / ; ,cell cell cell 2 / for ,1 next drop ; constadd-word (lit2) ,  
+,cell(exit) , ; var vhere ->vars  const cell allot ;                                           
+mk     here 20 !c  last 21 !c  vhere 22 !c ;                                                     
+marker here 23 !c  last 24 !c  vhere 25 !c ;                                                     
+fg     20 @c (here) !c  21 @c (last) !c  22 @c (vhere) !c ;                                      
+forget 23 @c (here) !c  24 @c (last) !c  25 @c (vhere) !c  0 >lex ; marker mk                   
+.02'.' emit dup 10 <if0 (.)then (.) ; .verversion 100 /mod 100 /mod (.) .02 .02 ;          
+hi ." cf - v" .ver ."  - Chris Curl." cr ;                                                    
+hi forget ed 1 edit ; 6  load                                                                  
+                                                                                                   

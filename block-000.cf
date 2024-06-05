@@ -1,20 +1,25 @@
-Core words
-here (here) @ ;    last  (last) @ ;
-vhere(vhere) @ ;   allot vhere + (vhere) ! ;
-ifJMPZ, here 0 , ; then  here swap ! ;
-beginhere ;        again JMP, , ;
-whileJMPNZ, , ;    until JMPZ, , ;
-bl32 ;             .     (.)no exit here!
-spacebl emit ;     spaces0 do space loop ;
-TEMP - for benchmarking
-mil1000 dup * * ;  elapsedclock swap - . ;
-bm1clock swap 0 do loop elapsed ;
-bm2clock swapbegin1-whiledrop elapsed ;
-YN'N' SWAPifdrop 'Y'thenemit ;
-
-
-
-
-
-
-
+Core words                                                                                        
+here(here) @c ;     last  (last) @c ;                                                          
+vhere(vhere) @c ;   allot vhere + (vhere) !c ;                                                 
+if(jmpz) here 0 , ; then  here swap !c ;                                                       
+beginhere ;         again (jmp) , ;                                                            
+while(jmpnz) , ;    until (jmpz) , , ;                                                         
+bl32 ; .(.);     space bl emit ;  spacesfor space next ;                                  
+                                                                                                   
+TEMP - for benchmarking                                                                           
+mil1000 dup * * ;   elapsedtimer swap - . ;                                                    
+bm1for next elapsed ;                                                                            
+bm2timer swapbegin1-whiledrop elapsed ;                                                      
+YN'N' SWAPifdrop 'Y'thenemit ;                                                               
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
