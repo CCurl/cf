@@ -195,7 +195,7 @@ DE_T *addWord(const char *w) {
 	dp->ln = ln;
 	strCpy(dp->nm, w);
 	last=newLast;
-	// printf("-add:%d,[%s],%d (%d)-\n", newLast, dp->nm, dp->lx, dp->xt);
+	// printStringF("-add:%d,[%s],%d (%d)-\n", newLast, dp->nm, dp->lx, dp->xt);
 	return dp;
 }
 
@@ -205,7 +205,7 @@ DE_T *findWord(const char *w) {
 	int cw = last;
 	while (cw < DICT_SZ) {
 		DE_T *dp = (DE_T*)&dict[cw];
-		// printf("-%d,(%s)-", cw, dp->nm);
+		// printStringF("-%d,(%s)-", cw, dp->nm);
 		if ((len == dp->ln) && strEqI(dp->nm, w)) { return dp; }
 		cw += dp->sz;
 	}
@@ -216,7 +216,7 @@ int findXT(int xt) {
 	int cw = last;
 	while (cw < DICT_SZ) {
 		DE_T *dp = (DE_T*)&dict[cw];
-		// printf("-%d,(%s)-", cw, dp->nm);
+		// printStringF("-%d,(%s)-", cw, dp->nm);
 		if (dp->xt == xt) { return cw; }
 		cw += dp->sz;
 	}
@@ -237,28 +237,28 @@ int findPrevXT(int xt) {
 
 void doSee() {
 	DE_T *dp = findWord(0);
-	if (!dp) { printf("-nf:%s-", wd); return; }
-	if (dp->xt <= BYE) { printf("%s is a primitive ($%hX).\n", wd, dp->xt); return; }
+	if (!dp) { printStringF("-nf:%s-", wd); return; }
+	if (dp->xt <= BYE) { printStringF("%s is a primitive ($%hX).\n", wd, dp->xt); return; }
 	cell x = (cell)dp-(cell)dict;
 	int stop = findPrevXT(dp->xt)-1;
 	int i = dp->xt;
-	printf("\n%04lX: %s ($%04hX to $%04X)", x, dp->nm, dp->xt, stop);
+	printStringF("\n%04lX: %s ($%04hX to $%04X)", x, dp->nm, dp->xt, stop);
 	while (i <= stop) {
 		int op = code[i++];
 		x = code[i];
-		printf("\n%04X: %04X\t", i-1, op);
+		printStringF("\n%04X: %04X\t", i-1, op);
 		switch (op) {
-			case  STOP: printf("stop"); i++;
-			BCASE LIT1: printf("lit1 #%ld ($%lX)", x, x); i++;
+			case  STOP: printString("stop"); i++;
+			BCASE LIT1: printStringF("lit1 #%ld ($%lX)", x, x); i++;
 			BCASE LIT2: x = fetchCell((cell)&code[i]);
-				printf("lit2 #%ld ($%lX)", x, x);
+				printStringF("lit2 #%ld ($%lX)", x, x);
 				i += CELL_SZ / 2;
-			BCASE JMP:   printf("jmp %04lX", x);   i++;
-			BCASE JMPZ:  printf("jmpz %04lX (if)", x);     i++;
-			BCASE NJMPZ: printf("njmpz %04lX (-if)", x);   i++;
-			BCASE JMPNZ: printf("jmpnz %04lX (while)", x); i++; break;
+			BCASE JMP:   printStringF("jmp %04lX", x);   i++;
+			BCASE JMPZ:  printStringF("jmpz %04lX (if)", x);     i++;
+			BCASE NJMPZ: printStringF("njmpz %04lX (-if)", x);   i++;
+			BCASE JMPNZ: printStringF("jmpnz %04lX (while)", x); i++; break;
 			default: x = findXT(op);
-				printf("%s", x ? ((DE_T*)&dict[(ushort)x])->nm : "??");
+				printStringF("%s", x ? ((DE_T*)&dict[(ushort)x])->nm : "??");
 		}
 	}
 }
@@ -283,9 +283,9 @@ char *iToA(cell N, int b) {
 }
 
 void dotS() {
-	printf("( ");
-	for (int i = 1; i <= sp; i++) { printf("%s ", iToA(stk[i].i, base)+1); }
-	printf(")");
+	printString("( ");
+	for (int i = 1; i <= sp; i++) { printStringF("%s ", iToA(stk[i].i, base)+1); }
+	printString(")");
 }
 
 void quote() {
@@ -376,7 +376,7 @@ int doCompile(char *w) {
 		comma(de->xt);
 		return 1;
 	}
-	printf("-compile:%s?-",wd);
+	printStringF("-compile:%s?-",wd);
 	return 0;
 }
 
@@ -393,7 +393,7 @@ int doInterpret(char *w) {
 		Exec(h);
 		return 1;
 	}
-	printf("-interpret:%s?-",wd);
+	printStringF("-interpret:%s?-",wd);
 	return 0;
 }
 
@@ -418,12 +418,13 @@ void doOuter(const char *src) {
 	toIn = (char*)src;
 	while (nextWord()) {
 		if (setState(wd)) { continue; }
-		// printf("-%d:%s-\n",state,wd);
+		// printStringF("-%d:%s-\n",state,wd);
 		switch (state) {
 			case COMMENT:
 			BCASE DEFINE:  addWord(wd);
 			BCASE COMPILE: if (doCompile(wd) == 0) isErr = 1;
 			BCASE INTERP:  if (doInterpret(wd) == 0) isErr = 1;
+			BCASE MACRO:   if (doInterpret(wd) == 0) isErr = 1;
 			break; default: printString("-state?-"); break;
 		}
 		if (isErr) {
@@ -511,13 +512,13 @@ void REP() {
 	if (inputFp == 0) {
         ttyMode(0);
 		Color(state, 0);
-		printStringF(" ok\n");
+		printString(" ok\n");
 	}
 	tib[0] = 0;
 	if (fileGets(tib, 100, inputFp)) {
         if (inputFp == 0) { ttyMode(1); }
 		if (tib[tib[0]] == 10) { tib[tib[0]] = 0; }
-		// printf("--%s--\n", tib+1);
+		// printStringF("--%s--\n", tib+1);
 		doOuter(tib+1);
 		return;
 	}

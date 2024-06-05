@@ -57,7 +57,9 @@ void showStatus() {
     Color(WHITE, 0);
     printString("- Block Editor v0.1 - ");
     printStringF("Block# %03d%s", blkNum, ISDIRTY() ? " *" : "");
-    printStringF("%s- %s", msg ? msg : " ", mode);
+    if (msg) { printStringF(" - %s", msg); }
+    printStringF(" - %s", mode);
+    printStringF(" - [%d:%d]", line, off);
     ClearEOL();
     if (msg && (1 < ++cnt)) { msg = NULL; cnt = 0; }
 }
@@ -87,15 +89,12 @@ void mv(int l, int o) {
     NormLO();
 }
 
-void gotoEOL() {
-    off = LLEN-1;
-    while ((0<=off) && (EDCH(line, off) < 33)) { --off; }
-}
-
 void edRdBlk(int force) {
     if (force) { blockReload(blkNum); }
     theBlock = (char*)blockData(blkNum);
-    for (int p = 0; p < BLOCK_SZ; p++) { if ((POSCH(p) == 0) || (POSCH(p) == 10)) { POSCH(p) = 32; } }
+    for (int p = 0; p < BLOCK_SZ; p++) {
+        if ((POSCH(p) == 0) || (POSCH(p) == 10)) { POSCH(p) = 32; }
+    }
 }
 
 void edSvBlk(int force) {
@@ -139,10 +138,6 @@ void insertLine() {
     DIRTY();
 }
 
-void joinLines() {
-    DIRTY();
-}
-
 void replaceChar(char c, int force, int mov) {
     if (!btwi(c, 32, 126) && (!ISCFMODE(c)) && (!force)) { return; }
     int o = pos;
@@ -164,9 +159,35 @@ int doInsertReplace(char c) {
     return 1;
 }
 
+int accept(char *buf) {
+    int ln = 0;
+    while (1) {
+        int c = key();
+        if ((c==27) || (c==3)) { buf[0]=0; return 0; }
+        else if (c==13) { buf[ln]=0; return ln; }
+        else if ((c==127) || (c==8)) {
+            if (0<ln) { --ln; printStringF("%c%c",8,8); }
+        }
+        else if (btwi(c,32,126)) { buf[ln++]=c; printChar(c); }
+    }
+    return ln;
+}
+
 int doCommand() {
-    GotoXY(NUM_LINES+3,0);
-    printChar(':');
+    char buf[32];
+    GotoXY(1, NUM_LINES+3);
+    printString(":");
+    ClearEOL();
+    int ln = accept(buf);
+    GotoXY(1, NUM_LINES+3);
+    ClearEOL();
+    if (strEq(buf,"w"))  { edSvBlk(1); }
+    if (strEq(buf,"wq")) { edSvBlk(1); edMode = QUIT; }
+    if (strEq(buf,"rl")) { edRdBlk(1); }
+    if (strEq(buf,"q!")) { edRdBlk(1); edMode = QUIT; }
+    if (strEq(buf,"q")) {
+        if (ISDIRTY()) { printString("use q! to quit"); }
+        else { edMode = QUIT; } }
     return 1;
 }
 
@@ -223,28 +244,26 @@ int processEditorChar(int c) {
     BCASE '_': mv(0,-off);
     BCASE ':': doCommand();
     BCASE 'a': mv(0, 1); insertMode();
-    BCASE 'A': gotoEOL(); mv(0,1); insertMode();
-    BCASE 'J': joinLines();
+    BCASE '$': off = LLEN-1; mv(0,0);
     BCASE 'g': mv(-line,-off);
-    BCASE 'G': mv(99,99);
+    BCASE 'G': mv(999,999);
     BCASE 'i': insertMode();
     BCASE 'I': mv(0, -off); insertMode();
     BCASE 'o': mv(1, -off); insertLine(); insertMode();
     BCASE 'O': mv(0, -off); insertLine(); insertMode();
     BCASE 'r': replaceChar(edKey(), 0, 1);
     BCASE 'R': replaceMode();
-    BCASE 'c': deleteChar(); insertMode();
     BCASE 'C': deleteToEOL(off); DIRTY(); insertMode();
     BCASE 'D': yankLine(line); deleteLine();
     BCASE 'x': deleteChar();
-    BCASE 'X': if (0 < off) { mv(0, -1); deleteChar(); }
+    BCASE 'X': if (0 < pos) { mv(0, -1); deleteChar(); }
     BCASE 'L': edRdBlk(1);
     BCASE 'W': DIRTY(); edSvBlk(1);
     BCASE 'Y': yankLine(line);
     BCASE 'p': mv(1,-off); insertLine(); pasteLine(line);
     BCASE 'P': mv(0,-off); insertLine(); pasteLine(line);
-    BCASE '+': edSvBlk(0); ++blkNum; edRdBlk(0);
-    BCASE '-': edSvBlk(0); blkNum = max(0, blkNum-1); edRdBlk(0);
+    BCASE '+': edSvBlk(0); ++blkNum; edRdBlk(0); mv(-line, -off);
+    BCASE '-': edSvBlk(0); blkNum=max(0,blkNum-1); edRdBlk(0);  mv(-line, -off);
     BCASE 'Q': edMode = QUIT;
     }
     return 1;
