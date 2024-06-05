@@ -67,7 +67,7 @@ void showStatus() {
 void showHelp() {
     GotoXY(1, NUM_LINES+1);
     Color(WHITE, 0);
-    printString("\r\n  (^A) Define (^B) Compile (^C) Interpret (^G) Comment");
+    printString("\r\n  (^A) Define (^B) Compile (^C) Interpret (^D) Macro (^G) Comment");
 }
 
 void showEditor() {
@@ -193,15 +193,19 @@ int doCommand() {
 
 int doCommon(int c) {
     int l = line, o = off;
-    if (c == 8) { mv(0, -1); }                     // <ctrl-h>
-    else if (c ==  9) { mv(0, 10); }               // <tab>
-    else if (c == 10) { mv(1, 0); }                // <ctrl-j>
-    else if (c == 11) { mv(-1, 0); }               // <ctrl-k>
-    else if (c == 12) { mv(0, 1); }                // <ctrl-l>
-    else if (c == 13) { mv(1, -off); }             // <ctrl-m>
+    if (c == 8) { mv(0, -1); }                     // <ctrl-h> - left
+    else if (c ==  9) { mv(0,  8); }               // <tab-right>
+    else if (c == 17) { mv(0, -8); }               // <ctrl-q> - tab-left
+    else if (c == 11) { mv(-1, 0); }               // <ctrl-k> - up
+    else if (c == 10) { mv(1,  0); }               // <ctrl-j> - down
+    else if (c == 12) { mv(0,  1); }               // <ctrl-l> - right
+    else if (c == 13) { mv(1, -off); }             // <ctrl-m> / enter
+    else if (c == 21) { mv(-4, 0); }               // <ctrl-u> - up 4
+    else if (c ==  5) { mv(4,  0); }               // <ctrl-e> - down 4
     else if (c == 24) { mv(0, -1); deleteChar(); } // <ctrl-x>
     else if (c == 26) { normalMode(); return 1; }  // <ctrl-z>
     else if (c == 27) { normalMode(); return 1; }  // <escape>
+    else if (c == 127) { mv(0, -1); }              // <backspace> - left
     return ((l!=line) || (o!=off)) ? 1 : 0;
 }
 
@@ -239,12 +243,16 @@ int processEditorChar(int c) {
     case  ' ': mv(0,  1);
     BCASE 'h': mv(0, -1);
     BCASE 'l': mv(0,  1);
-    BCASE 'j': mv(1,  0);
+    BCASE 'q': mv(0,  8);
+    BCASE 'Q': mv(0, -8);
+    BCASE 'j': mv(1, 0);
     BCASE 'k': mv(-1, 0);
+    BCASE 'e': mv(4, 0);
+    BCASE 'u': mv(-4, 0);
     BCASE '_': mv(0,-off);
+    BCASE '$': off = LLEN-1; mv(0,0);
     BCASE ':': doCommand();
     BCASE 'a': mv(0, 1); insertMode();
-    BCASE '$': off = LLEN-1; mv(0,0);
     BCASE 'g': mv(-line,-off);
     BCASE 'G': mv(999,999);
     BCASE 'i': insertMode();
@@ -258,13 +266,11 @@ int processEditorChar(int c) {
     BCASE 'x': deleteChar();
     BCASE 'X': if (0 < pos) { mv(0, -1); deleteChar(); }
     BCASE 'L': edRdBlk(1);
-    BCASE 'W': DIRTY(); edSvBlk(1);
     BCASE 'Y': yankLine(line);
     BCASE 'p': mv(1,-off); insertLine(); pasteLine(line);
     BCASE 'P': mv(0,-off); insertLine(); pasteLine(line);
     BCASE '+': edSvBlk(0); ++blkNum; edRdBlk(0); mv(-line, -off);
     BCASE '-': edSvBlk(0); blkNum=max(0,blkNum-1); edRdBlk(0);  mv(-line, -off);
-    BCASE 'Q': edMode = QUIT;
     }
     return 1;
 }
@@ -274,7 +280,7 @@ void doEditor(int blk) {
     line = off = pos = 0;
     msg = NULL;
     CLS();
-    CursorShape(2);
+    CursorShape(2); // 1/2=>box (blink/steady), 3/4=>underline, 5/6=>bar
     CursorOff();
     edRdBlk(0);
     normalMode();
@@ -289,7 +295,7 @@ void doEditor(int blk) {
     }
     GotoXY(1, NUM_LINES + 7);
     CursorOn();
-    CursorShape(5);
+    // CursorShape(5);
 }
 
 #endif // __EDITOR__
