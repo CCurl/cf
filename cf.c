@@ -238,15 +238,15 @@ int findPrevXT(int xt) {
 void doSee() {
 	DE_T *dp = findWord(0);
 	if (!dp) { printStringF("-nf:%s-", wd); return; }
-	if (dp->xt <= BYE) { printStringF("%s is a primitive ($%hX).\n", wd, dp->xt); return; }
+	if (dp->xt <= BYE) { printStringF("%s is a primitive ($%hX).\r\n", wd, dp->xt); return; }
 	cell x = (cell)dp-(cell)dict;
 	int stop = findPrevXT(dp->xt)-1;
 	int i = dp->xt;
-	printStringF("\n%04lX: %s ($%04hX to $%04X)", x, dp->nm, dp->xt, stop);
+	printStringF("\r\n%04lX: %s ($%04hX to $%04X)", x, dp->nm, dp->xt, stop);
 	while (i <= stop) {
 		int op = code[i++];
 		x = code[i];
-		printStringF("\n%04X: %04X\t", i-1, op);
+		printStringF("\r\n%04X: %04X\t", i-1, op);
 		switch (op) {
 			case  STOP: printString("stop"); i++;
 			BCASE LIT1: printStringF("lit1 #%ld ($%lX)", x, x); i++;
@@ -512,7 +512,7 @@ void REP() {
 	if (inputFp == 0) {
         ttyMode(0);
 		Color(state, 0);
-		printString(" ok\n");
+		printString(" ok\r\n");
 	}
 	tib[0] = 0;
 	if (fileGets(tib, 100, inputFp)) {
