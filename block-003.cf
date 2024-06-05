@@ -1,25 +1,43 @@
-Block #3 - strings                                                                                
+Block #3 - strings                                                                               
+
                                                                                                    
-find cmove loaded?                                                                                
+find cmove loaded?                                                                               
+
                                                                                                    
-3 >lex                                                                                            
+3 >lex                                                                                           
+
                                                                                                    
 fill  ( dst num ch-- )>r for r@ over c! 1+ next drop r> drop ;                                  
 cmove ( src dst num-- )d >r s >r  swap >d swap >s  for s+ c@ d+ c! next  r> >s r> >d ;          
-cmove>( src dst num-- )d >r s >r  swap >d swap >s  for s- c@ d- c! next  r> >s r> >d ;          
+cmove>( src dst num-- )d >r s >r  swap >d swap >s  for s- c@ d- c! next  r> >s r> >d ;         
+
                                                                                                    
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
+
+                                                                                                  
+ 
+                                                                                                 
+  
+                                                                                                
+   
+                                                                                               
+    
+                                                                                              
+     
+                                                                                             
+      
+                                                                                            
+       
+                                                                                           
+        
+                                                                                          
+         
+                                                                                         
+          
+                                                                                        
+           
+                                                                                       
+            
+                                                                                      
+             
+                                                                                     
                                                                                                    
