@@ -1,25 +1,25 @@
-Block #6 - utility words                                                                          
-                                                                                                  
-ls " ls -l"   system ;                                                                          
-lg " lazygit" system ;                                                                          
+Block #6 - utility words                                                                         
+                                                                                                   
+3 load                                                                                            
                                                                                                    
+find pull loaded?                                                                                 
+ 6 >lex                                                                                            
                                                                                                    
+p1vhere ->vars 100 + ;                                                                           
+ls" ls -l"   system ;  lg" lazygit" system ;                                                 
+cd( dir-- )p1" cd "strcpy p1 swap strcat p1"  && "strcat ;                                  
+.p1p1 count type."  ... ";                                                                     
+pull( dir-- )cd p1" git pull -p "strcat .p1 p1 system;                                       
+cf" \code\mine\cf";         c3" \code\mine\c3";                                              
+sia" \code\sia";            bws" \code\BWServiceDefinitions";                                
+pull-allsia pull cf pull c3 pull bws pull ;                                                     
                                                                                                    
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
+rlforget flush 6 load ;      ed6 edit ;                                                       
+                                                                                                  
+                                                                                                  
+                                                                                                  
+                                                                                                  
+                                                                                                  
+                                                                                                  
+                                                                                                  
+                                                                                                  
