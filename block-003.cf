@@ -8,7 +8,7 @@
 cmove>( src dst num-- )d >r s >r  swap >d swap >s  for s- c@ d- c! next  r> >s r> >d ;         
 t1( dst ch-- )swap count + c! ; nt(dst--)0 t1 ; c++(a--)dup c@ 1+ swap c! ;               
 strcatc( dst ch-- )over >r t1 r@ c++ r> nt ;                                                   
-strcat( dst src-- )count swap >a ?dupiffor dup a+ c@ strcatc nextthendrop ;                 
+strcat( dst src-- )count swap >a ?dupiffor dup a+ c@ strcatc nextthendrop ;                 
 strtrunc( dst-- )0 swap w! ;                                                                   
                                                                                                   
                                                                                                   
