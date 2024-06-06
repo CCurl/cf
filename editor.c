@@ -59,7 +59,7 @@ void showStatus() {
     printStringF("Block# %03d%s", blkNum, ISDIRTY() ? " *" : "");
     if (msg) { printStringF(" - %s", msg); }
     printStringF(" - %s", mode);
-    printStringF(" - [%02d:%02d] ($%02X)", line, off, POSCH(pos));
+    printStringF(" - [%02d:%02d] (#%d/$%X)", line, off, POSCH(pos), POSCH(pos));
     ClearEOL();
     if (msg && (1 < ++cnt)) { msg = NULL; cnt = 0; }
 }
