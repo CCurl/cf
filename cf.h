@@ -102,5 +102,6 @@ extern void  blockDirty(int blk, int val);
 extern int   blockDirtyQ(int blk);
 extern void  blockReload(int blk);
 extern void  flushBlocks();
+extern void  flushBlock(int blk, int force);
 
 #endif

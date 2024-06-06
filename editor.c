@@ -104,7 +104,7 @@ void edSvBlk(int force) {
     for (int ln = 0; ln < NUM_LINES; ln++) {
         for (int o = LLEN-1; 0 <= o; o--) { if (EDCH(ln,o)==32) { EDCH(ln,o)=10; break; } }
     }
-    DIRTY();
+    flushBlock(blkNum, 1);
 }
 
 void deleteChar() {
@@ -194,14 +194,16 @@ int doCommand() {
 int doCommon(int c) {
     int l = line, o = off;
     if (c == 8) { mv(0, -1); }                     // <ctrl-h> - left
-    else if (c ==  9) { mv(0,  8); }               // <tab-right>
+    else if (c ==  9) { mv(0,  8); }               // <tab>
     else if (c == 17) { mv(0, -8); }               // <ctrl-q> - tab-left
-    else if (c == 11) { mv(-1, 0); }               // <ctrl-k> - up
-    else if (c == 10) { mv(1,  0); }               // <ctrl-j> - down
-    else if (c == 12) { mv(0,  1); }               // <ctrl-l> - right
-    else if (c == 13) { mv(1, -off); }             // <ctrl-m> / enter
-    else if (c == 21) { mv(-4, 0); }               // <ctrl-u> - up 4
+    else if (c == 10) { mv(1, 0); }                // <ctrl-j>
+    else if (c == 11) { mv(-1, 0); }               // <ctrl-k>
+    else if (c == 12) { mv(0, 1); }                // <ctrl-l>
+    else if (c == 13) { mv(1, -off); }             // <ctrl-m>
     else if (c ==  5) { mv(4,  0); }               // <ctrl-e> - down 4
+    else if (c == 21) { mv(-4, 0); }               // <ctrl-u> - up 4
+    else if (c == 28) { off=LLEN-1; mv(0, 0); }    // <ctrl-$> - EOL
+    else if (c == 29) { mv(0, -off); }             // <ctrl-%> - home
     else if (c == 24) { mv(0, -1); deleteChar(); } // <ctrl-x>
     else if (c == 26) { normalMode(); return 1; }  // <ctrl-z>
     else if (c == 27) { normalMode(); return 1; }  // <escape>
@@ -212,7 +214,7 @@ int doCommon(int c) {
 int doCTL(int c) {
     if (ISCFMODE(c)) {
         if (32<EDCH(line, off)) {  insertSpace(); }
-        replaceChar(c, 1, 0);
+        replaceChar(c, 1, btwi(edMode,INSERT, REPLACE));
     } else {
         doCommon(c);
     }
@@ -235,42 +237,43 @@ void pasteLine(int L) {
 
 int processEditorChar(int c) {
     if (c<32) { return doCTL(c); }
+    if (c==127) { mv(0, -1); return 1; }
     if (btwi(edMode,INSERT,REPLACE)) {
         return doInsertReplace((char)c);
     }
 
     switch (c) {
-    case  ' ': mv(0,  1);
-    BCASE 'h': mv(0, -1);
-    BCASE 'l': mv(0,  1);
-    BCASE 'q': mv(0,  8);
-    BCASE 'Q': mv(0, -8);
-    BCASE 'j': mv(1, 0);
-    BCASE 'k': mv(-1, 0);
-    BCASE 'e': mv(4, 0);
-    BCASE 'u': mv(-4, 0);
-    BCASE '_': mv(0,-off);
-    BCASE '$': off = LLEN-1; mv(0,0);
-    BCASE ':': doCommand();
-    BCASE 'a': mv(0, 1); insertMode();
-    BCASE 'g': mv(-line,-off);
-    BCASE 'G': mv(999,999);
-    BCASE 'i': insertMode();
-    BCASE 'I': mv(0, -off); insertMode();
-    BCASE 'o': mv(1, -off); insertLine(); insertMode();
-    BCASE 'O': mv(0, -off); insertLine(); insertMode();
-    BCASE 'r': replaceChar(edKey(), 0, 1);
-    BCASE 'R': replaceMode();
-    BCASE 'C': deleteToEOL(off); DIRTY(); insertMode();
-    BCASE 'D': yankLine(line); deleteLine();
-    BCASE 'x': deleteChar();
-    BCASE 'X': if (0 < pos) { mv(0, -1); deleteChar(); }
-    BCASE 'L': edRdBlk(1);
-    BCASE 'Y': yankLine(line);
-    BCASE 'p': mv(1,-off); insertLine(); pasteLine(line);
-    BCASE 'P': mv(0,-off); insertLine(); pasteLine(line);
-    BCASE '+': edSvBlk(0); ++blkNum; edRdBlk(0); mv(-line, -off);
-    BCASE '-': edSvBlk(0); blkNum=max(0,blkNum-1); edRdBlk(0);  mv(-line, -off);
+        case  ' ': mv(0,  1);
+        BCASE 'h': mv(0, -1);
+        BCASE 'l': mv(0,  1);
+        BCASE 'q': mv(0,  8);
+        BCASE 'Q': mv(0, -8);
+        BCASE 'j': mv(1,  0);
+        BCASE 'k': mv(-1, 0);
+        BCASE 'e': mv(4, 0);
+        BCASE 'u': mv(-4, 0);
+        BCASE '_': mv(0,-off);
+        BCASE '$': off = LLEN-1; mv(0,0);
+        BCASE ':': doCommand();
+        BCASE 'g': mv(-line,-off);
+        BCASE 'G': mv(999,999);
+        BCASE 'i': insertMode();
+        BCASE 'I': mv(0, -off); insertMode();
+        BCASE 'o': mv(1, -off); insertLine(); replaceMode();
+        BCASE 'O': mv(0, -off); insertLine(); replaceMode();
+        BCASE 'r': replaceChar(edKey(), 0, 1);
+        BCASE 'R': replaceMode();
+        BCASE 'C': deleteToEOL(off); DIRTY(); replaceMode();
+        BCASE 'D': yankLine(line); deleteLine();
+        BCASE 'x': deleteChar();
+        BCASE 'X': if (0 < pos) { mv(0, -1); deleteChar(); }
+        BCASE 'z': deleteChar(); c=pos; pos=LO2pos(line, LLEN-2); insertSpace(); pos=c;
+        BCASE 'L': edRdBlk(1);
+        BCASE 'Y': yankLine(line);
+        BCASE 'p': mv(1,-off); insertLine(); pasteLine(line);
+        BCASE 'P': mv(0,-off); insertLine(); pasteLine(line);
+        BCASE '+': edSvBlk(0); ++blkNum; edRdBlk(0); mv(-line, -off);
+        BCASE '-': edSvBlk(0); blkNum=max(0,blkNum-1); edRdBlk(0);  mv(-line, -off);
     }
     return 1;
 }

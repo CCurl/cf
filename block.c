@@ -36,7 +36,7 @@ static void readBlock(int blk) {
 
 void blockReload(int blk) { readBlock(blk); }
 
-static void flushBlock(int blk, int force) {
+void flushBlock(int blk, int force) {
 	char fn[32];
 	byte *data = blockData(blk);
 	if (data == NULL) { return; }
