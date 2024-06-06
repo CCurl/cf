@@ -38,7 +38,24 @@ void CursorOff() { printString("\x1B[?25l"); }
 void normalMode() { edMode=NORMAL; strCpy(mode, "normal"); }
 void insertMode()  { edMode=INSERT;  strCpy(mode, "insert"); }
 void replaceMode() { edMode=REPLACE; strCpy(mode, "replace"); }
-int  edKey() { return key(); }
+
+int edKey() {
+    // NB: in Windows, <ctrl-h> and <backspace> both return 8
+    int k = key();
+    if (k==224) {
+        // Windows special keys
+        switch (key()) {
+            case 72: return 11; // <up>
+            case 80: return 10; // <down>
+            case 77: return 12; // <right>
+            case 75: return  8; // <left>
+            case 83: return 25; // <delete>
+            case 71: return 29; // <home>
+            case 79: return 28; // <end>
+        }
+    }
+    return k;
+}
 
 void NormLO() {
     pos = min(max(pos, 0), BLOCK_SZ-1);
@@ -194,22 +211,21 @@ int doCommand() {
 int doCommon(int c) {
     int l = line, o = off;
     switch (c) {
-        case   8: mv(0, -1);                 // <ctrl-h> - left
+        case   8:  mv(0, -1);                // <ctrl-h> - left
         BCASE  9:  mv(0,  8);                // <tab>
         BCASE 17:  mv(0, -8);                // <ctrl-q> - tab-left
-        BCASE 10:  mv(1, 0);                 // <ctrl-j>
-        BCASE 11:  mv(-1, 0);                // <ctrl-k>
-        BCASE 12:  mv(0, 1);                 // <ctrl-l>
-        BCASE 13:  mv(1, -off);              // <ctrl-m>
+        BCASE 10:  mv(1, 0);                 // <ctrl-j> - down
+        BCASE 11:  mv(-1, 0);                // <ctrl-k> - up
+        BCASE 12:  mv(0, 1);                 // <ctrl-l> - right
+        BCASE 13:  mv(1, -off);              // <ctrl-m> - <enter>
         BCASE  5:  mv(4,  0);                // <ctrl-e> - down 4
         BCASE 21:  mv(-4, 0);                // <ctrl-u> - up 4
-        BCASE 28:  off=LLEN-1; mv(0, 0);     // <ctrl-$> - EOL
+        BCASE 28:  off=LLEN-1; mv(0, 0);     // <ctrl-$> - <end>
         BCASE 29:  mv(0, -off);              // <ctrl-%> - home
-        BCASE 24:  mv(0, -1); deleteChar();  // <ctrl-x>
-        BCASE 25:  deleteChar();             // <ctrl-y>
+        BCASE 24:  mv(0, -1); deleteChar();  // <ctrl-x> - backspace
+        BCASE 25:  deleteChar();             // <ctrl-y> - delete
         BCASE 26:  normalMode(); return 1;   // <ctrl-z>
         BCASE 27:  normalMode(); return 1;   // <escape>
-        BCASE 127: mv(0, -1);                // <backspace> - left
     }
     return ((l!=line) || (o!=off)) ? 1 : 0;
 }
@@ -239,8 +255,8 @@ void pasteLine(int L) {
 }
 
 int processEditorChar(int c) {
-    if (c<32) { return doCTL(c); }
-    if (c==127) { mv(0, -1); return 1; }
+    if (c==127) { c = 24; }
+    if (c < 32) { return doCTL(c); }
     if (btwi(edMode,INSERT,REPLACE)) {
         return doInsertReplace((char)c);
     }
