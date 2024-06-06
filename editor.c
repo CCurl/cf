@@ -59,7 +59,7 @@ void showStatus() {
     printStringF("Block# %03d%s", blkNum, ISDIRTY() ? " *" : "");
     if (msg) { printStringF(" - %s", msg); }
     printStringF(" - %s", mode);
-    printStringF(" - [%d:%d]", line, off);
+    printStringF(" - [%02d:%02d] ($%02X)", line, off, POSCH(pos));
     ClearEOL();
     if (msg && (1 < ++cnt)) { msg = NULL; cnt = 0; }
 }
@@ -110,7 +110,6 @@ void edSvBlk(int force) {
 void deleteChar() {
     int x = pos;
     while ((x+1)<BLOCK_SZ) { POSCH(x) = POSCH(x+1); ++x; }
-    // POSCH(pos) = 32;
     DIRTY();
 }
 
@@ -128,6 +127,7 @@ void insertSpace() {
         POSCH(o) = POSCH(o-1);
     }
     POSCH(pos)=32;
+    DIRTY();
 }
 
 void insertLine() {
@@ -193,21 +193,24 @@ int doCommand() {
 
 int doCommon(int c) {
     int l = line, o = off;
-    if (c == 8) { mv(0, -1); }                     // <ctrl-h> - left
-    else if (c ==  9) { mv(0,  8); }               // <tab>
-    else if (c == 17) { mv(0, -8); }               // <ctrl-q> - tab-left
-    else if (c == 10) { mv(1, 0); }                // <ctrl-j>
-    else if (c == 11) { mv(-1, 0); }               // <ctrl-k>
-    else if (c == 12) { mv(0, 1); }                // <ctrl-l>
-    else if (c == 13) { mv(1, -off); }             // <ctrl-m>
-    else if (c ==  5) { mv(4,  0); }               // <ctrl-e> - down 4
-    else if (c == 21) { mv(-4, 0); }               // <ctrl-u> - up 4
-    else if (c == 28) { off=LLEN-1; mv(0, 0); }    // <ctrl-$> - EOL
-    else if (c == 29) { mv(0, -off); }             // <ctrl-%> - home
-    else if (c == 24) { mv(0, -1); deleteChar(); } // <ctrl-x>
-    else if (c == 26) { normalMode(); return 1; }  // <ctrl-z>
-    else if (c == 27) { normalMode(); return 1; }  // <escape>
-    else if (c == 127) { mv(0, -1); }              // <backspace> - left
+    switch (c) {
+        case   8: mv(0, -1);                 // <ctrl-h> - left
+        BCASE  9:  mv(0,  8);                // <tab>
+        BCASE 17:  mv(0, -8);                // <ctrl-q> - tab-left
+        BCASE 10:  mv(1, 0);                 // <ctrl-j>
+        BCASE 11:  mv(-1, 0);                // <ctrl-k>
+        BCASE 12:  mv(0, 1);                 // <ctrl-l>
+        BCASE 13:  mv(1, -off);              // <ctrl-m>
+        BCASE  5:  mv(4,  0);                // <ctrl-e> - down 4
+        BCASE 21:  mv(-4, 0);                // <ctrl-u> - up 4
+        BCASE 28:  off=LLEN-1; mv(0, 0);     // <ctrl-$> - EOL
+        BCASE 29:  mv(0, -off);              // <ctrl-%> - home
+        BCASE 24:  mv(0, -1); deleteChar();  // <ctrl-x>
+        BCASE 25:  deleteChar();             // <ctrl-y>
+        BCASE 26:  normalMode(); return 1;   // <ctrl-z>
+        BCASE 27:  normalMode(); return 1;   // <escape>
+        BCASE 127: mv(0, -1);                // <backspace> - left
+    }
     return ((l!=line) || (o!=off)) ? 1 : 0;
 }
 
@@ -267,7 +270,9 @@ int processEditorChar(int c) {
         BCASE 'D': yankLine(line); deleteLine();
         BCASE 'x': deleteChar();
         BCASE 'X': if (0 < pos) { mv(0, -1); deleteChar(); }
-        BCASE 'z': deleteChar(); c=pos; pos=LO2pos(line, LLEN-2); insertSpace(); pos=c;
+        BCASE 'z': deleteChar();  c=pos; pos=LO2pos(line, LLEN-2); insertSpace(); pos=c;
+        BCASE 'b': insertSpace();
+        BCASE 'B': insertSpace(); c=pos; pos=LO2pos(line, LLEN-2); deleteChar();  pos=c;
         BCASE 'L': edRdBlk(1);
         BCASE 'Y': yankLine(line);
         BCASE 'p': mv(1,-off); insertLine(); pasteLine(line);
