@@ -25,7 +25,10 @@ short sp, rsp, lsp, aSp;
 cell A, B, S, D, lstk[LSTK_SZ], rstk[RSTK_SZ+1];
 char *tib, wd[32], *toIn, wordAdded;
 
-#define BOARDPRIMS
+#define BOARDPRIMS \
+/*	X(BOINPUT, "o-in",      t = pop(); printStringF("-input:%d-", (int)t); ) \     */
+/*	X(BOPU,    "o-pu",      t = pop(); printStringF("-input/pullup:%d-", (int)t); ) \     */
+/*	X(BOINPUT, "o-out",     t = pop(); printStringF("-output:%d-", (int)t); )     */
 
 #define FILEPRIMS \
 	X(BLOCK,   "block",     TOS=(cell)blockData((int)TOS); ) \

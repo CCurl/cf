@@ -15,11 +15,11 @@
    dup ->size + dup dict-sz ->dict <whiledrop '(' emit r> .." words)"r> >a ;                  
 ,1dup $ffff and , $10000 / ; ,cellcell 2 / for ,1 next drop ;                                  
 constadd-word (lit2) , ,cell(exit) , ; varvhere ->vars  const cell allot ;                    
-mk     here 20 !c  last 21 !c  vhere 22 !c ;                                                     
+m1     here 20 !c  last 21 !c  vhere 22 !c ;                                                     
 marker here 23 !c  last 24 !c  vhere 25 !c ;                                                     
-fg     20 @c (here) !c  21 @c (last) !c  22 @c (vhere) !c ;                                      
-forget 23 @c (here) !c  24 @c (last) !c  25 @c (vhere) !c  0 >lex ; marker mk                   
-.02'.' emit dup 10 <if0 (.)then (.) ; .verversion 100 /mod 100 /mod (.) .02 .02 ;          
+f1     20 @c (here) !c  21 @c (last) !c  22 @c (vhere) !c ;                                      
+forget 23 @c (here) !c  24 @c (last) !c  25 @c (vhere) !c  0 >lex ; marker m1                   
+.02'.' emit dup 10 <if0 (.)then(.) ; .verversion 100 /mod 100 /mod (.) .02 .02 ;           
 hi." cf - v".ver."  - Chris Curl."cr ;                                                        
-hi forget ed1 edit ; 6 load                                                                    
+hi forget 6 load                                                                                 
                                                                                                    
