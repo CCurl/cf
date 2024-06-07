@@ -42,17 +42,41 @@ void replaceMode() { edMode=REPLACE; strCpy(mode, "replace"); }
 int edKey() {
     // NB: in Windows, <ctrl-h> and <backspace> both return 8
     int k = key();
-    if (k==224) {
+    if (k == 224) {
         // Windows special keys
         switch (key()) {
-            case 72: return 11; // <up>
-            case 80: return 10; // <down>
-            case 77: return 12; // <right>
-            case 75: return  8; // <left>
-            case 83: return 25; // <delete>
-            case 71: return 29; // <home>
-            case 79: return 28; // <end>
+            case 71: return 29; // home
+            case 72: return 11; // up
+            case 73: return 21; // pg-up
+            case 75: return  8; // left
+            case 77: return 12; // right
+            case 79: return 28; // end
+            case 80: return 10; // down
+            case 81: return 22; // pg-dn
+            case 82: return 30; // insert
+            case 83: return 25; // delete
         }
+        return 27;
+    }
+    else if (k == 27) {
+        if (key() == 91) {
+            k = key();
+            if (k == 65) { return 11; } // up
+            if (k == 66) { return 10; } // down
+            if (k == 67) { return 12; } // right
+            if (k == 68) { return  8; } // left
+            if (btwi(k,49,54)) {
+                if (key() == 126) {
+                    if (k == 49) { return 29; } // home
+                    if (k == 50) { return 30; } // insert
+                    if (k == 51) { return 25; } // delete
+                    if (k == 52) { return 28; } // end
+                    if (k == 53) { return 21; } // pg-up
+                    if (k == 54) { return 22; } // pg-dn
+                }
+            }
+        }
+        return 27;
     }
     return k;
 }
@@ -213,19 +237,20 @@ int doCommon(int c) {
     switch (c) {
         case   8:  mv(0, -1);                // <ctrl-h> - left
         BCASE  9:  mv(0,  8);                // <tab>
-        BCASE 17:  mv(0, -8);                // <ctrl-q> - tab-left
         BCASE 10:  mv(1, 0);                 // <ctrl-j> - down
         BCASE 11:  mv(-1, 0);                // <ctrl-k> - up
         BCASE 12:  mv(0, 1);                 // <ctrl-l> - right
-        BCASE 13:  mv(1, -off);              // <ctrl-m> - <enter>
-        BCASE  5:  mv(4,  0);                // <ctrl-e> - down 4
+        BCASE 13:  mv(1, -off);              // <ctrl-m> - enter
+        BCASE 17:  mv(0, -8);                // <ctrl-q> - tab-left
         BCASE 21:  mv(-4, 0);                // <ctrl-u> - up 4
-        BCASE 28:  off=LLEN-1; mv(0, 0);     // <ctrl-$> - <end>
-        BCASE 29:  mv(0, -off);              // <ctrl-%> - home
+        BCASE 22:  mv(4,  0);                // <ctrl-v> - down 4
         BCASE 24:  mv(0, -1); deleteChar();  // <ctrl-x> - backspace
         BCASE 25:  deleteChar();             // <ctrl-y> - delete
-        BCASE 26:  normalMode(); return 1;   // <ctrl-z>
+        BCASE 26:  normalMode(); return 1;   // <ctrl-z> 
         BCASE 27:  normalMode(); return 1;   // <escape>
+        BCASE 28:  off=LLEN-1; mv(0, 0);     // <ctrl-$> - <end>
+        BCASE 29:  mv(0, -off);              // <ctrl-%> - home
+        BCASE 30:  insertMode(); return 1;   // <ctrl-z> - insert
     }
     return ((l!=line) || (o!=off)) ? 1 : 0;
 }
