@@ -30,8 +30,7 @@ char tBuf[LLEN], mode[32], *msg = NULL;
 char yanked[LLEN];
 
 enum { LF=8, UP=11, RT=12, DN=10, INS=30, DEL=25, HOME=29, END=28,
-       TABR=9, TABL=17, PGUP=21, PGDN=22, BKSP=24, ENT=13, ESC=27, ESC2=26
-};
+       TABR=9, TABL=17, PGUP=21, PGDN=22, BKSP=24, ENT=13, ESC=27, ESC2=2 };
 
 void GotoXY(int x, int y) { printStringF("\x1B[%d;%dH", y, x); }
 void CLS() { printString("\x1B[2J"); GotoXY(1, 1); }
