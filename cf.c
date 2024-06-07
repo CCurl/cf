@@ -522,6 +522,7 @@ void REP() {
         if (inputFp == 0) { ttyMode(1); }
 		if (tib[tib[0]] == 10) { tib[tib[0]] = 0; }
 		// printStringF("--%s--\n", tib+1);
+		Color(WHITE, 0);
 		doOuter(tib+1);
 		return;
 	}
