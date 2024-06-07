@@ -149,9 +149,9 @@ void edRdBlk(int force) {
 void edSvBlk(int force) {
     if ((ISDIRTY()==0) && (force==0)) { return; }
     // Try to clean up the block for standard text editors
-    for (int p = 0; p < BLOCK_SZ; p++) { if ((POSCH(p) == 0) || (POSCH(p) == 10)) { POSCH(p) = 32; } }
-    for (int ln = 0; ln < NUM_LINES; ln++) {
-        for (int o = LLEN-1; 0 <= o; o--) { if (EDCH(ln,o)==32) { EDCH(ln,o)=10; break; } }
+    for (int p=0; p<BLOCK_SZ; p++) { if (btwi(POSCH(p),9,31)) { POSCH(p)=32; } }
+    for (int ln=0; ln < NUM_LINES; ln++) {
+        for (int o=LLEN-1; 0<=o; o--) { if (EDCH(ln,o)==32) { EDCH(ln,o)=10; break; } }
     }
     flushBlock(blkNum, 1);
 }
@@ -175,10 +175,7 @@ void deleteLine() {
 
 void insertSpace(int lineOnly) {
     int o = (lineOnly) ? LO2pos(line,LLEN-1) : BLOCK_SZ-1;
-    while(pos < o) {
-        POSCH(o) = POSCH(o-1);
-        --o;
-    }
+    while(pos < o) { POSCH(o) = POSCH(o-1); --o; }
     POSCH(pos)=32;
     DIRTY();
 }

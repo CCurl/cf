@@ -11,8 +11,8 @@
 tab9 emit ; ?@ . ; ->xtw@ ; ->size2+ c@ ; ->flags3 + c@ ; ->lex4 + c@ ;                
 ->len5 + ; ->name 6 + ; lex-match?( a--f )->lex lex = lex 0= or ;                           
 wordsa >r  0 dup >a >r  last ->dictbegindup lex-match?ifdup ->len count type                 
-    r> 1+ >r  dup ->len c@ 7 >ifa+ dropthena+ 8 >ifcr 0 >aelsetabthen then                
-   dup ->size + dup dict-sz ->dict <whiledrop '(' emit r> .." words)"r> >a ;                  
+       r> 1+ >r  dup ->len c@ 7 >ifa+ dropthena+ 8 >ifcr 0 >aelsetabthen then             
+      dup ->size + dup dict-sz ->dict <whiledrop '(' emit r> .." words)"r> >a ;               
 ,1dup $ffff and , $10000 / ; ,cellcell 2 / for ,1 next drop ;                                  
 constadd-word (lit2) , ,cell(exit) , ; varvhere ->vars  const cell allot ;                    
 m1     here 20 !c  last 21 !c  vhere 22 !c ;                                                     
