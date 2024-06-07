@@ -7,7 +7,7 @@
 nipswap drop ; tuckswap over ; ?dup-ifdupthen; 2dupover over ; 2+1+ 1+ ;              
 min2dup >ifswapthendrop ; max2dup <ifswapthendrop ; c+!tuck c@ + swap c! ;           
 negatecom 1+ ; absdup 0 <ifnegatethen ; mod/mod drop ; +!tuck @  + swap ! ;            
-bl32 ; spacebl emit ; (.)to-string count type ; .(.) space ; cr13 emit 10 emit ;         
+bl32 ; (.)to-string count type ; .(.) spacebl emit; cr13 emit 10 emit ;                 
 tab9 emit ; ?@ . ; ->xtw@ ; ->size2+ c@ ; ->flags3 + c@ ; ->lex4 + c@ ;                
 ->len5 + ; ->name 6 + ; lex-match?( a--f )->lex lex = lex 0= or ;                           
 wordsa >r  0 dup >a >r  last ->dictbegindup lex-match?ifdup ->len count type                 

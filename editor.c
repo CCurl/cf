@@ -29,6 +29,10 @@ int line, off, blkNum, edMode, pos;
 char tBuf[LLEN], mode[32], *msg = NULL;
 char yanked[LLEN];
 
+enum { LF=8, UP=11, RT=12, DN=10, INS=30, DEL=25, HOME=29, END=28,
+       TABR=9, TABL=17, PGUP=21, PGDN=22, BKSP=24, ENT=13, ESC=27, ESC2=26
+};
+
 void GotoXY(int x, int y) { printStringF("\x1B[%d;%dH", y, x); }
 void CLS() { printString("\x1B[2J"); GotoXY(1, 1); }
 void ClearEOL() { printString("\x1B[K"); }
@@ -38,6 +42,7 @@ void CursorOff() { printString("\x1B[?25l"); }
 void normalMode() { edMode=NORMAL; strCpy(mode, "normal"); }
 void insertMode()  { edMode=INSERT;  strCpy(mode, "insert"); }
 void replaceMode() { edMode=REPLACE; strCpy(mode, "replace"); }
+int insertToggle() { edMode == INSERT ? normalMode() : insertMode(); return 1; }
 
 int edKey() {
     // NB: in Windows, <ctrl-h> and <backspace> both return 8
@@ -45,36 +50,37 @@ int edKey() {
     if (k == 224) {
         // Windows special keys
         switch (key()) {
-            case 71: return 29; // home
-            case 72: return 11; // up
-            case 73: return 21; // pg-up
-            case 75: return  8; // left
-            case 77: return 12; // right
-            case 79: return 28; // end
-            case 80: return 10; // down
-            case 81: return 22; // pg-dn
-            case 82: return 30; // insert
-            case 83: return 25; // delete
+            case 71: return HOME;
+            case 72: return UP;
+            case 73: return PGUP;
+            case 75: return LF;
+            case 77: return RT;
+            case 79: return END;
+            case 80: return DN;
+            case 81: return PGDN;
+            case 82: return INS;
+            case 83: return DEL;
         }
         return 27;
     }
     else if (k == 27) {
+        // Possible Linux/VT special key
         if (key() == 91) {
             k = key();
-            if (k == 65) { return 11; } // up
-            if (k == 66) { return 10; } // down
-            if (k == 67) { return 12; } // right
-            if (k == 68) { return  8; } // left
-            if (k == 70) { return 28; } // end
-            if (k == 72) { return 29; } // home
+            if (k == 65) { return UP; }
+            if (k == 66) { return DN; }
+            if (k == 67) { return RT; }
+            if (k == 68) { return LF; }
+            if (k == 70) { return END; }
+            if (k == 72) { return HOME; }
             if (btwi(k,49,54)) {
                 if (key() == 126) {
-                    if (k == 49) { return 29; } // home
-                    if (k == 50) { return 30; } // insert
-                    if (k == 51) { return 25; } // delete
-                    if (k == 52) { return 28; } // end
-                    if (k == 53) { return 21; } // pg-up
-                    if (k == 54) { return 22; } // pg-dn
+                    if (k == 49) { return HOME; }
+                    if (k == 50) { return INS; }
+                    if (k == 51) { return DEL; }
+                    if (k == 52) { return END; }
+                    if (k == 53) { return PGUP; }
+                    if (k == 54) { return PGDN; }
                 }
             }
         }
@@ -136,7 +142,8 @@ void edRdBlk(int force) {
     if (force) { blockReload(blkNum); }
     theBlock = (char*)blockData(blkNum);
     for (int p = 0; p < BLOCK_SZ; p++) {
-        if ((POSCH(p) == 0) || (POSCH(p) == 10)) { POSCH(p) = 32; }
+        int c = POSCH(p);
+        if ((c==0) || btwi(c,9,31)) { POSCH(p) = 32; }
     }
 }
 
@@ -150,9 +157,11 @@ void edSvBlk(int force) {
     flushBlock(blkNum, 1);
 }
 
-void deleteChar() {
+void deleteChar(int LineOnly) {
     int x = pos;
-    while ((x+1)<BLOCK_SZ) { POSCH(x) = POSCH(x+1); ++x; }
+    int stopHere = (LineOnly) ? LO2pos(line, LLEN) : BLOCK_SZ;
+    while ((x+1)<stopHere) { POSCH(x) = POSCH(x+1); ++x; }
+    if (line) { POSCH(x) = 32; }
     DIRTY();
 }
 
@@ -165,9 +174,11 @@ void deleteLine() {
     DIRTY();
 }
 
-void insertSpace() {
-    for (int o=BLOCK_SZ-1; pos<o; o--) {
+void insertSpace(int lineOnly) {
+    int o = (lineOnly) ? LO2pos(line,LLEN-1) : BLOCK_SZ-1;
+    while(pos < o) {
         POSCH(o) = POSCH(o-1);
+        --o;
     }
     POSCH(pos)=32;
     DIRTY();
@@ -197,7 +208,7 @@ int doInsertReplace(char c) {
         return 1;
     }
     if (!btwi(c,32,126) && (!ISCFMODE(c))) { return 1; }
-    if (edMode == INSERT) { insertSpace(); }
+    if (edMode == INSERT) { insertSpace(1); }
     replaceChar(c, 1, 1);
     return 1;
 }
@@ -237,29 +248,29 @@ int doCommand() {
 int doCommon(int c) {
     int l = line, o = off;
     switch (c) {
-        case   8:  mv(0, -1);                // <ctrl-h> - left
-        BCASE  9:  mv(0,  8);                // <tab>
-        BCASE 10:  mv(1, 0);                 // <ctrl-j> - down
-        BCASE 11:  mv(-1, 0);                // <ctrl-k> - up
-        BCASE 12:  mv(0, 1);                 // <ctrl-l> - right
-        BCASE 13:  mv(1, -off);              // <ctrl-m> - enter
-        BCASE 17:  mv(0, -8);                // <ctrl-q> - tab-left
-        BCASE 21:  mv(-4, 0);                // <ctrl-u> - up 4
-        BCASE 22:  mv(4,  0);                // <ctrl-v> - down 4
-        BCASE 24:  mv(0, -1); deleteChar();  // <ctrl-x> - backspace
-        BCASE 25:  deleteChar();             // <ctrl-y> - delete
-        BCASE 26:  normalMode(); return 1;   // <ctrl-z> 
-        BCASE 27:  normalMode(); return 1;   // <escape>
-        BCASE 28:  off=LLEN-1; mv(0, 0);     // <ctrl-$> - <end>
-        BCASE 29:  mv(0, -off);              // <ctrl-%> - home
-        BCASE 30:  insertMode(); return 1;   // <ctrl-z> - insert
+        BCASE  9:   mv(0,  8);
+        BCASE TABL: mv(0, -8);
+        case  LF:   mv(0, -1);
+        BCASE RT:   mv(0,  1);
+        BCASE UP:   mv(-1, 0);
+        BCASE DN:   mv(1,  0);
+        BCASE 13:   mv(1, -off);
+        BCASE PGUP: mv(-4, 0);
+        BCASE PGDN: mv(4,  0);
+        BCASE BKSP: mv(0, -1); deleteChar(1);
+        BCASE DEL:  deleteChar(1);
+        BCASE ESC:  normalMode(); return 1;
+        BCASE ESC2: normalMode(); return 1;
+        BCASE END:  off=LLEN-1; mv(0, 0);
+        BCASE HOME: mv(0, -off);
+        BCASE INS:  return insertToggle();
     }
     return ((l!=line) || (o!=off)) ? 1 : 0;
 }
 
 int doCTL(int c) {
     if (ISCFMODE(c)) {
-        if (32<EDCH(line, off)) {  insertSpace(); }
+        if (32<EDCH(line, off)) {  insertSpace(1); }
         replaceChar(c, 1, btwi(edMode,INSERT, REPLACE));
     } else {
         doCommon(c);
@@ -311,11 +322,11 @@ int processEditorChar(int c) {
         BCASE 'R': replaceMode();
         BCASE 'C': deleteToEOL(off); DIRTY(); replaceMode();
         BCASE 'D': yankLine(line); deleteLine();
-        BCASE 'x': deleteChar();
-        BCASE 'X': if (0 < pos) { mv(0, -1); deleteChar(); }
-        BCASE 'z': deleteChar();  c=pos; pos=LO2pos(line, LLEN-2); insertSpace(); pos=c;
-        BCASE 'b': insertSpace();
-        BCASE 'B': insertSpace(); c=pos; pos=LO2pos(line, LLEN-2); deleteChar();  pos=c;
+        BCASE 'x': deleteChar(1);
+        BCASE 'X': deleteChar(0);
+        BCASE 'H': mv(0, -1); deleteChar(1);
+        BCASE 'b': insertSpace(1);
+        BCASE 'B': insertSpace(0);
         BCASE 'L': edRdBlk(1);
         BCASE 'Y': yankLine(line);
         BCASE 'p': mv(1,-off); insertLine(); pasteLine(line);
