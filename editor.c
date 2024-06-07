@@ -65,6 +65,8 @@ int edKey() {
             if (k == 66) { return 10; } // down
             if (k == 67) { return 12; } // right
             if (k == 68) { return  8; } // left
+            if (k == 70) { return 28; } // end
+            if (k == 72) { return 29; } // home
             if (btwi(k,49,54)) {
                 if (key() == 126) {
                     if (k == 49) { return 29; } // home
