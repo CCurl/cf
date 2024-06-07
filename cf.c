@@ -400,16 +400,18 @@ int doInterpret(char *w) {
 	return 0;
 }
 
+// Auto state transitions for text-based usage
 int setState(char *wd) {
+	if (state == COMMENT) {
+		if (strEq(wd, ")"))  { return changeState(COMPILE); }
+		if (strEq(wd, "))")) { return changeState(INTERP); }
+		return 0;
+	}
 	if (strEq(wd, ":D")) { return changeState(DEFINE);  }
 	if (strEq(wd, "["))  { return changeState(INTERP);  }
 	if (strEq(wd, "]"))  { return changeState(COMPILE); }
 	if (strEq(wd, "("))  { return changeState(COMMENT); }
-	if (strEq(wd, ")"))  { return changeState(COMPILE); }
 	if (strEq(wd, "((")) { return changeState(COMMENT); }
-	if (strEq(wd, "))")) { return changeState(INTERP);  }
-
-	// Auto state transitions for text-based usage
 	if (strEq(wd, ":"))  { addWord(0);  return changeState(COMPILE); }
 	if (strEq(wd, ";"))  { comma(EXIT); return changeState(INTERP); }
 	return 0;
