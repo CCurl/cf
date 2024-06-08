@@ -21,12 +21,12 @@
 ## The markers:
 
 |Mode       |Color   | Code  |Editor  | Word(s) |
-| :--       | :--    | :--   | :--    | :--  |
-| DEFINE    | red    | 1     | ctrl-a | :    |
-| COMPILE   | green  | 2     | ctrl-b | ],)  |
-| INTERPRET | orange | 3     | ctrl-c | [,)) |
-| MACRO     | blue   | 4     | ctrl-d | [,)) |
-| COMMENT   | white  | 7     | ctrl-g | (.(( |
+| :--       | :--    | :--   | :--    | :--     |
+| DEFINE    | red    | 1     | ctrl-a | ":"     |
+| COMPILE   | green  | 2     | ctrl-b | "]" or ")"  |
+| INTERPRET | orange | 3     | ctrl-c | "[" or "))" |
+| MACRO     | blue   | 4     | ctrl-d | "[" or "))" |
+| COMMENT   | white  | 7     | ctrl-g | "(" or "((" |
 
 ## Blocks
 - In cf, a block is a file with the name "block-NNN.cf". It has a maximum of BLOCK_SZ bytes.
@@ -36,7 +36,7 @@
 
 The editor supports 25 lines of 100 characters each.
 
-The editor has 3 modes: NORMAL, INSERT and REPLACE
+The editor has 3 modes: NORMAL, INSERT and REPLACE.
 
 ## NORMAL MODE
 
@@ -52,52 +52,54 @@ The editor has 3 modes: NORMAL, INSERT and REPLACE
 | [ctrl-l] | Move cursor right 1 character. |
 | [space]  | Move cursor right 1 character |
 | [tab]    | Move cursor right 8 characters. |
+| q        | Move cursor right 8 characters. |
+| Q        | Move cursor left 8 characters. |
 | _        | Go to BOL (the Beginning Of the Line) |
 | $        | Go to EOL (the End Of the Line) |
 | g        | Go to the beginning of the block |
 | G        | Go to the beginning of the last line of the block |
+| :        | Execute a command. |
 
 ### ColorForth markers
 |  Key     | Action |
 | :--      | :--    |
 | [ctrl-a] | Insert a space if necessary. Place DEFINE marker. |
-| [ctrl-b] | Insert a space if necessary. Place COMMENT marker. |
-| [ctrl-c] | Insert a space if necessary. Place INLINE marker. |
-| [ctrl-d] | Insert a space if necessary. Place UNUSED marker. |
-| [ctrl-e] | Insert a space if necessary. Place MACHINE marker. |
-| [ctrl-f] | Insert a space if necessary. Place INTERPRET marker. |
+| [ctrl-b] | Insert a space if necessary. Place COMPILE marker. |
+| [ctrl-c] | Insert a space if necessary. Place INTERPRET marker. |
+| [ctrl-d] | Insert a space if necessary. Place MACRO marker. |
+| [ctrl-e] | (Unused) |
+| [ctrl-f] | (Unused) |
+| [ctrl-g] | Insert a space if necessary. Place COMMENT marker. |
 
 ### Modifying text
 |  Key     | Action |
 | :--      | :--    |
-| a        | Move right one char and change MODE to INSERT |
-| A        | Go to EOL and change MODE to INSERT |
 | c        | Delete the current character and change MODE to INSERT |
 | C        | Delete to EOL and change MODE to INSERT |
-| D        | Delete the current line |
+| D        | Delete the current line into the YANK buffer |
 | i        | Change MODE to INSERT |
-| I        | Go to BOL and change MODE to INSERT |
-| J        | Join the current and next line |
-| o        | Open a line after the current line and change MODE to INSERT |
-| O        | Open a line before the current line and change MODE to INSERT |
+| o        | Open a line below the current line and change MODE to REPLACE |
+| O        | Open a line above the current line and change MODE to REPLACE |
 | p        | Paste the yanked line after the current line |
 | P        | Paste the yanked line before the current line |
 | r        | Replace the character under the cursor with the next key pressed |
 | R        | Change MODE to REPLACE |
-| x        | Delete the current character |
-| X        | Move cursor left 1 character. Delete character. |
-| [ctrl-x] | Move cursor left 1 character. Delete character. |
-| Y        | Yank/copy the current line |
+| x        | Delete the current character to the end of the line. |
+| X        | Delete the current character to the end of the block. |
+| [ctrl-x] | Move cursor left 1 character. Delete character to the end of the line. |
+| Y        | YANK/copy the current line into the YANK buffer. |
 
-### Other Commands
+### COMMANDs
 |  Key     | Action |
 | :--      | :--    |
 | +        | Save current block if changed and edit block+1 |
 | -        | Save current block if changed and edit block-1 |
-| L        | Reload the block from disk |
-| W        | Write the block to disk |
-| Q        | Quit the editor (does not save automatically) |
-| [esc]    | Cancel and change MODE to COMMAND |
+| :rl      | Reload the block from disk |
+| :w       | Write the block to disk |
+| :wq      | Write and then Quit |
+| :q       | Quit the editor if no changes made. |
+| :q!      | Quit the editor even if there are changes. |
+| [esc]    | Cancel current operation and change MODE to NORMAL |
 
 ### INSERT Mode
 
