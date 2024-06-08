@@ -1,44 +1,44 @@
 # cf - a ColorForth inspired system
 
+# NOTE: I know this is out of date; I have to update it!
+
 <img src="/images/editing.jpg" width="250" height="250" />
 
 ## What is cf?
 - cf is inspired by ColorForth, but it is NOT ColorForth.
 - Like ColorForth, cf uses markers in the source to control its mode.
-- cf uses the VM from c3. See this for details: https://github.com/CCurl/c3
-- cf has 6 modes: DEFINE, COMMENT, INLINE, COMPILE, INTERPRET, and MACHINE.
-- cf supports using a marker byte in the whitespace or a word to identify each mode.
+- cf uses the VM from c4. See this for details: https://github.com/CCurl/c4
+- cf has 5 modes: DEFINE, COMMENT, MACRO, COMPILE, INTERPRET.
+- cf supports using either a marker byte in the whitespace or a word to identify each mode.
 - cf includes a simple block editor that colors the file to identify how it will be processed.
-- cf is a work in progress. Please collaborate with me on it!
+- cf is a work in progress. **Please collaborate with me on it!**
 
 ## Notes:
-- Words like IF/THEN are defined in block 0.
-- They are WHITE (INTERPRETED) because they generate code.
+- Words like IF/THEN are defined in block 1.
+- They are BLUE (MACRO) because they generate code.
 - BEGIN, WHILE, UNTIL, and AGAIN are also interpreted.
 
 ## The markers:
 
-|Mode       |Color   | Code  |Editor  | Word |
+|Mode       |Color   | Code  |Editor  | Word(s) |
 | :--       | :--    | :--   | :--    | :--  |
-| DEFINE    | red    | 1     | ctrl-a | ::   |
-| COMMENT   | green  | 2     | ctrl-b | ((   |
-| INLINE    | orange | 3     | ctrl-c | :I   |
-| UNUSED    | blue   | 4     | ctrl-d |      |
-| MACHINE   | purple | 5     | ctrl-e | :M   |
-| COMPILE   | cyan   | 6     | ctrl-f | [[   |
-| INTERPRET | white  | 7     | ctrl-g | ]]   |
+| DEFINE    | red    | 1     | ctrl-a | :    |
+| COMPILE   | green  | 2     | ctrl-b | ],)  |
+| INTERPRET | orange | 3     | ctrl-c | [,)) |
+| MACRO     | blue   | 4     | ctrl-d | [,)) |
+| COMMENT   | white  | 7     | ctrl-g | (.(( |
 
 ## Blocks
 - In cf, a block is a file with the name "block-NNN.cf". It has a maximum of BLOCK_SZ bytes.
-- BLOCK_SZ, in block.h, is set to 2000. It is easy to change as needed.
+- BLOCK_SZ, in cf.h, is defaulted to 2500. It is easy to change as needed.
 
 ## The Editor
 
-The editor supports 20 lines of 100 characters each.
+The editor supports 25 lines of 100 characters each.
 
-The editor has 3 modes: COMMAND, INSERT and REPLACE
+The editor has 3 modes: NORMAL, INSERT and REPLACE
 
-## COMMAND MODE
+## NORMAL MODE
 
 ### Moving around
 
