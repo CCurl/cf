@@ -1,25 +1,25 @@
-Block #3 - strings                                                                               
-                                                                                                   
-find cmove loaded?                                                                               
-3 >lex                                                                                           
-                                                                                                   
-fill  ( dst num ch-- )>r for r@ over c! 1+ next drop r> drop ;                                 
-cmove ( src dst num-- )d >r s >r  swap >d swap >s  for s+ c@ d+ c! next  r> >s r> >d ;         
-cmove>( src dst num-- )d >r s >r  swap >d swap >s  for s- c@ d- c! next  r> >s r> >d ;         
-t1( dst ch-- )swap count + c! ; nt(dst--)0 t1 ; c++(a--)dup c@ 1+ swap c! ;               
-strcatc( dst ch-- )over >r t1 r@ c++ r> nt ;                                                   
+Block #3 - strings                                                                                
+                                                                                                   
+find cmove loaded?                                                                                
+3 >lex                                                                                            
+                                                                                                   
+fill  ( dst num ch-- )>r for r@ over c! 1+ next drop r> drop ;                                  
+cmove ( src dst num-- )d >r s >r  swap >d swap >s  for s+ c@ d+ c! next  r> >s r> >d ;          
+cmove>( src dst num-- )d >r s >r  swap >d swap >s  for s- c@ d- c! next  r> >s r> >d ;          
+t1( dst ch-- )swap count + c! ; c++(a--)dup c@ 1+ swap c! ;                                  
+strcatc( dst ch-- )over >r t1 r@ c++ r> 0 t1 ;                                                  
 strcat( dst src-- )count swap >a ?dupiffor dup a+ c@ strcatc nextthendrop ;                 
-strtrunc( dst-- )0 swap w! ;                                                                   
-                                                                                                  
-                                                                                                  
-                                                                                                  
-                                                                                                  
-                                                                                                  
-                                                                                                  
-                                                                                                  
-                                                                                                  
-                                                                                                  
-                                                                                                  
-                                                                                                  
-                                                                                                  
+strtrunc( dst-- )0 swap w! ;                                                                    
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
                                                                                                    

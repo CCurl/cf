@@ -1,22 +1,22 @@
- (( block 2 - editor ))  [ 5 load ( screen ) [ 3 load ( strings )  [ 2 >lex  : rl forget 2
-load ;  : rows ( --n )  40 @c ;   : >rows ( n-- )  40 !c ; : cols ( --n )  41 @c ;   : >cols ( n--
-)  41 !C ; : row  ( --n )  42 @c ;   : >row  ( n-- )  42 !c ; : col  ( --n )  43 @c ;   : >col  (
-n-- )  43 !c ; : pos  ( --n )  44 @c ;   : >pos  ( n-- )  44 !c ; : blk  ( --n )  45 @c ;   :
->blk  ( n-- )  45 !c ; : mod  ( --n )  46 @c ;   : >mod  ( n-- )  46 !c ; : block-sz rows cols * ; 
-[ 30 >rows 100 >cols [ var block  block-sz allot  : rc->pos ( -- )   row cols * col + >pos ; :
-pos->rc ( -- )   pos cols /mod >row >col ; : ->pos   ( -- )   pos->rc row 1+ col 1+ ->rc ; :
-->foot  ( -- )   rows 1+ 1 ->rc ; : ->cmd   ( -- )   rows 2+ 1 ->rc ; : move  ( dist-- )  pos + 0 max
-block-sz min >pos  pos->rc ; : prev-line  cols negate move ; : next-line  cols move ; : set-color
-( c--c )     dup 0=  if exit then     dup 7 > if exit then 	dup 30 + fg ; : footer ->foot ."
-block " blk . bl mod if drop '*' then emit ; : show-row  cols for 		a+ c@ set-color 		dup bl < if
-drop bl then emit 	next ; : show    ( -- ) 1 dup ->rc  block >a 	rows for show-row cr next footer
-;  : dump ( from num-- )  for dup c@ . 1+ next  drop ; : test-block a >r  block >a 	rows for cols
-for i 10 mod '1' + a+ c! next next     r> >a ; : init-block block  0  block-sz fill ; :
-dump-block block block-sz dump ;  : fopen-rb ( fn--fh )   " rb" fopen ; : fopen-wb ( fn--fh )   " wb"
-fopen ;  : block-fn ( --s )  p1 " block-" s-cpy 	blk 10 /mod 10 /mod 	3 for p1 swap '0' + s-catc
-drop next 	" .c4" s-cat ;  : read-block init-block  block-fn fopen-rb >a     a [ if ] block
-block-sz a fread  drop  a fclose [ then ] ;  : save-block block-fn fopen-wb >a     a [ if ] block
-block-sz a fwrite  a fclose [ then ] ;  : ed ( -- )  read-block show 0 >pos ; (( 2 >blk  1 >mod ed ))
+(( block 2 - editor ))                                                                            
+5 loadscreen                                                                                     
+3 loadstrings                                                                                    
+2 >lex                                                                                            
+rlforget 2 load ; ed2 edit ;                                                                   
+rows25 ; cols100 ;      row42 @c ; >row42 !c ; col 43 @c ;>col 43 !c ;                
+pos 44 @c ; >pos44 !c ; blk45 @c ; >blk45 !c ; mode46 @c ; >mode46 !c ;                
+rc->pos(r c--pos)>r cols * r> + ; pos->rc(pos--r c)cols /mod ;                               
+->posrow 1+ col 1+ ->yx ;->footrows 1+ 1 ->yx ;->cmd->foot cr ;                              
+norm-rc(--)row 0 max rows 1- min >row  col 0 max cols 1- >col ;                                 
+mv(r c--)col + >col row + >row norm-rc row col rc->pos >pos ;                                   
+up1 negate 0 mv ; dn1 0 ; lf0 1 negate mv ; rt0 1 mv ;                                     
+btwi(n l h--f)>r over > swap r> > or 0= ;                                                       
+setcol(c1--)dup 1 7 btwiif30 + fg exitthendrop;                                            
+ws?(c1--c2)dup 31 <ifsetcol 32then;                                                         
+show1 1 ->xy blk block >a rows for cols for a+ c@ ws? emit next cr next ;                        
+                                                                                                   
+2 >blk cls show                                                                                   
+                                                                                                   
                                                                                                    
                                                                                                    
                                                                                                    
