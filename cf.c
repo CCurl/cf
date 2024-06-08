@@ -6,12 +6,12 @@
 
 #define NCASE         goto next; case
 #define BCASE         break; case
-#define here          code[0]
-#define last          code[1]
-#define vhere         code[2]
-#define base          code[3]
-#define state         code[4]
-#define lex           code[5]
+#define here          code[HA]
+#define last          code[LA]
+#define vhere         code[VHA]
+#define base          code[BA]
+#define state         code[SA]
+#define lex           code[LXA]
 #define TOS           stk[sp].i
 #define NOS           stk[sp-1].i
 #define L0            lstk[lsp]
@@ -24,6 +24,8 @@ byte dict[DICT_SZ+1], vars[VARS_SZ+1];
 short sp, rsp, lsp, aSp;
 cell A, B, S, D, lstk[LSTK_SZ], rstk[RSTK_SZ+1];
 char *tib, wd[32], *toIn, wordAdded;
+
+enum { HA=0,LA, VHA, BA, SA, LXA };
 
 #define BOARDPRIMS \
 /*	X(BOINPUT, "o-in",      t = pop(); printStringF("-input:%d-", (int)t); ) \     */
@@ -418,19 +420,17 @@ int setState(char *wd) {
 }
 
 void doOuter(const char *src) {
-	// DE_T *dp;
 	int isErr = 0;
 	toIn = (char*)src;
 	while (nextWord()) {
 		if (setState(wd)) { continue; }
-		// printStringF("-%d:%s-\n",state,wd);
 		switch (state) {
-			case COMMENT:
 			BCASE DEFINE:  addWord(wd);
-			BCASE COMPILE: if (doCompile(wd) == 0) isErr = 1;
-			BCASE INTERP:  if (doInterpret(wd) == 0) isErr = 1;
-			BCASE MACRO:   if (doInterpret(wd) == 0) isErr = 1;
-			break; default: printString("-state?-"); break;
+			BCASE COMPILE: isErr = (!doCompile(wd));
+			BCASE INTERP:  isErr = (!doInterpret(wd));
+			BCASE MACRO:   isErr = (!doInterpret(wd));
+			BCASE COMMENT:  break;
+			default: printString("-state?-"); break;
 		}
 		if (isErr) {
 			state = INTERP;
@@ -476,12 +476,12 @@ void baseSys() {
 	parseF(": (lit2)    #%d ;", LIT2);
 	parseF(": (exit)    #%d ;", EXIT);
 
-	parseF(": (here)    #%d ;", 0);
-	parseF(": (last)    #%d ;", 1);
-	parseF(": (vhere)   #%d ;", 2);
-	parseF(": base      #%d ;", 3);
-	parseF(": state     #%d ;", 4);
-	parseF(": (lex)     #%d ;", 5);
+	parseF(": (here)    #%d ;", HA);
+	parseF(": (last)    #%d ;", LA);
+	parseF(": (vhere)   #%d ;", VHA);
+	parseF(": base      #%d ;", BA);
+	parseF(": state     #%d ;", SA);
+	parseF(": (lex)     #%d ;", LXA);
 
 	parseF(addrFmt, "code", &code[0]);
 	parseF(addrFmt, "vars", &vars[0]);

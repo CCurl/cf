@@ -5,7 +5,7 @@ find test-if loaded?
 200 (lex) !c                                                                                       
 : .. dup . ;                                                                                       
 : test-if 'n' swap [ if ] drop 'y' [ then ] emit '.' emit ;  0 test-if 1 test-if  see test-if cr   
-: test2 [ if " yes" else " no" then ] count type '.' emit ;  0 test2   1 test2    see test1   cr   
+: test2 [ if " yes" else " no" then ] count type '.' emit ;  0 test2   1 test2    see test2   cr   
 m1 : x cr 10 [ begin ] .. 1- dup [ while ] drop ;      x f1                                        
 m1 : x cr  0 [ begin ] .. 1+ dup 10 = [ until ] drop ; x f1                                        
 m1 : x cr  5 for i 10 + . 4 for i . next next ;        x f1                                        
