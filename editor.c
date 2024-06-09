@@ -95,6 +95,11 @@ void NormLO() {
     off = pos2Offset(pos);
 }
 
+void mv(int l, int o) {
+    pos = LO2pos(line+l, off+o);
+    NormLO();
+}
+
 void showCursor() {
     GotoXY(off + 1, line + 1);
     CursorOn();
@@ -131,11 +136,6 @@ void showEditor() {
         }
         printString("\r\n");
     }
-}
-
-void mv(int l, int o) {
-    pos = LO2pos(line+l, off+o);
-    NormLO();
 }
 
 void edRdBlk(int force) {
