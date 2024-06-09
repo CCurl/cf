@@ -29,8 +29,9 @@ int line, off, blkNum, edMode, pos;
 char tBuf[LLEN], mode[32], *msg = NULL;
 char yanked[LLEN];
 
-enum { LF=8, UP=11, RT=12, DN=10, INS=30, DEL=25, HOME=29, END=28,
-       TABR=9, TABL=17, PGUP=21, PGDN=22, BKSP=24, ENT=13, ESC=27, ESC2=2 };
+enum { LF=8, TABR=9, DN=10, UP=11, RT=12, ENT=13, TABL=17,
+        PGUP=21, PGDN=22, BKSP=24, DEL=25, ESC2=26, ESC=27,
+        END=28, HOME=29, INS=30 };
 
 void GotoXY(int x, int y) { printStringF("\x1B[%d;%dH", y, x); }
 void CLS() { printString("\x1B[2J"); GotoXY(1, 1); }
@@ -213,12 +214,12 @@ int accept(char *buf) {
     int ln = 0;
     while (1) {
         int c = key();
-        if ((c==27) || (c==3)) { buf[0]=0; return 0; }
-        else if (c==13) { buf[ln]=0; return ln; }
-        else if ((c==127) || (c==8)) {
-            if (0<ln) { --ln; printStringF("%c %c",8,8); }
+        if ((c==27) || (c==3) || (c==26)) { buf[0]=0; return 0; }
+        if (c==13) { buf[ln]=0; return ln; }
+        if (btwi(c,32,126)) { buf[ln++]=c; printChar(c); }
+        if ((c==127) || (c==8)) {
+            if (0<ln) { --ln; EMIT(8); EMIT(32); EMIT(8); }
         }
-        else if (btwi(c,32,126)) { buf[ln++]=c; printChar(c); }
     }
     return ln;
 }
@@ -251,12 +252,12 @@ int doCommon(int c) {
         BCASE UP:   mv(-1, 0);
         BCASE DN:   mv(1,  0);
         BCASE 13:   mv(1, -off);
-        BCASE PGUP: mv(-4, 0);
-        BCASE PGDN: mv(4,  0);
+        BCASE PGUP: mv(-5, 0);
+        BCASE PGDN: mv(5,  0);
         BCASE BKSP: mv(0, -1); deleteChar(1);
         BCASE DEL:  deleteChar(1);
-        BCASE ESC:  normalMode(); return 1;
         BCASE ESC2: normalMode(); return 1;
+        BCASE ESC:  normalMode(); return 1;
         BCASE END:  off=LLEN-1; mv(0, 0);
         BCASE HOME: mv(0, -off);
         BCASE INS:  return insertToggle();
@@ -274,13 +275,18 @@ int doCTL(int c) {
     return 1;
 }
 
-void yankLine(int L) {
-    for (int x=0; x<LLEN; x++) {
-        yanked[x] = EDCH(L,x);
+void yankLine(int L) { for (int x=0; x<LLEN; x++) { yanked[x] = EDCH(L,x); } }
+void deleteToEOL(int o) { while (o < LLEN) { EDCH(line, o++) = 32; } }
+
+void doDelete(int x) {
+    if (x==0) { x=key(); }
+    switch (x) {
+        case '.': deleteChar(1);
+        BCASE '$': deleteToEOL(off);
+        BCASE 'd': deleteLine();
+        BCASE '_': while (off) { --off; pos=LO2pos(line,off); deleteChar(1); }
     }
 }
-
-void deleteToEOL(int c) { while (c < LLEN) { EDCH(line, c++) = 32; } }
 
 void pasteLine(int L) {
     for (int x=0; x<LLEN; x++) {
@@ -309,7 +315,7 @@ int processEditorChar(int c) {
         BCASE '$': off = LLEN-1; mv(0,0);
         BCASE ':': doCommand();
         BCASE 'g': mv(-line,-off);
-        BCASE 'G': mv(999,999);
+        BCASE 'G': line = NUM_LINES-1; off = 0; mv(0, 0);
         BCASE 'i': insertMode();
         BCASE 'I': mv(0, -off); insertMode();
         BCASE 'o': mv(1, -off); insertLine(); replaceMode();
@@ -317,6 +323,7 @@ int processEditorChar(int c) {
         BCASE 'r': replaceChar(edKey(), 0, 1);
         BCASE 'R': replaceMode();
         BCASE 'C': deleteToEOL(off); DIRTY(); replaceMode();
+        BCASE 'd': doDelete(0);
         BCASE 'D': yankLine(line); deleteLine();
         BCASE 'x': deleteChar(1);
         BCASE 'X': deleteChar(0);
