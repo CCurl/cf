@@ -103,7 +103,7 @@ enum { HA=0,LA, VHA, BA, SA, LXA };
 	X(TYPE,    "type",      t=pop(); char *y=(char*)pop(); for (int i=0; i<t; i++) emit(y[i]); ) \
 	X(ADDW,    "add-word",  addWord(0); ) \
 	X(QUOTE,   "\"",        quote(); ) \
-	X(DOTQT,   ".\"",       quote(); comma(COUNT); comma(TYPE); ) \
+	X(DOTQT,   ".\"",       dotQuote(); ) \
 	X(RAND,    "rand",      doRand(); ) \
 	X(ITOA,    "to-string", t=pop(); push((cell)iToA(t, base)); ) \
 	X(DOTS,    ".s",        dotS(); ) \
@@ -294,21 +294,28 @@ void dotS() {
 }
 
 void quote() {
-	comma(LIT2);
-	commaCell((cell)&vars[vhere]);
-	ushort start = vhere;
-	vars[vhere++] = 0; // Length byte
+	ushort vh = vhere;
+	vars[vh++] = 0; // Length byte
 	if (*toIn) { ++toIn; }
 	while (*toIn) {
 		if (*toIn == '"') { ++toIn; break; }
-		vars[vhere++] = *(toIn++);
-		++vars[start];
+		vars[vh++] = *(toIn++);
+		++vars[vhere];
 	}
-	vars[vhere++] = 0; // NULL terminator
+	vars[vh++] = 0; // NULL terminator
+	if (state == INTERP) {
+		push((cell) &vars[vhere]);
+	} else {
+		comma(LIT2);
+		commaCell((cell)&vars[vhere]);
+		vhere = vh;
+	}
 }
 
 void dotQuote() {
-	quote(); comma(COUNT); comma(TYPE);
+	quote();
+	if (state == INTERP) { printString((char*)pop() + 1); }
+	else { comma(COUNT); comma(TYPE); }
 }
 
 void doRand() {
@@ -531,4 +538,5 @@ void REP() {
 	if (inputFp == 0) { exit(0); }
 	fileClose(inputFp);
 	inputFp = filePop();
+	state = INTERP;
 }
