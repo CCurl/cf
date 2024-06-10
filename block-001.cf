@@ -20,6 +20,6 @@
 f1     20 @c (here) !c  21 @c (last) !c  22 @c (vhere) !c ;                                      
 forget 23 @c (here) !c  24 @c (last) !c  25 @c (vhere) !c  0 >lex ; marker m1                   
 .02'.' emit 10 /mod (.) (.) ; .verversion 100 /mod 100 /mod (.) .02 .02 ;                      
-hi." cf - v".ver."  - Chris Curl."cr ;                                                        
-hiforget  9 load                                                                                 
+." cf - v" .ver ."  - Chris Curl." cr                                                             
+                                                                                                   
                                                                                                    
