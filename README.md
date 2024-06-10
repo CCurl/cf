@@ -1,7 +1,5 @@
 # cf - a ColorForth inspired system
 
-# NOTE: I know this is out of date; I have to update it!
-
 <img src="/images/editing.jpg" width="250" height="250" />
 
 ## What is cf?
@@ -48,26 +46,26 @@ The editor has 3 modes: NORMAL, INSERT and REPLACE.
 | [ctrl-e] | (Unused) |
 | [ctrl-f] | (Unused) |
 | [ctrl-g] | Insert a space if necessary. Place COMMENT marker. |
-| [ctrl-h] | Move cursor left 1 character. |
-| [ctrl-i] | Move cursor right 8 characters. |
-| [ctrl-j] | Move cursor down 1 line. |
-| [ctrl-k] | Move cursor up 1 line. |
-| [ctrl-l] | Move cursor right 1 character. |
-| [ctrl-m] | Move cursor down 1 and to the beginning of the line. |
+| [ctrl-h] | Move left 1 character. |
+| [ctrl-i] | Move right 8 characters (Also `TAB`). |
+| [ctrl-j] | Move down 1 line. |
+| [ctrl-k] | Move up 1 line. |
+| [ctrl-l] | Move right 1 character. |
+| [ctrl-m] | Move down 1 and to the beginning of the line. |
 | [ctrl-n] | (Unused) |
 | [ctrl-o] | (Unused) |
 | [ctrl-p] | (Unused) |
-| [ctrl-q] | Move cursor left 8 characters. |
+| [ctrl-q] | Move left 8 characters. |
 | [ctrl-r] | (Unused) |
 | [ctrl-s] | (Unused) |
 | [ctrl-t] | (Unused) |
-| [ctrl-u] | Move cursor down 5 lines |
-| [ctrl-v] | Move cursor up 5 lines |
+| [ctrl-u] | Move down 5 lines (also `PgDn`) |
+| [ctrl-v] | Move up 5 lines (also `PgUp`) |
 | [ctrl-w] | (Unused) |
 | [ctrl-x] | Move left 1 and delete (line-only). |
 | [ctrl-y] | Delete current char (line-only). |
-| [enter]  | Move cursor down 1 and to the beginning of the line. |
-| [tab]    | Move cursor right 8 characters. |
+| [enter]  | Move down 1 and to the beginning of the line. |
+| [tab]    | Move right 8 characters. |
 | [bs]     | Windows: [ctrl-h], Linux: [ctrl-x] |
 
 ## NORMAL MODE
@@ -80,9 +78,11 @@ The editor has 3 modes: NORMAL, INSERT and REPLACE.
 | C        | Delete to EOL and change MODE to INSERT. |
 | d[x]     | [x] identifies what to delete. |
 | D        | Delete the current line into the YANK buffer. |
+| e        | Move down 5 lines. |
 | g        | Move to the beginning of the block. |
 | G        | Move to the beginning of the last line of the block. |
 | h/j/k/l  | Move cursor left/down/up/right (like VI). |
+| H        | Move left 1 and delete (line-only). |
 | i        | Change MODE to INSERT. |
 | I        | Move to the beginning of the line and change MODE to INSERT. |
 | o        | Open a line below the current line and change MODE to REPLACE. |
@@ -93,8 +93,9 @@ The editor has 3 modes: NORMAL, INSERT and REPLACE.
 | Q        | Move left 8 characters. |
 | r        | Replace the character under the cursor with the next key pressed. |
 | R        | Change MODE to REPLACE. |
+| u        | Move up 5 lines. |
 | x        | Delete the current character (line-only). |
-| X        | Delete the current character. |
+| X        | Delete th e current character. |
 | Y        | YANK/copy the current line into the YANK buffer. |
 | _        | Move to the beginning of the line. |
 | $        | Move to the end Of the line. |
@@ -119,7 +120,7 @@ The combination d[x] identifies what to delete.
 | :w       | Write the block to disk |
 | :wq      | Write and then Quit |
 | :q       | Quit the editor if no changes made. |
-| :q!      | Quit the editor even if there are changes. |
+| :q!      | Discard any changes and quit the editor. |
 | [esc][x] | Cancel and change MODE to NORMAL. |
 
 ### INSERT Mode
@@ -128,7 +129,7 @@ The combination d[x] identifies what to delete.
 | :--      | :--    |
 | [ctrl-z] | Cancel and change MODE to NORMAL. |
 | [esc][x] | Cancel and change MODE to NORMAL. |
-| [other]  | Insert the char and move the cursor right. |
+| [other]  | If printable (32-126), insert the char and move the cursor right. |
 
 ### REPLACE Mode
 
@@ -136,4 +137,4 @@ The combination d[x] identifies what to delete.
 | :--      | :--    |
 | [ctrl-z] | Cancel and change MODE to NORMAL. |
 | [esc][x] | Cancel and change MODE to NORMAL. |
-| [other]  | Insert the char and move the cursor right. |
+| [other]  | If printable (32-126), replace the char and move the cursor right. |

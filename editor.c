@@ -283,7 +283,7 @@ void doDelete(int x) {
     switch (x) {
         case '.': deleteChar(1);
         BCASE '$': deleteToEOL(off);
-        BCASE 'd': deleteLine();
+        BCASE 'd': yankLine(line); deleteLine();
         BCASE '_': while (off) { --off; pos=LO2pos(line,off); deleteChar(1); }
     }
 }
@@ -314,6 +314,8 @@ int processEditorChar(int c) {
         BCASE '_': mv(0,-off);
         BCASE '$': off = LLEN-1; mv(0,0);
         BCASE ':': doCommand();
+        BCASE 'b': insertSpace(1);
+        BCASE 'B': insertSpace(0);
         BCASE 'g': mv(-line,-off);
         BCASE 'G': line = NUM_LINES-1; off = 0; mv(0, 0);
         BCASE 'i': insertMode();
@@ -324,13 +326,10 @@ int processEditorChar(int c) {
         BCASE 'R': replaceMode();
         BCASE 'C': deleteToEOL(off); DIRTY(); replaceMode();
         BCASE 'd': doDelete(0);
-        BCASE 'D': yankLine(line); deleteLine();
+        BCASE 'D': doDelete('d');
         BCASE 'x': deleteChar(1);
         BCASE 'X': deleteChar(0);
         BCASE 'H': mv(0, -1); deleteChar(1);
-        BCASE 'b': insertSpace(1);
-        BCASE 'B': insertSpace(0);
-        BCASE 'L': edRdBlk(1);
         BCASE 'Y': yankLine(line);
         BCASE 'p': mv(1,-off); insertLine(); pasteLine(line);
         BCASE 'P': mv(0,-off); insertLine(); pasteLine(line);
