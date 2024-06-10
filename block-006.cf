@@ -1,25 +1,25 @@
-Block #6 - utility words                                                                          
-                                                                                                  
-ls " ls -l"   system ;                                                                          
-lg " lazygit" system ;                                                                          
+Block #6 - utility words                                                                         
+                                                                                                   
+3 load- Strings                                                                                  
+5 load- Screen                                                                                   
                                                                                                    
+find pull loaded?                                                                                 
+ 6 >lex                                                                                            
                                                                                                    
+p1vhere ->vars 100 + ;                                                                           
+ls" ls -l"   system ;  lg" lazygit" system ;                                                 
+cd( dir-- )p1" cd "strcpy p1 swap strcat p1"  && "strcat ;                                  
+.p1green dupcount type."  ... "white ;                                                        
+vs-code( dir-- )    cd p1" code ."      strcat p1 system;                                    
+pull   ( dir-- ).p1 cd p1" git pull -p "strcat p1 system;                                    
+cf" \code\mine\cf";         c3" \code\mine\c3";                                              
+sia" \code\sia";            bws" \code\BWServiceDefinitions";                                
+pull-allcf c3 bws sia  4 for pull next ;                                                        
+dev" ccc dev"system ;                                                                           
                                                                                                    
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
-                                                                                                   
+rlforget 6 load ;      ed6 edit ;                                                             
+                                                                                                  
+                                                                                                  
+                                                                                                  
+                                                                                                  
+                                                                                                  

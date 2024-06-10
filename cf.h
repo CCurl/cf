@@ -34,7 +34,7 @@
 #define XXXXX1   CYAN
 #define COMMENT  WHITE
 
-#define VERSION       240605
+#define VERSION       240609
 
 #define CODE_SZ       0xFFFF
 #define VARS_SZ       0xFFFF
@@ -47,6 +47,7 @@
 #define NUM_BLOCKS       400
 #define btwi(n,l,h)   (((l)<=n) && (n<=(h)))
 #define BCASE         break; case
+#define EMIT(x)       printChar((x))
 
 #if __LONG_MAX__ > __INT32_MAX__
 #define CELL_SZ   8

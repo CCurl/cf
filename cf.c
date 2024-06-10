@@ -6,12 +6,12 @@
 
 #define NCASE         goto next; case
 #define BCASE         break; case
-#define here          code[0]
-#define last          code[1]
-#define vhere         code[2]
-#define base          code[3]
-#define state         code[4]
-#define lex           code[5]
+#define here          code[HA]
+#define last          code[LA]
+#define vhere         code[VHA]
+#define base          code[BA]
+#define state         code[SA]
+#define lex           code[LXA]
 #define TOS           stk[sp].i
 #define NOS           stk[sp-1].i
 #define L0            lstk[lsp]
@@ -25,7 +25,12 @@ short sp, rsp, lsp, aSp;
 cell A, B, S, D, lstk[LSTK_SZ], rstk[RSTK_SZ+1];
 char *tib, wd[32], *toIn, wordAdded;
 
-#define BOARDPRIMS
+enum { HA=0,LA, VHA, BA, SA, LXA };
+
+#define BOARDPRIMS \
+/*	X(BOINPUT, "o-in",      t = pop(); printStringF("-input:%d-", (int)t); ) \     */
+/*	X(BOPU,    "o-pu",      t = pop(); printStringF("-input/pullup:%d-", (int)t); ) \     */
+/*	X(BOINPUT, "o-out",     t = pop(); printStringF("-output:%d-", (int)t); )     */
 
 #define FILEPRIMS \
 	X(BLOCK,   "block",     TOS=(cell)blockData((int)TOS); ) \
@@ -238,15 +243,15 @@ int findPrevXT(int xt) {
 void doSee() {
 	DE_T *dp = findWord(0);
 	if (!dp) { printStringF("-nf:%s-", wd); return; }
-	if (dp->xt <= BYE) { printStringF("%s is a primitive ($%hX).\n", wd, dp->xt); return; }
+	if (dp->xt <= BYE) { printStringF("%s is a primitive ($%hX).\r\n", wd, dp->xt); return; }
 	cell x = (cell)dp-(cell)dict;
 	int stop = findPrevXT(dp->xt)-1;
 	int i = dp->xt;
-	printStringF("\n%04lX: %s ($%04hX to $%04X)", x, dp->nm, dp->xt, stop);
+	printStringF("\r\n%04lX: %s ($%04hX to $%04X)", x, dp->nm, dp->xt, stop);
 	while (i <= stop) {
 		int op = code[i++];
 		x = code[i];
-		printStringF("\n%04X: %04X\t", i-1, op);
+		printStringF("\r\n%04X: %04X\t", i-1, op);
 		switch (op) {
 			case  STOP: printString("stop"); i++;
 			BCASE LIT1: printStringF("lit1 #%ld ($%lX)", x, x); i++;
@@ -397,35 +402,35 @@ int doInterpret(char *w) {
 	return 0;
 }
 
+// Auto state transitions for text-based usage
 int setState(char *wd) {
+	if (state == COMMENT) {
+		if (strEq(wd, ")"))  { return changeState(COMPILE); }
+		if (strEq(wd, "))")) { return changeState(INTERP); }
+		return 0;
+	}
 	if (strEq(wd, ":D")) { return changeState(DEFINE);  }
 	if (strEq(wd, "["))  { return changeState(INTERP);  }
 	if (strEq(wd, "]"))  { return changeState(COMPILE); }
 	if (strEq(wd, "("))  { return changeState(COMMENT); }
-	if (strEq(wd, ")"))  { return changeState(COMPILE); }
 	if (strEq(wd, "((")) { return changeState(COMMENT); }
-	if (strEq(wd, "))")) { return changeState(INTERP);  }
-
-	// Auto state transitions for text-based usage
 	if (strEq(wd, ":"))  { addWord(0);  return changeState(COMPILE); }
 	if (strEq(wd, ";"))  { comma(EXIT); return changeState(INTERP); }
 	return 0;
 }
 
 void doOuter(const char *src) {
-	// DE_T *dp;
 	int isErr = 0;
 	toIn = (char*)src;
 	while (nextWord()) {
 		if (setState(wd)) { continue; }
-		// printStringF("-%d:%s-\n",state,wd);
 		switch (state) {
-			case COMMENT:
 			BCASE DEFINE:  addWord(wd);
-			BCASE COMPILE: if (doCompile(wd) == 0) isErr = 1;
-			BCASE INTERP:  if (doInterpret(wd) == 0) isErr = 1;
-			BCASE MACRO:   if (doInterpret(wd) == 0) isErr = 1;
-			break; default: printString("-state?-"); break;
+			BCASE COMPILE: isErr = (!doCompile(wd));
+			BCASE INTERP:  isErr = (!doInterpret(wd));
+			BCASE MACRO:   isErr = (!doInterpret(wd));
+			BCASE COMMENT:  break;
+			default: printString("-state?-"); break;
 		}
 		if (isErr) {
 			state = INTERP;
@@ -471,12 +476,12 @@ void baseSys() {
 	parseF(": (lit2)    #%d ;", LIT2);
 	parseF(": (exit)    #%d ;", EXIT);
 
-	parseF(": (here)    #%d ;", 0);
-	parseF(": (last)    #%d ;", 1);
-	parseF(": (vhere)   #%d ;", 2);
-	parseF(": base      #%d ;", 3);
-	parseF(": state     #%d ;", 4);
-	parseF(": (lex)     #%d ;", 5);
+	parseF(": (here)    #%d ;", HA);
+	parseF(": (last)    #%d ;", LA);
+	parseF(": (vhere)   #%d ;", VHA);
+	parseF(": base      #%d ;", BA);
+	parseF(": state     #%d ;", SA);
+	parseF(": (lex)     #%d ;", LXA);
 
 	parseF(addrFmt, "code", &code[0]);
 	parseF(addrFmt, "vars", &vars[0]);
@@ -512,13 +517,14 @@ void REP() {
 	if (inputFp == 0) {
         ttyMode(0);
 		Color(state, 0);
-		printString(" ok\n");
+		printString(" ok\r\n");
 	}
 	tib[0] = 0;
 	if (fileGets(tib, 100, inputFp)) {
         if (inputFp == 0) { ttyMode(1); }
 		if (tib[tib[0]] == 10) { tib[tib[0]] = 0; }
 		// printStringF("--%s--\n", tib+1);
+		Color(WHITE, 0);
 		doOuter(tib+1);
 		return;
 	}
