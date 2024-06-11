@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <time.h>
 
 #ifdef _MSC_VER
@@ -49,19 +50,22 @@
 #define BCASE         break; case
 #define EMIT(x)       printChar((x))
 
-#if __LONG_MAX__ > __INT32_MAX__
+#if UINTPTR_MAX > UINT32_MAX
+#define CELL_T    int64_t
+#define UCELL_T   uint64_t
 #define CELL_SZ   8
 #define FLT_T     double
 #define addrFmt ": %s $%llx ;"
 #else
 #define CELL_SZ   4
+#define CELL_T    int32_t
+#define UCELL_T   uint32_t
 #define FLT_T     float
 #define addrFmt ": %s $%lx ;"
 #endif
 
-typedef long cell;
-typedef long cell_t;
-typedef unsigned long ucell;
+typedef CELL_T cell;
+typedef UCELL_T ucell;
 typedef unsigned short ushort;
 typedef unsigned char byte;
 typedef union { FLT_T f; cell i; } SE_T;

@@ -44,8 +44,8 @@ enum { HA=0,LA, VHA, BA, SA, LXA };
 #define FILEPRIMS \
 	X(FLOPEN,  "fopen",     t=pop(); n=pop(); push(fileOpen((char*)n, (char*)t)); ) \
 	X(FLCLOSE, "fclose",    t=pop(); fileClose(t); ) \
-	X(FLREAD,  "fread",     t=pop(); n=pop(); TOS = fileRead((byte*)TOS, n, t); ) \
-	X(FLWRITE, "fwrite",    t=pop(); n=pop(); TOS = fileWrite((byte*)TOS, n, t); ) \
+	X(FLREAD,  "fread",     t=pop(); n=pop(); TOS = fileRead((byte*)TOS, (int)n, t); ) \
+	X(FLWRITE, "fwrite",    t=pop(); n=pop(); TOS = fileWrite((byte*)TOS, (int)n, t); ) \
 	X(FLGETS,  "fgets",     t=pop(); n=pop(); TOS = fileGets((char*)TOS, (int)n, t); ) \
 	X(FLLOAD,  "fload",     t=pop(); fileLoad((char*)t); ) \
 	X(LOADED,  "loaded?",   t=pop(); pop(); if (t) { fileClose(inputFp); inputFp=filePop(); } )
@@ -103,7 +103,7 @@ enum { HA=0,LA, VHA, BA, SA, LXA };
 	X(CLK,     "timer",     push(clock()); ) \
 	X(SEE,     "see",       doSee(); ) \
 	X(COUNT,   "count",     t=pop(); push(t+1); push(*(byte*)t); ) \
-	X(TYPE,    "type",      t=pop(); char *y=(char*)pop(); for (int i=0; i<t; i++) emit(y[i]); ) \
+	X(TYPE,    "type",      t=pop(); char *y=(char*)pop(); for (cell i=0; i<t; i++) emit(y[i]); ) \
 	X(ADDW,    "add-word",  addWord(0); ) \
 	X(QUOTE,   "\"",        quote(); ) \
 	X(DOTQT,   ".\"",       dotQuote(); ) \
