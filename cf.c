@@ -32,19 +32,22 @@ enum { HA=0,LA, VHA, BA, SA, LXA };
 /*	X(BOPU,    "o-pu",      t = pop(); printStringF("-input/pullup:%d-", (int)t); ) \     */
 /*	X(BOINPUT, "o-out",     t = pop(); printStringF("-output:%d-", (int)t); )     */
 
-#define FILEPRIMS \
+#define BLOCKPRIMS \
 	X(BLOCK,   "block",     TOS=(cell)blockData((int)TOS); ) \
+	X(LOAD,    "load",      t=pop(); blockLoad((int)t); ) \
+	X(RELOAD,  "reload",    t=pop(); blockReload((int)t); ) \
 	X(DIRTY,   "dirty",     t=pop(); n=pop(); blockDirty((int)n, (int)t); ) \
 	X(DIRTYQ,  "dirty?",    TOS = blockDirtyQ((int)TOS); ) \
 	X(FLUSH,   "flush",     flushBlocks(); ) \
-	X(EDIT,    "edit",      doEditor((int)pop()); ) \
+	X(EDIT,    "edit",      doEditor((int)pop()); )
+
+#define FILEPRIMS \
 	X(FLOPEN,  "fopen",     t=pop(); n=pop(); push(fileOpen((char*)n, (char*)t)); ) \
 	X(FLCLOSE, "fclose",    t=pop(); fileClose(t); ) \
 	X(FLREAD,  "fread",     t=pop(); n=pop(); TOS = fileRead((byte*)TOS, n, t); ) \
 	X(FLWRITE, "fwrite",    t=pop(); n=pop(); TOS = fileWrite((byte*)TOS, n, t); ) \
 	X(FLGETS,  "fgets",     t=pop(); n=pop(); TOS = fileGets((char*)TOS, (int)n, t); ) \
 	X(FLLOAD,  "fload",     t=pop(); fileLoad((char*)t); ) \
-	X(LOAD,    "load",      t=pop(); blockLoad((int)t); ) \
 	X(LOADED,  "loaded?",   t=pop(); pop(); if (t) { fileClose(inputFp); inputFp=filePop(); } )
 
 #define PRIMS \
@@ -115,7 +118,7 @@ enum { HA=0,LA, VHA, BA, SA, LXA };
 	X(STRLEN,  "strlen",    TOS=strlen((char*)TOS); ) \
 	X(KEY,     "key",       push(key()); ) \
 	X(QKEY,    "?key",      push(qKey()); ) \
-	FILEPRIMS BOARDPRIMS \
+	BOARDPRIMS FILEPRIMS BLOCKPRIMS \
 	X(BYE,     "bye",       ttyMode(0); flushBlocks(); exit(0); )
 
 #define X(op, name, cod) op,
@@ -194,7 +197,7 @@ DE_T *addWord(const char *w) {
 	ushort newLast=last - sz;
 	DE_T *dp = (DE_T*)&dict[newLast];
 	dp->sz = sz;
-	dp->xt=here;
+	dp->xt = here;
 	dp->fl = 0;
 	dp->lx = (byte)lex;
 	dp->ln = ln;
@@ -320,10 +323,15 @@ void dotQuote() {
 
 void doRand() {
 	static cell sd = 0;
-	if (!sd) { sd = (cell)code  *clock(); }
-	sd = (sd << 13) ^ sd;
-	sd = (sd >> 17) ^ sd;
-	sd = (sd <<  5) ^ sd;
+	#if (CELL_SZ == 8)
+	int a=13, b=7, c=17; 
+	#else
+	int a=13, b=17, c=5; 
+	#endif
+	if (!sd) { sd = (cell)code ^ clock(); }
+	sd = (sd << a) ^ sd;
+	sd = (sd >> b) ^ sd;
+	sd = (sd << c) ^ sd;
 	push(sd);
 }
 
@@ -417,7 +425,7 @@ int setState(char *wd) {
 		return 0;
 	}
 	if (strEq(wd, ":D")) { return changeState(DEFINE);  }
-	if (strEq(wd, "["))  { return changeState(INTERP);  }
+	if (strEq(wd, "["))  { return changeState(MACRO);  }
 	if (strEq(wd, "]"))  { return changeState(COMPILE); }
 	if (strEq(wd, "("))  { return changeState(COMMENT); }
 	if (strEq(wd, "((")) { return changeState(COMMENT); }
@@ -490,10 +498,11 @@ void baseSys() {
 	parseF(": state     #%d ;", SA);
 	parseF(": (lex)     #%d ;", LXA);
 
-	parseF(addrFmt, "code", &code[0]);
-	parseF(addrFmt, "vars", &vars[0]);
-	parseF(addrFmt, "dict", &dict[0]);
-	parseF(addrFmt, ">in",  &toIn);
+	parseF(addrFmt, "code",    &code[0]);
+	parseF(addrFmt, "vars",    &vars[0]);
+	parseF(addrFmt, "dict",    &dict[0]);
+	parseF(addrFmt, ">in",     &toIn);
+	// parseF(addrFmt, "(vhere)", &vhere);
 
 	parseF(": code-sz    #%d ;", CODE_SZ);
 	parseF(": vars-sz    #%d ;", VARS_SZ);
