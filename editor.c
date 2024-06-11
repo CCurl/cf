@@ -357,7 +357,6 @@ void doEditor(int blk) {
         showCursor();
         processEditorChar(edKey());
     }
-    GotoXY(1, NUM_LINES + 7);
     CursorOn();
     // CursorShape(5);
 }
