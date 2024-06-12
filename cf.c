@@ -1,7 +1,3 @@
-//#include <stdio.h>
-//#include <stdlib.h>
-//#include <stdarg.h>
-//#include <time.h>
 #include "cf.h"
 
 #define NCASE         goto next; case
@@ -425,7 +421,7 @@ int setState(char *wd) {
 		return 0;
 	}
 	if (strEq(wd, ":D")) { return changeState(DEFINE);  }
-	if (strEq(wd, "["))  { return changeState(MACRO);  }
+	if (strEq(wd, "["))  { return changeState(IMMED);  }
 	if (strEq(wd, "]"))  { return changeState(COMPILE); }
 	if (strEq(wd, "("))  { return changeState(COMMENT); }
 	if (strEq(wd, "((")) { return changeState(COMMENT); }
@@ -443,7 +439,7 @@ void doOuter(const char *src) {
 			BCASE DEFINE:  addWord(wd);
 			BCASE COMPILE: isErr = (!doCompile(wd));
 			BCASE INTERP:  isErr = (!doInterpret(wd));
-			BCASE MACRO:   isErr = (!doInterpret(wd));
+			BCASE IMMED:   isErr = (!doInterpret(wd));
 			BCASE COMMENT:  break;
 			default: printString("-state?-"); break;
 		}

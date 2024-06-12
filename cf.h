@@ -1,16 +1,8 @@
 #ifndef __CF_H__
 #define __CF_H__
 
-#define _CRT_SECURE_NO_WARNINGS
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdarg.h>
-#include <stdint.h>
-#include <time.h>
-
 #ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
 #define IS_WINDOWS 1
 #define IS_PC      1
 #endif
@@ -18,6 +10,13 @@
 #ifdef IS_LINUX
 #define IS_PC      1
 #endif
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdarg.h>
+#include <stdint.h>
+#include <time.h>
 
 #define RED      1
 #define GREEN    2
@@ -30,7 +29,7 @@
 #define DEFINE   RED
 #define COMPILE  GREEN
 #define INTERP   ORANGE
-#define MACRO    BLUE
+#define IMMED    BLUE
 #define XXXXX0   PURPLE
 #define XXXXX1   CYAN
 #define COMMENT  WHITE
@@ -71,7 +70,7 @@ typedef unsigned char byte;
 typedef union { FLT_T f; cell i; } SE_T;
 typedef struct { ushort xt; byte sz, fl, lx, ln; char nm[32]; } DE_T;
 
-// These are defined by c4.c
+// These are defined by cf.c
 extern void Init();
 extern void REP();
 extern int  strLen(const char *s);
