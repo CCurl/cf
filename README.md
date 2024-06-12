@@ -20,10 +20,10 @@
 
 |Mode       |Color   | Code  |Editor  | Word(s) |
 | :--       | :--    | :--   | :--    | :--     |
-| DEFINE    | red    | 1     | ctrl-a | ":"     |
+| DEFINE    | red    | 1     | ctrl-a | ":" or ":D" |
 | COMPILE   | green  | 2     | ctrl-b | "]" or ")"  |
-| INTERPRET | orange | 3     | ctrl-c | "[" or "))" |
-| IMMEDIATE | blue   | 4     | ctrl-d | "[" or "))" |
+| INTERPRET | orange | 3     | ctrl-c | ";" or "))" |
+| IMMEDIATE | blue   | 4     | ctrl-d | "["         |
 | COMMENT   | white  | 7     | ctrl-g | "(" or "((" |
 
 ## Blocks
