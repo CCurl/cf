@@ -4,7 +4,6 @@
 #define BCASE         break; case
 #define here          code[HA]
 #define last          code[LA]
-#define vhere         code[VHA]
 #define base          code[BA]
 #define state         code[SA]
 #define lex           code[LXA]
@@ -18,10 +17,10 @@ SE_T stk[STK_SZ+1];
 ushort code[CODE_SZ+1];
 byte dict[DICT_SZ+1], vars[VARS_SZ+1];
 short sp, rsp, lsp, aSp;
-cell A, B, S, D, lstk[LSTK_SZ], rstk[RSTK_SZ+1];
+cell vhere, A, B, S, D, lstk[LSTK_SZ], rstk[RSTK_SZ+1];
 char *tib, wd[32], *toIn, wordAdded;
 
-enum { HA=0,LA, VHA, BA, SA, LXA };
+enum { HA=0,LA, BA, SA, LXA };
 
 #define BOARDPRIMS \
 /*	X(BOINPUT, "o-in",      t = pop(); printStringF("-input:%d-", (int)t); ) \     */
@@ -293,7 +292,7 @@ void dotS() {
 }
 
 void quote() {
-	ushort vh = vhere;
+	cell vh = vhere;
 	vars[vh++] = 0; // Length byte
 	if (*toIn) { ++toIn; }
 	while (*toIn) {
@@ -489,7 +488,6 @@ void baseSys() {
 
 	parseF(": (here)    #%d ;", HA);
 	parseF(": (last)    #%d ;", LA);
-	parseF(": (vhere)   #%d ;", VHA);
 	parseF(": base      #%d ;", BA);
 	parseF(": state     #%d ;", SA);
 	parseF(": (lex)     #%d ;", LXA);
@@ -498,7 +496,7 @@ void baseSys() {
 	parseF(addrFmt, "vars",    &vars[0]);
 	parseF(addrFmt, "dict",    &dict[0]);
 	parseF(addrFmt, ">in",     &toIn);
-	// parseF(addrFmt, "(vhere)", &vhere);
+	parseF(addrFmt, "(vhere)", &vhere);
 
 	parseF(": code-sz    #%d ;", CODE_SZ);
 	parseF(": vars-sz    #%d ;", VARS_SZ);

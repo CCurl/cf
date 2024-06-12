@@ -1,5 +1,5 @@
 (( core )) ->codecode + ; ->varsvars + ; ->dictdict + ; lex(lex) @c ; >lex(lex) !C ;    
-here (here)  @c ; last(last) @c ; vhere(vhere) @c ; ,here dup 1+ (here) !c !c ;            
+here (here)  @c ; last(last) @c ; vhere(vhere) @ ; ,here dup 1+ (here) !c !c ;             
 beginhere ; again(jmp) , , ; while(jmpnz) , , ; until(jmpz) , , ;                          
 if (jmpz)  , here 0 , ; else(jmp) , here swap 0 , here swap !c ; thenhere swap !c ;          
 -if(njmpz) , here 0 , ; allotvhere + (vhere) !c ; ,vvhere ->vars ! cell allot ;              
