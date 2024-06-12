@@ -121,7 +121,7 @@ void showStatus() {
 void showHelp() {
     GotoXY(1, NUM_LINES+1);
     Color(WHITE, 0);
-    printString("\r\n  (^A) Define (^B) Compile (^C) Interpret (^D) Macro (^G) Comment");
+    printString("\r\n  (^A) Define (^B) Compile (^C) Interpret (^D) Immediate (^G) Comment");
 }
 
 void showEditor() {

@@ -1,29 +1,29 @@
 # cf - a ColorForth inspired system
 
-<img src="/images/editing.jpg" width="250" height="250" />
+<img src="/images/editing.jpg" width="300" height="300" />
 
 ## What is cf?
 - cf is inspired by ColorForth, but it is NOT ColorForth.
 - Like ColorForth, cf uses markers in the source to control its mode.
 - cf uses the VM from c4. See this for details: https://github.com/CCurl/c4
-- cf has 5 modes: DEFINE, COMMENT, MACRO, COMPILE, INTERPRET.
+- cf has 5 modes: DEFINE, COMPILE, INTERPRET, IMMEDIATE, and COMMENT.
 - cf supports using either a marker byte in the whitespace or a word to identify each mode.
 - cf includes a simple block editor that colors the file to identify how it will be processed.
 - cf is a work in progress. **Please collaborate with me on it!**
 
 ## Notes:
-- Words like IF/THEN are defined in block 1.
-- They are BLUE (MACRO) because they generate code.
-- BEGIN, WHILE, UNTIL, and AGAIN are also interpreted.
+- Words like IF/ELSE/THEN are defined in block 1.
+- They are BLUE (IMMEDIATE) because they generate code.
+- BEGIN, WHILE, UNTIL, and AGAIN are also IMMEDIATE.
 
 ## The markers:
 
 |Mode       |Color   | Code  |Editor  | Word(s) |
 | :--       | :--    | :--   | :--    | :--     |
-| DEFINE    | red    | 1     | ctrl-a | ":"     |
+| DEFINE    | red    | 1     | ctrl-a | ":" or ":D" |
 | COMPILE   | green  | 2     | ctrl-b | "]" or ")"  |
-| INTERPRET | orange | 3     | ctrl-c | "[" or "))" |
-| MACRO     | blue   | 4     | ctrl-d | "[" or "))" |
+| INTERPRET | orange | 3     | ctrl-c | ";" or "))" |
+| IMMEDIATE | blue   | 4     | ctrl-d | "["         |
 | COMMENT   | white  | 7     | ctrl-g | "(" or "((" |
 
 ## Blocks
@@ -32,7 +32,7 @@
 
 ## The Editor
 
-The editor supports 25 lines of 100 characters each.
+The editor supports (by default) 25 lines of 100 characters each.
 
 The editor has 3 modes: NORMAL, INSERT and REPLACE.
 
@@ -42,7 +42,7 @@ The editor has 3 modes: NORMAL, INSERT and REPLACE.
 | [ctrl-a] | Insert a space if necessary. Place DEFINE marker. |
 | [ctrl-b] | Insert a space if necessary. Place COMPILE marker. |
 | [ctrl-c] | Insert a space if necessary. Place INTERPRET marker. |
-| [ctrl-d] | Insert a space if necessary. Place MACRO marker. |
+| [ctrl-d] | Insert a space if necessary. Place IMMED marker. |
 | [ctrl-e] | (Unused) |
 | [ctrl-f] | (Unused) |
 | [ctrl-g] | Insert a space if necessary. Place COMMENT marker. |
@@ -76,7 +76,7 @@ The editor has 3 modes: NORMAL, INSERT and REPLACE.
 | b        | Insert a space (line-only). |
 | B        | Insert a space. |
 | C        | Delete to EOL and change MODE to INSERT. |
-| d[x]     | [x] identifies what to delete. |
+| d[x]     | [x] identifies what to delete. See the "Deleting" section below. |
 | D        | Delete the current line into the YANK buffer. |
 | e        | Move down 5 lines. |
 | g        | Move to the beginning of the block. |
