@@ -153,6 +153,9 @@
     <None Include="block-000.cf" />
     <None Include="block-001.cf" />
     <None Include="block-002.cf" />
+    <None Include="block-003.cf" />
+    <None Include="block-005.cf" />
+    <None Include="block-200.cf" />
     <None Include="lib.fs" />
     <None Include="LICENSE" />
     <None Include="makefile" />

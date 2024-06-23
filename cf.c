@@ -1,14 +1,9 @@
-//#include <stdio.h>
-//#include <stdlib.h>
-//#include <stdarg.h>
-//#include <time.h>
 #include "cf.h"
 
 #define NCASE         goto next; case
 #define BCASE         break; case
 #define here          code[HA]
 #define last          code[LA]
-#define vhere         code[VHA]
 #define base          code[BA]
 #define state         code[SA]
 #define lex           code[LXA]
@@ -22,29 +17,32 @@ SE_T stk[STK_SZ+1];
 ushort code[CODE_SZ+1];
 byte dict[DICT_SZ+1], vars[VARS_SZ+1];
 short sp, rsp, lsp, aSp;
-cell A, B, S, D, lstk[LSTK_SZ], rstk[RSTK_SZ+1];
+cell vhere, A, B, S, D, lstk[LSTK_SZ], rstk[RSTK_SZ+1];
 char *tib, wd[32], *toIn, wordAdded;
 
-enum { HA=0,LA, VHA, BA, SA, LXA };
+enum { HA=0,LA, BA, SA, LXA };
 
 #define BOARDPRIMS \
 /*	X(BOINPUT, "o-in",      t = pop(); printStringF("-input:%d-", (int)t); ) \     */
 /*	X(BOPU,    "o-pu",      t = pop(); printStringF("-input/pullup:%d-", (int)t); ) \     */
 /*	X(BOINPUT, "o-out",     t = pop(); printStringF("-output:%d-", (int)t); )     */
 
-#define FILEPRIMS \
+#define BLOCKPRIMS \
 	X(BLOCK,   "block",     TOS=(cell)blockData((int)TOS); ) \
+	X(LOAD,    "load",      t=pop(); blockLoad((int)t); ) \
+	X(RELOAD,  "reload",    t=pop(); blockReload((int)t); ) \
 	X(DIRTY,   "dirty",     t=pop(); n=pop(); blockDirty((int)n, (int)t); ) \
 	X(DIRTYQ,  "dirty?",    TOS = blockDirtyQ((int)TOS); ) \
 	X(FLUSH,   "flush",     flushBlocks(); ) \
-	X(EDIT,    "edit",      doEditor((int)pop()); ) \
+	X(EDIT,    "edit",      doEditor((int)pop()); )
+
+#define FILEPRIMS \
 	X(FLOPEN,  "fopen",     t=pop(); n=pop(); push(fileOpen((char*)n, (char*)t)); ) \
 	X(FLCLOSE, "fclose",    t=pop(); fileClose(t); ) \
-	X(FLREAD,  "fread",     t=pop(); n=pop(); TOS = fileRead((byte*)TOS, n, t); ) \
-	X(FLWRITE, "fwrite",    t=pop(); n=pop(); TOS = fileWrite((byte*)TOS, n, t); ) \
+	X(FLREAD,  "fread",     t=pop(); n=pop(); TOS = fileRead((byte*)TOS, (int)n, t); ) \
+	X(FLWRITE, "fwrite",    t=pop(); n=pop(); TOS = fileWrite((byte*)TOS, (int)n, t); ) \
 	X(FLGETS,  "fgets",     t=pop(); n=pop(); TOS = fileGets((char*)TOS, (int)n, t); ) \
 	X(FLLOAD,  "fload",     t=pop(); fileLoad((char*)t); ) \
-	X(LOAD,    "load",      t=pop(); blockLoad((int)t); ) \
 	X(LOADED,  "loaded?",   t=pop(); pop(); if (t) { fileClose(inputFp); inputFp=filePop(); } )
 
 #define PRIMS \
@@ -100,10 +98,10 @@ enum { HA=0,LA, VHA, BA, SA, LXA };
 	X(CLK,     "timer",     push(clock()); ) \
 	X(SEE,     "see",       doSee(); ) \
 	X(COUNT,   "count",     t=pop(); push(t+1); push(*(byte*)t); ) \
-	X(TYPE,    "type",      t=pop(); char *y=(char*)pop(); for (int i=0; i<t; i++) emit(y[i]); ) \
+	X(TYPE,    "type",      t=pop(); char *y=(char*)pop(); for (cell i=0; i<t; i++) emit(y[i]); ) \
 	X(ADDW,    "add-word",  addWord(0); ) \
 	X(QUOTE,   "\"",        quote(); ) \
-	X(DOTQT,   ".\"",       quote(); comma(COUNT); comma(TYPE); ) \
+	X(DOTQT,   ".\"",       dotQuote(); ) \
 	X(RAND,    "rand",      doRand(); ) \
 	X(ITOA,    "to-string", t=pop(); push((cell)iToA(t, base)); ) \
 	X(DOTS,    ".s",        dotS(); ) \
@@ -115,7 +113,7 @@ enum { HA=0,LA, VHA, BA, SA, LXA };
 	X(STRLEN,  "strlen",    TOS=strlen((char*)TOS); ) \
 	X(KEY,     "key",       push(key()); ) \
 	X(QKEY,    "?key",      push(qKey()); ) \
-	FILEPRIMS BOARDPRIMS \
+	BOARDPRIMS FILEPRIMS BLOCKPRIMS \
 	X(BYE,     "bye",       ttyMode(0); flushBlocks(); exit(0); )
 
 #define X(op, name, cod) op,
@@ -194,7 +192,7 @@ DE_T *addWord(const char *w) {
 	ushort newLast=last - sz;
 	DE_T *dp = (DE_T*)&dict[newLast];
 	dp->sz = sz;
-	dp->xt=here;
+	dp->xt = here;
 	dp->fl = 0;
 	dp->lx = (byte)lex;
 	dp->ln = ln;
@@ -294,29 +292,41 @@ void dotS() {
 }
 
 void quote() {
-	comma(LIT2);
-	commaCell((cell)&vars[vhere]);
-	ushort start = vhere;
-	vars[vhere++] = 0; // Length byte
+	cell vh = vhere;
+	vars[vh++] = 0; // Length byte
 	if (*toIn) { ++toIn; }
 	while (*toIn) {
 		if (*toIn == '"') { ++toIn; break; }
-		vars[vhere++] = *(toIn++);
-		++vars[start];
+		vars[vh++] = *(toIn++);
+		++vars[vhere];
 	}
-	vars[vhere++] = 0; // NULL terminator
+	vars[vh++] = 0; // NULL terminator
+	if (state == INTERP) {
+		push((cell) &vars[vhere]);
+	} else {
+		comma(LIT2);
+		commaCell((cell)&vars[vhere]);
+		vhere = vh;
+	}
 }
 
 void dotQuote() {
-	quote(); comma(COUNT); comma(TYPE);
+	quote();
+	if (state == INTERP) { printString((char*)pop() + 1); }
+	else { comma(COUNT); comma(TYPE); }
 }
 
 void doRand() {
 	static cell sd = 0;
-	if (!sd) { sd = (cell)code  *clock(); }
-	sd = (sd << 13) ^ sd;
-	sd = (sd >> 17) ^ sd;
-	sd = (sd <<  5) ^ sd;
+	#if (CELL_SZ == 8)
+	int a=13, b=7, c=17; 
+	#else
+	int a=13, b=17, c=5; 
+	#endif
+	if (!sd) { sd = (cell)code ^ clock(); }
+	sd = (sd << a) ^ sd;
+	sd = (sd >> b) ^ sd;
+	sd = (sd << c) ^ sd;
 	push(sd);
 }
 
@@ -410,7 +420,7 @@ int setState(char *wd) {
 		return 0;
 	}
 	if (strEq(wd, ":D")) { return changeState(DEFINE);  }
-	if (strEq(wd, "["))  { return changeState(INTERP);  }
+	if (strEq(wd, "["))  { return changeState(IMMED);  }
 	if (strEq(wd, "]"))  { return changeState(COMPILE); }
 	if (strEq(wd, "("))  { return changeState(COMMENT); }
 	if (strEq(wd, "((")) { return changeState(COMMENT); }
@@ -428,7 +438,7 @@ void doOuter(const char *src) {
 			BCASE DEFINE:  addWord(wd);
 			BCASE COMPILE: isErr = (!doCompile(wd));
 			BCASE INTERP:  isErr = (!doInterpret(wd));
-			BCASE MACRO:   isErr = (!doInterpret(wd));
+			BCASE IMMED:   isErr = (!doInterpret(wd));
 			BCASE COMMENT:  break;
 			default: printString("-state?-"); break;
 		}
@@ -478,15 +488,15 @@ void baseSys() {
 
 	parseF(": (here)    #%d ;", HA);
 	parseF(": (last)    #%d ;", LA);
-	parseF(": (vhere)   #%d ;", VHA);
 	parseF(": base      #%d ;", BA);
 	parseF(": state     #%d ;", SA);
 	parseF(": (lex)     #%d ;", LXA);
 
-	parseF(addrFmt, "code", &code[0]);
-	parseF(addrFmt, "vars", &vars[0]);
-	parseF(addrFmt, "dict", &dict[0]);
-	parseF(addrFmt, ">in",  &toIn);
+	parseF(addrFmt, "code",    &code[0]);
+	parseF(addrFmt, "vars",    &vars[0]);
+	parseF(addrFmt, "dict",    &dict[0]);
+	parseF(addrFmt, ">in",     &toIn);
+	parseF(addrFmt, "(vhere)", &vhere);
 
 	parseF(": code-sz    #%d ;", CODE_SZ);
 	parseF(": vars-sz    #%d ;", VARS_SZ);
@@ -531,4 +541,5 @@ void REP() {
 	if (inputFp == 0) { exit(0); }
 	fileClose(inputFp);
 	inputFp = filePop();
+	state = INTERP;
 }

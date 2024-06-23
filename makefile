@@ -21,11 +21,11 @@ $(app32): $(srcfiles) $(incfiles)
 clean:
 	rm -f $(app) $(app32)
 
-run: $(app)
-	./$(app)
-
 test: $(app)
 	./$(app) block-200.cf
 
 bin: $(app)
 	cp -u -p $(app) ~/bin/
+
+run: $(bin)
+	./$(app)
