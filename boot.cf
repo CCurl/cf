@@ -44,18 +44,16 @@
 : tdrop  t> drop ; inline
 : atdrop a> drop t> drop ; inline
 
-: comp?   ( --n ) state @ ;
 : (quote) ( -- )  vhere dup >t  >in @ 1+ >a
-   begin
+   [ begin ]
       @a '"' = [ if ]
          0 !t+  a> 1+ >in !
-         comp? [ if ] t> (vha) ! (lit4) c, , exit [ then ]
-         tdrop exit
+         t> (vha) ! (lit4) c, , exit
       [ then ] @a+ !t+
-   again ;
+   [ again ] ;
 
 : "  (quote) ;
-: ." (quote) comp? [ if ] (ztype) c, exit [ then ] ztype ;
+: ." (quote) (ztype) c, exit ;
 
 : bl 32 ; inline
 : tab 9 emit ; inline
@@ -116,10 +114,10 @@
 : de>flags cell + c@ ;
 : de>len   cell + 1+ c@ ;
 : de>name  cell + 2+ ;
-: .de-word de>name ztype t@+ 10 mod if0 cr exit [ then ] tab ;
-: words last >a 1 >t begin
+: .de-word de>name ztype t@+ 10 mod [ if0 ] cr exit [ then ] tab ;
+: words last >a 1 >t [ begin ]
     a@ .de-word a@ de-sz + a!
-    a@ dict-end < [ while ] lpar t> 1- . ." words)" adrop ;
+    a@ dict-end < [ while ] lpar t> 1- . [ ." words)" ] adrop ;
 
 (( memory ))
 : fill ( b a n-- ) for 2dup c! 1+ next 2drop ;
@@ -141,12 +139,12 @@
 : csi       ( -- )    27 emit '[' emit ;
 : ->cr      ( c r-- ) csi (.) ';' emit (.) 'H' emit ;
 : ->rc      ( r c-- ) swap ->cr ;
-: cls       ( -- )    csi ." 2J" 1 dup ->cr ;
-: clr-eol   ( -- )    csi ." 0K" ;
-: cur-on    ( -- )    csi ." ?25h" ;
-: cur-off   ( -- )    csi ." ?25l" ;
-: cur-block ( -- )    csi ." 2 q" ;
-: cur-bar   ( -- )    csi ." 5 q" ;
+: cls       ( -- )    csi [ ." 2J" ] 1 dup ->cr ;
+: clr-eol   ( -- )    csi [ ." 0K" ] ;
+: cur-on    ( -- )    csi [ ." ?25h" ] ;
+: cur-off   ( -- )    csi [ ." ?25l" ] ;
+: cur-block ( -- )    csi [ ." 2 q" ] ;
+: cur-bar   ( -- )    csi [ ." 5 q" ] ;
 
 : color   ( bg fg-- ) csi (.) ';' emit (.) 'm' emit ;
 : fg      ( fg-- )    40 swap color ;
@@ -154,7 +152,7 @@
 : green  32 fg ;      : yellow 33 fg ;
 : blue   34 fg ;      : purple 35 fg ;
 : cyan   36 fg ;      : grey   37 fg ;
-: colors 31 >a 7 for a@ fg ." color #" a@+ . cr next white adrop ;
+: colors 31 >a 7 for a@ fg [ ." color #" ] a@+ . cr next white adrop ;
 
 (( blocks ))
 : block-max   499 ; inline
@@ -162,9 +160,9 @@
 : disk-sz block-max 1+ block-sz * ;
 : disk vars vars-sz + disk-sz - ;
 : ->block   ( n--a )  block-max min block-sz * disk + ;
-: disk-read " disk.c5" " rb" fopen ?dup
+: disk-read [ " disk.c5" ] [ " rb" ] fopen ?dup
    [ if ] >a disk disk-sz a@ fread  a> fclose [ then ] ;
-: disk-flush " disk.c5" " wb" fopen ?dup
+: disk-flush [ " disk.c5" ] [ " wb" ] fopen ?dup
    [ if ] >a disk disk-sz a@ fwrite  a> fclose [ then ] ;
 [ disk-read
 
@@ -203,11 +201,11 @@
 : ->cur  col@ 2+ row@ 2+ ->cr ;
 : ->foot 1 rows 3 + ->cr ;
 : ->cmd ->foot cr ;
-: .foot ->foot ." Block #" blk @ .
+: .foot ->foot [ ." Block #" ] blk @ .
    bl dirty? [ if ] drop '*' [ then ] emit space
    lpar row@ 1+ (.) ',' emit col@ 1+ (.) rpar
-   repl? [ if ] yellow ."  -replace-" white [ then ]
-   ins?  [ if ] purple ."  -insert-"  white [ then ]
+   repl? [ if ] yellow [ ."  -replace-" ] white [ then ]
+   ins?  [ if ] purple [ ."  -insert-" ]  white [ then ]
    space lpar '#' emit rc->pos c@ (.) rpar clr-eol ;
 : printable? ( c--f ) dup  31 >  swap 127 < and ;
 : show show? [ if ] cur-off .scr cur-on shown [ then ] .foot ->cur ;
@@ -238,39 +236,40 @@
 
 (( VI-like commands ))
 [ vhere const ed-cases
-[ 'h'  case  mv-left           'j'  case  mv-down  
-[ 'k'  case  mv-up             'l'  case  mv-right
-[ 32   case  mv-right          'b'  case  ins-bl
-[ 'x'  case  del-ch            'C'  case  clr-line
-[ 'R'  case  ->repl            'I'  case  ->ins
-[ 'O'  case  ins-line          'D'  case  del-line
-[ '+'  case  next-pg           '-'  case  prev-pg
-[ 27   case  ->norm            13   case! mv-down 0 col! ;
-[ 'X'  case! mv-left del-ch ;  'o'  case! mv-down ins-line ;
-[ '_'  case! 0 col! ;           3   case! 99 mode! ;
-[ 0 vc, 0 v, ( end )
+[ 'h'  case  mv-left               'j'  case  mv-down  
+[ 'k'  case  mv-up                 'l'  case  mv-right
+[ 32   case  mv-right              'b'  case  ins-bl
+[ 'x'  case  del-ch                'C'  case  clr-line
+[ 'r'  case  ->repl                'i'  case  ->ins
+[ 'O'  case  ins-line              'D'  case  del-line
+[ '+'  case  next-pg               '-'  case  prev-pg
+[ 27   case  ->norm
+[ 13   case! ] mv-down 0 col! ;  [ 'X'  case! ] mv-left del-ch ;
+[ '_'  case! ] 0 col! ;          [ 'o'  case! ] mv-down ins-line ;
+[  3   case! ] 99 mode! ;
+[ 0 vc, 0 v, (( end ))
 
 (( switch: case-table process ))
 : switch ( tbl-- )
-   >t begin
+   >t [ begin ]
       @t [ if0 ] tdrop exit [ then ]
       @t+ a@ = [ if ]  t> @ >r exit [ then ]
       t@ cell+ t!
-   again tdrop ;
+   [ again ] tdrop ;
 
 : process-key ( --)
    a@ 27 = [ if ] ->norm exit [ then ]
    ins?  [ if ] insert-char exit [ then ]
    repl? [ if ] replace-char exit [ then ]
    ed-cases switch ;
-: ed-loop[ [ begin ] ]show key >a process-key adrop quit?[ [ until ]  ];
+: ed-loop [ begin ] show key >a process-key adrop quit? [ until ] ;
 : ed-init block->ed 0 mode! show! 0 dup row! col! cls ;
 : ed  ed-init ed-loop ed->block ->cmd ;
 : edit  blk ! ed ;
 
 : reboot
    -vha- (vha) !  -la- (la) !  -ha- (ha) !
-   " boot.c5" " rb" fopen ?dup [ if ] >a
+   [ " boot.c5" ] [ " rb" ] fopen ?dup [ if ] >a
       vars 10000 + >t 
       0 t@ 25000 fill 
       t@ 25000 a@ fread drop a> fclose
@@ -281,9 +280,9 @@
 : .ascii ( -- ) a@ $10 - $10 for dup c@ aemit 1+ next drop ;
 : dump ( f n-- ) swap >a 0 >t
    for
-      t@ [ if0 ] cr a@ .hex ." : " [ then ]
+      t@ [ if0 ] cr a@ .hex [ ." : " ] [ then ]
       @a+ .hex
-      t@+ $0e = [ if ] ."    " .ascii 0 t! [ then ]
+      t@+ $0e = [ if ] [ ."    " ] .ascii 0 t! [ then ]
    next drop atdrop ;
 
 (( fg: forget-one ))
@@ -295,20 +294,20 @@
 : marker here fgh ! last fgl ! vhere fgv ! ;
 : forget fgh @ (ha) ! fgl @ (la) ! fgv @ (vha) ! ;
 
-: .ver  green ." c5 v" version <# # # #. # # #. #s #> ztype white cr ;
-[ .ver ." hello"
-
+: .version  green [ ." cf v" ] version <# # # #. # # #. #s #> ztype white cr ;
 [ marker
+: hi .version [ ." hello" ]
+[ hi forget
 
 (( temp for testing ))
 
 : boot->disk vars 10000 + disk 25000 cmove ;
 : mil 1000 dup * * ;
-: elapsed timer swap - . ." usec" ;
+: elapsed timer swap - . [ ." usec" ] ;
 : bm timer swap for next elapsed ;
 : fib 1- dup 2 < [ if ] drop 1 exit [ then ] dup fib swap 1- fib + ;
 : fib-bm timer swap fib . elapsed ;
-: lg " lazygit" system ;
-: ls " ls -l" system ;
-: pwd " pwd" system ;
+: lg   [ " lazygit" ] system ;
+: ls   [ " ls -l" ] system ;
+: pwd  [ " pwd" ] system ;
 [ boot->disk

@@ -277,7 +277,7 @@ int outer(const char *src) {
 	toIn = (char*)src;
 	while (nextWord()) {
 		if (isStateChange()) { continue; }
-		printf("-wd:[%s],(%d)-\n",wd,state);
+		// printf("-wd:[%s],(%d)-\n",wd,state);
 		if (state == COMMENT) { continue; }
 		if (state == DEFINE)  { if (addWord(wd)) { state = COMPILE; continue; } }
 		if (state == COMPILE) { if (compileWord()) { continue; } }
