@@ -166,18 +166,17 @@ DE_T *findWord(const char *w) {
 
 void inner(cell start) {
 	cell t, n;
-	//printf("\n");
 	byte *pc = (byte *)start;
 next:
 	if (pc==0) return;
-	// printf("\n-pc:%ld,ir:%d-",(cell)pc,*pc);
+	// printf("\n-pc:%lx,ir:%d-",(cell)pc,*pc);
 	switch(*(pc++)) {
 		case  STOP:   return;
 		NCASE LIT1:   push((byte)*(pc++));
 		NCASE LIT2:   push(fetchWord(pc)); pc += 2;
 		NCASE LIT4:   push(fetchCell(pc)); pc += CELL_SZ;
 		NCASE CALL:   t=(cell)pc+CELL_SZ; if (*(byte*)t!=EXIT) { rpush(t); } pc=(byte*)fetchCell(pc);
-		NCASE JMP:    pc=(byte*)fetchCell(pc); // zType("-jmp-");
+		NCASE JMP:    pc=(byte*)fetchCell(pc);
 		NCASE JMPZ:   t=fetchCell(pc); if (pop()==0) { pc = (byte*)t; } else { pc += CELL_SZ; }
 		NCASE NJMPZ:  t=fetchCell(pc); if (TOS==0)   { pc = (byte*)t; } else { pc += CELL_SZ; }
 		NCASE JMPNZ:  t=fetchCell(pc); if (pop())    { pc = (byte*)t; } else { pc += CELL_SZ; }
@@ -185,13 +184,12 @@ next:
 		PRIMS
 		default:
 			zType("-ir?-");
-			// goto next;
 			// printf("-ir:%d?-", *(pc-1));
-			return; // goto next;
+			return;
 	}
 }
 
-int isNum(const char *w) {
+int isNumber(const char *w) {
 	cell n=0, b=base, isNeg=0;
 	if ((w[0]==39) && (w[2]==39) && (w[3]==0)) { push(w[1]); return 1; }
 	if (w[0]=='#') { b=10; w++; }
@@ -210,7 +208,7 @@ int isNum(const char *w) {
 	return 1;
 }
 
-int compNum(cell n) {
+int compileNumber(cell n) {
 		if (btwi(n, 0, 0x7f)) { ccomma(LIT1); ccomma((byte)n); }
 		else if (btwi(n, 0, 0x7fff)) { ccomma(LIT2); wcomma((ushort)n); }
 		else { ccomma(LIT4); comma(n); }
@@ -218,10 +216,7 @@ int compNum(cell n) {
 }
 
 int interpretWord() {
-	// zType("-interpret:"); zType(w); zType("-");
-	if (isNum(wd)) {
-		return 1;
-	}
+	if (isNumber(wd)) { return 1; }
 
 	DE_T *dp = findWord(wd);
 	if (dp) {
@@ -233,16 +228,13 @@ int interpretWord() {
 		inner((cell)here+100);
 		return 1;
 	}
-	zType("-interp:");zType(wd);zType("?-");
+	zType("-interpret:[");zType(wd);zType("]?-");
 	return 0;
 }
 
 int compileWord() {
-	if (isNum(wd)) {
-		cell n = pop();
-		compNum(n);
-		return 1;
-	}
+	if (isNumber(wd)) { return compileNumber(pop()); }
+
 	DE_T *dp = findWord(wd);
 	if (dp) {
 		if ((dp->flags & 0x02)) {   // Inline
@@ -253,7 +245,7 @@ int compileWord() {
 		}
 		return 1;
 	}
-	zType("-comp:");zType(wd);zType("?-");
+	zType("-compile:[");zType(wd);zType("]?-");
 	return 0;
 }
 
@@ -276,14 +268,12 @@ int isStateChange() {
 int outer(const char *src) {
 	toIn = (char*)src;
 	while (nextWord()) {
-		if (isStateChange()) { continue; }
 		// printf("-wd:[%s],(%d)-\n",wd,state);
+		if (isStateChange()) { continue; }
 		if (state == COMMENT) { continue; }
 		if (state == DEFINE)  { if (addWord(wd)) { state = COMPILE; continue; } }
 		if (state == COMPILE) { if (compileWord()) { continue; } }
 		if (state == INTERP)  { if (interpretWord()) { continue; } }
-		zType("-error-");
-		printf("state: %d", state);
 		state = INTERP;
 		return 0;
 	}
@@ -291,7 +281,7 @@ int outer(const char *src) {
 }
 
 void defNum(const char *name, cell val) {
-	addWord(name); compNum(val); ccomma(EXIT);
+	addWord(name); compileNumber(val); ccomma(EXIT);
 }
 
 void baseSys() {
