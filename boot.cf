@@ -33,11 +33,13 @@
 : @a  a@  c@ ; inline
 : @a+ a@+ c@ ; inline
 : @a- a@- c@ ; inline
+: !a  a@  c! ; inline
 : !a+ a@+ c! ; inline
 : !a- a@- c! ; inline
 : @t  t@  c@ ; inline
 : @t+ t@+ c@ ; inline
 : @t- t@- c@ ; inline
+: !t  t@  c! ; inline
 : !t+ t@+ c! ; inline
 : !t- t@- c! ; inline
 : adrop  a> drop ; inline
@@ -257,7 +259,7 @@
       t@ cell+ t!
    [ again ] tdrop ;
 
-: process-key ( --)
+: process-key ( -- )
    a@ 27 = [ if ] ->norm exit [ then ]
    ins?  [ if ] insert-char exit [ then ]
    repl? [ if ] replace-char exit [ then ]
@@ -269,12 +271,12 @@
 
 : reboot
    -vha- (vha) !  -la- (la) !  -ha- (ha) !
-   [ " boot.c5" ] [ " rb" ] fopen ?dup [ if ] >a
+   [ " boot.cf" ] [ " rb" ] fopen ?dup [ if ] >a
       vars 10000 + >t 
       0 t@ 25000 fill 
       t@ 25000 a@ fread drop a> fclose
       t> >in !
-   [ then ] ;
+   [ then ] >in ;
 
 (( ... from Peter Jakacki ))
 : .ascii ( -- ) a@ $10 - $10 for dup c@ aemit 1+ next drop ;
@@ -300,14 +302,28 @@
 [ hi forget
 
 (( temp for testing ))
+vhere const wd 32 allot
+vhere const wd-in cell allot
 
+: skip-ws ( p1--p2 ) [ begin ] dup c@ 32 > [ if ] exit [ then ] 1+ [ again ] ;
+: next-wd ( p1 wd--p2 ) >t skip-ws >a
+   [ begin ]
+      @a 33 < [ if ] 0 !t a@ atdrop exit [ then ]
+      @a+ !t+
+   [ again ] ;
+
+(( move this boot code to the disk area ))
 : boot->disk vars 10000 + disk 25000 cmove ;
+[ boot->disk
+
+(( some benchmarks ))
 : mil 1000 dup * * ;
 : elapsed timer swap - . [ ." usec" ] ;
 : bm timer swap for next elapsed ;
 : fib 1- dup 2 < [ if ] drop 1 exit [ then ] dup fib swap 1- fib + ;
 : fib-bm timer swap fib . elapsed ;
+
 : lg   [ " lazygit" ] system ;
 : ls   [ " ls -l" ] system ;
 : pwd  [ " pwd" ] system ;
-[ boot->disk
+[
