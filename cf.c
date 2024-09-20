@@ -127,9 +127,23 @@ void strCpy(char *d, const char *s) {
 	*(d) = 0;
 }
 
+int changeState(int newState) {
+	state = newState;
+	return state;
+}
+
+int checkWhitespace(char c) {
+	if (c == 1) { return changeState(DEFINE); }
+	if (c == 2) { return changeState(INTERP); }
+	if (c == 3) { return changeState(COMPILE); }
+	if (c == 4) { return changeState(COMMENT); }
+	return 0;
+}
+
 int nextWord() {
 	int len = 0;
-	while (btwi(*toIn, 1, 32)) { ++toIn; }
+	while (btwi(*toIn, 1, 32)) { checkWhitespace(*(toIn++)); }
+	// while (btwi(*toIn, 1, 32)) { toIn++; }
 	while (btwi(*toIn, 33, 126)) { wd[len++] = *(toIn++); }
 	wd[len] = 0;
 	return len;
@@ -234,11 +248,6 @@ int compileWord(DE_T *dp) {
 		ccomma(CALL); comma(dp->xt);
 	}
 	return 1;
-}
-
-int changeState(int newState) {
-	state = newState;
-	return newState;
 }
 
 int isStateChange() {
