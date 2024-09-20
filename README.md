@@ -58,7 +58,9 @@ clang -m64 -O3 -o c5 *.c
 | COMPILE   | 3     | "]" or ")"  |
 | COMMENT   | 4     | "(" or "((" |
 
-**NOTE:** DEFINE also changes the mode to COMPILE after adding the word to the dictionary
+**NOTES:**
+- DEFINE changes the mode to COMPILE after adding the word to the dictionary
+- cf still supports IMMEDIATE words
 
 ## Blocks
 - Blocks are not native to cf.

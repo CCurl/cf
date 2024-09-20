@@ -42,7 +42,7 @@ char *toIn, wd[32];
 	X(LT,      "<",         0, t=pop(); TOS = (TOS < t); ) \
 	X(EQ,      "=",         0, t=pop(); TOS = (TOS == t); ) \
 	X(GT,      ">",         0, t=pop(); TOS = (TOS > t); ) \
-	X(SCMA,    ";",         0, if (0<rsp) { pc = (byte*)rpop(); } else { return; } ) \
+	X(SEMI,    ";",         1, ccomma(EXIT); ) \
 	X(EXIT,    "exit",      0, if (0<rsp) { pc = (byte*)rpop(); } else { return; } ) \
 	X(EQ0,     "0=",        0, TOS = (TOS == 0) ? 1 : 0; ) \
 	X(AND,     "and",       0, t=pop(); TOS &= t; ) \
