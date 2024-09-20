@@ -215,38 +215,25 @@ int compileNumber(cell n) {
 		return 1;
 }
 
-int interpretWord() {
-	if (isNumber(wd)) { return 1; }
-
-	DE_T *dp = findWord(wd);
-	if (dp) {
-		byte *y = here+100;
-		*(y++) = CALL;
-		storeCell(y, dp->xt);
-		y += CELL_SZ;
-		*(y) = STOP;
-		inner((cell)here+100);
-		return 1;
-	}
-	zType("-interpret:[");zType(wd);zType("]?-");
-	return 0;
+int executeWord(DE_T *dp) {
+	byte *y = here+100, *h = y;
+	*(h++) = CALL;
+	storeCell(h, dp->xt);
+	h += CELL_SZ;
+	*(h) = STOP;
+	inner((cell)y);
+	return 1;
 }
 
-int compileWord() {
-	if (isNumber(wd)) { return compileNumber(pop()); }
-
-	DE_T *dp = findWord(wd);
-	if (dp) {
-		if ((dp->flags & 0x02)) {   // Inline
-			byte *y = (byte*)dp->xt;
-			do { ccomma(*(y++)); } while ( *(y) != EXIT );
-		} else {
-			ccomma(CALL); comma(dp->xt);
-		}
-		return 1;
+int compileWord(DE_T *dp) {
+	if (dp->flags & 0x01) { return executeWord(dp); };
+	if ((dp->flags & 0x02)) {   // Inline
+		byte *y = (byte*)dp->xt;
+		do { ccomma(*(y++)); } while ( *(y) != EXIT );
+	} else {
+		ccomma(CALL); comma(dp->xt);
 	}
-	zType("-compile:[");zType(wd);zType("]?-");
-	return 0;
+	return 1;
 }
 
 int changeState(int newState) {
@@ -268,12 +255,23 @@ int isStateChange() {
 int outer(const char *src) {
 	toIn = (char*)src;
 	while (nextWord()) {
-		// printf("-wd:[%s],(%d)-\n",wd,state);
 		if (isStateChange()) { continue; }
+		// printf("-wd:[%s],(%d)-",wd,state);
 		if (state == COMMENT) { continue; }
 		if (state == DEFINE)  { if (addWord(wd)) { state = COMPILE; continue; } }
-		if (state == COMPILE) { if (compileWord()) { continue; } }
-		if (state == INTERP)  { if (interpretWord()) { continue; } }
+		if (isNumber(wd)) {
+			if (state == COMPILE) { compileNumber(pop()); }
+			continue;
+		}
+		DE_T *dp = findWord(wd);
+		if (!dp) {
+			zType("-["); zType(wd); zType("]?-");
+			state = INTERP;
+			return 0;
+		}
+		if (state == INTERP) { executeWord(dp); continue; }
+		if (state == COMPILE) { compileWord(dp); continue; }
+		zType("-state?-");
 		state = INTERP;
 		return 0;
 	}

@@ -5,7 +5,7 @@
 ## What is cf?
 - cf is inspired by ColorForth, but it is NOT ColorForth.
 - Like ColorForth, cf uses markers in the source to control its mode.
-- cf uses the VM from c4. See this for details: https://github.com/CCurl/c4
+- cf uses the VM from c5. See this for details: https://github.com/CCurl/c5
 - cf has 5 modes: DEFINE, COMPILE, INTERPRET, IMMEDIATE, and COMMENT.
 - cf supports using either a marker byte in the whitespace or a word to identify each mode.
 - cf includes a simple block editor that colors the file to identify how it will be processed.
