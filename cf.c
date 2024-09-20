@@ -230,12 +230,11 @@ int compileNumber(cell n) {
 }
 
 int executeWord(DE_T *dp) {
-	byte *y = here+100, *h = y;
-	*(h++) = CALL;
-	storeCell(h, dp->xt);
-	h += CELL_SZ;
-	*(h) = STOP;
-	inner((cell)y);
+	byte *h = here+100;
+	*(h) = CALL;
+	storeCell(h+1, dp->xt);
+	*(h+1+CELL_SZ) = STOP;
+	inner((cell)h);
 	return 1;
 }
 
