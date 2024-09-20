@@ -337,11 +337,11 @@ void baseSys() {
 }
 
 void Init() {
-	base       = 10;
-	here       = &code[0];
-	vhere      = &vars[0];
-	last       = (cell)&dict[MAX_DICT];
-	dictEnd    = last;
+	base    = 10;
+	here    = &code[0];
+	vhere   = &vars[0];
+	last    = (cell)&dict[MAX_DICT];
+	dictEnd = last;
 	dsp = rsp = lsp = tsp = asp = state = 0;
 	baseSys();
 }
