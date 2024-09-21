@@ -1,31 +1,17 @@
-app := cf
-app32 := cf32
+ARCH ?= 64
+CFLAGS = -O3 -m$(ARCH)
 
-CXX := clang
-CXXFLAGS := -O3 -D IS_LINUX
+cf: cf.c cf.h system.c
+	$(CC) $(CFLAGS) cf.c system.c -o $@
 
-srcfiles := $(shell find . -name "*.c")
-incfiles := $(shell find . -name "*.h")
-LDLIBS   := -lm
-
-all: $(app)
-
-$(app): $(srcfiles) $(incfiles)
-	$(CXX) -m64 -D _M64_ $(CXXFLAGS) $(LDFLAGS) -o $(app) $(srcfiles) $(LDLIBS)
-	ls -l $(app)
-
-$(app32): $(srcfiles) $(incfiles)
-	$(CXX) -m32 $(CXXFLAGS) $(LDFLAGS) -o $(app32) $(srcfiles) $(LDLIBS)
-	ls -l $(app32)
+run: cf
+	./cf
 
 clean:
-	rm -f $(app) $(app32)
+	rm -f cf
 
-run: $(app)
-	./$(app)
+test: cf
+	./cf block-200.cf
 
-test: $(app)
-	./$(app) block-200.cf
-
-bin: $(app)
-	cp -u -p $(app) ~/bin/
+bin: cf
+	cp -u -p cf ~/bin/

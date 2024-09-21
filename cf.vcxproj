@@ -139,10 +139,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="block.c" />
     <ClCompile Include="cf.c" />
-    <ClCompile Include="editor.c" />
-    <ClCompile Include="file.c" />
     <ClCompile Include="system.c" />
   </ItemGroup>
   <ItemGroup>
@@ -150,10 +147,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
-    <None Include="block-000.cf" />
-    <None Include="block-001.cf" />
-    <None Include="block-002.cf" />
-    <None Include="lib.fs" />
+    <None Include="boot.cf" />
     <None Include="LICENSE" />
     <None Include="makefile" />
     <None Include="README.md" />
