@@ -86,7 +86,7 @@ char *toIn, wd[32];
 	X(FSEEK,   "fseek",     0, t=pop(); n=pop(); fSeek(t,n); ) \
 	X(SYSTEM,  "system",    0, t=pop(); ttyMode(0); system((char*)t); ) \
 	X(SCOPY,   "s-cpy",     0, t=pop(); strCpy((char*)TOS, (char*)t); ) \
-	X(SEQI,    "s-eqi",     0, t=pop(); n=pop(); strEqI((char*)n, (char*)t); ) \
+	X(SEQI,    "s-eqi",     0, t=pop(); n=pop(); push(strEqI((char*)n, (char*)t)); ) \
 	X(SLEN,    "s-len",     0, TOS=strLen((char*)TOS); ) \
 	X(BYE,     "bye",       0, ttyMode(0); exit(0); )
 

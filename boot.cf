@@ -31,12 +31,15 @@
 : then here swap ! ; immediate
 
 : a+  a@ 1+ a! ; inline
+: a-  a@ 1- a! ; inline
 : @a  a@  c@ ; inline
 : @a+ a@+ c@ ; inline
 : @a- a@- c@ ; inline
 : !a  a@  c! ; inline
 : !a+ a@+ c! ; inline
 : !a- a@- c! ; inline
+: t+  t@ 1+ t! ; inline
+: t-  t@ 1- t! ; inline
 : @t  t@  c@ ; inline
 : @t+ t@+ c@ ; inline
 : @t- t@- c@ ; inline
@@ -117,10 +120,11 @@
 : de>flags cell + c@ ;
 : de>len   cell + 1+ c@ ;
 : de>name  cell + 2+ ;
-: .de-word de>name ztype t@+ 10 mod [ if0 ] cr exit then tab ;
-: words last >a 1 >t begin
-    a@ .de-word a@ de-sz + a!
-    a@ dict-end < while lpar t> 1- . ." words)" adrop ;
+: .de-word de>name ztype t@+ 10 > if 0 t! cr exit then tab ;
+: words last >a 1 >t 0 >r begin
+    a@ de>len 7 > if t+ then
+    a@ .de-word a@ de-sz + a! r@ 1+ r!
+    a@ dict-end < while lpar r> . ." words)" adrop ;
 
 (( memory ))
 : fill ( b a n-- ) for 2dup c! 1+ next 2drop ;
@@ -158,22 +162,33 @@
 : colors 31 >a 7 for a@ fg ." color #" a@+ . cr next white adrop ;
 
 (( blocks ))
+[ cell var blk
 : block-max   499 ; inline
 : block-sz   2000 ; inline
 : disk-sz block-max 1+ block-sz * ;
 : disk vars vars-sz + disk-sz - ;
 : ->block   ( n--a )  block-max min block-sz * disk + ;
 : disk-read " disk.c5" " rb" fopen ?dup
-   if >a disk disk-sz a@ fread  a> fclose then ;
+   if >a disk disk-sz a@ fread drop a> fclose then ;
 : disk-flush " disk.c5" " wb" fopen ?dup
-   if >a disk disk-sz a@ fwrite  a> fclose then ;
+   if >a disk disk-sz a@ fwrite drop a> fclose then ;
 [ disk-read
 
-[ cell var blk
-: rows 25 ; inline
-: cols 80 ; inline
+(( accept ))
+: printable? ( c--f ) dup 31 > swap 127 < and ;
+: bs 8 emit ; inline
+: accept ( dst-- ) dup >r >t 0 >a
+  begin key a!
+     a@   3 = if 0 r> c! atdrop exit then
+     a@  13 = if 0 !t atdrop rdrop exit then
+     a@   8 = if 127 a! then ( Windows: 8=backspace )
+     a@ 127 = if r@ t@ < if t- bs space bs then then
+     a@ printable? if a@ dup !t+ emit then
+  again ;
 
 (( a simple block editor ))
+: rows 25 ; inline
+: cols 80 ; inline
 [ block-sz var ed-block
 : block->ed ( blk-- ) blk @ ->block ed-block block-sz cmove ;
 : ed->block ( blk-- ) ed-block blk @ ->block block-sz cmove ;
@@ -192,9 +207,9 @@
 : show!  1 (show)  c! ;  : shown 0 (show)  c! ;
 : dirty! 1 (dirty) c! show! ;
 : ->norm  0 mode! ;
-: ->repl  1 mode! ;  : repl? mode@ 1 = ;
-: ->ins   2 mode! ;  : ins?  mode@ 2 = ;
-: quit?  mode@ 99 = ;
+: ->repl  1 mode! ;    : repl? mode@ 1 = ;
+: ->ins   2 mode! ;    : ins?  mode@ 2 = ;
+: quit!  99 mode! ;    : quit?  mode@ 99 = ;  
 : .b1  green cols 2+ for '-' emit next white cr ;
 : .b2  green '|' emit white ;
 : aemit ( b-- ) dup $20 < over $7e > or if drop '.' then emit ;
@@ -210,7 +225,6 @@
    repl? if yellow ."  -replace-" white then
    ins?  if purple ."  -insert-"  white then
    space lpar '#' emit rc->pos c@ (.) rpar clr-eol ;
-: printable? ( c--f ) dup  31 >  swap 127 < and ;
 : show show? if cur-off .scr cur-on shown then .foot ->cur ;
 : mv-left 0 dup 1-      mv ;   : mv-right 0 1 mv ;
 : mv-up   0 dup 1- swap mv ;   : mv-down  1 0 mv ;
@@ -233,6 +247,9 @@
    then row@  rows 1- row!  clr-line  row! ;
 : next-pg ed->block  blk @ 1+       blk ! block->ed show! clean ;
 : prev-pg ed->block  blk @ 1- 0 max blk ! block->ed show! clean ;
+: do-cmd ->cmd clr-eol ':' emit p accept
+   p " q" s-eqi if quit! then
+   ->cmd clr-eol ;
 
 : case ( ch -- ) find drop swap vc, v, ;   ( case-table entry - single word )
 : case! ( ch-- ) vc, here v, 1 state ! ;   ( case-table entry - code )
@@ -246,17 +263,17 @@
 [ 'r'  case  ->repl                'i'  case  ->ins
 [ 'O'  case  ins-line              'D'  case  del-line
 [ '+'  case  next-pg               '-'  case  prev-pg
-[ 27   case  ->norm
+[ 27   case  ->norm                ':'  case do-cmd
 [ 13   case! ] mv-down 0 col! ;  [ 'X'  case! ] mv-left del-ch ;
 [ '_'  case! ] 0 col! ;          [ 'o'  case! ] mv-down ins-line ;
-[  3   case! ] 99 mode! ;
+[  3   case  quit!
 [ 0 vc, 0 v, (( end ))
 
 (( switch: case-table process ))
 : switch ( tbl-- )
    >t begin
-      @t [ if0 ] tdrop exit then
-      @t+ a@ = if  t> @ >r exit then
+      @t if0 tdrop exit then
+      @t+ a@ = if t> @ >r exit then
       t@ cell+ t!
    again tdrop ;
 
@@ -277,13 +294,13 @@
       0 t@ 25000 fill 
       t@ 25000 a@ fread drop a> fclose
       t> >in !
-   then >in ;
+   then ;
 
 (( ... from Peter Jakacki ))
 : .ascii ( -- ) a@ $10 - $10 for dup c@ aemit 1+ next drop ;
 : dump ( f n-- ) swap >a 0 >t
    for
-      t@ [ if0 ] cr a@ .hex ." : " then
+      t@ if0 cr a@ .hex ." : " then
       @a+ .hex
       t@+ $0e = if ."    " .ascii 0 t! then
    next drop atdrop ;
