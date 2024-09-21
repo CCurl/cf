@@ -61,6 +61,16 @@
 : "  (quote) ; immediate
 : ." (quote) (ztype) c, exit ; immediate
 
+(( reboot ))
+: reboot
+   -vha- (vha) !  -la- (la) !  -ha- (ha) !
+   " boot.cf" " rb" fopen -if dup then if >a
+      vars 10000 + >t
+      25000 for 0 i t@ + c! next
+      t@ 25000 a@ fread drop a> fclose
+      t> >in !
+   then ;
+
 : bl 32 ; inline
 : tab 9 emit ; inline
 : cr 13 emit 10 emit ; inline
@@ -342,12 +352,4 @@ vhere const wd-in cell allot
 : lg   " lazygit" system ;
 : ls   " ls -l" system ;
 : pwd  " pwd" system ;
-: reboot
-   -vha- (vha) !  -la- (la) !  -ha- (ha) !
-   " boot.cf" " rb" fopen ?dup if >a
-      vars 10000 + >t
-      0 t@ 25000 fill
-      t@ 25000 a@ fread drop a> fclose
-      t> >in !
-   then ;
 [
