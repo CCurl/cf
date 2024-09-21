@@ -84,9 +84,10 @@
 : hex     $10 base ! ;
 : decimal #10 base ! ;
 : binary  %10 base ! ;
-: .hex ( n-- ) base @ >t hex     .2 t> base ! ;
-: .dec ( n-- ) base @ >t decimal .3 t> base ! ;
-: .bin ( n-- ) base @ >t binary  .  t> base ! ;
+: .hex  ( n-- ) base @ >t hex .2 t> base ! ;
+: .$hex ( n-- ) base @ >t hex <# # #s '$' #c #> ztype t> base ! ;
+: .dec  ( n-- ) base @ >t decimal .3 t> base ! ;
+: .bin  ( n-- ) base @ >t binary  .  t> base ! ;
 
 : execute ( xt-- ) >r ;
 : :noname here 1 state ! ;
@@ -111,6 +112,7 @@
 : depth (dsp) @ 1- ;
 : lpar '(' emit ; inline
 : rpar ')' emit ; inline
+: .comma ',' emit ; inline
 : .s lpar space depth ?dup if
       for i 1+ cells dstk + @ . next
    then rpar ;
@@ -179,7 +181,7 @@
 : bs 8 emit ; inline
 : accept ( dst-- ) dup >r >t 0 >a
   begin key a!
-     a@   3 = if 0 r> c! atdrop exit then
+     a@   3 =  a@ 27 = or if 0 r> c! atdrop exit then
      a@  13 = if 0 !t atdrop rdrop exit then
      a@   8 = if 127 a! then ( Windows: 8=backspace )
      a@ 127 = if r@ t@ < if t- bs space bs then then
@@ -219,12 +221,13 @@
 : ->cur  col@ 2+ row@ 2+ ->cr ;
 : ->foot 1 rows 3 + ->cr ;
 : ->cmd ->foot cr ;
+: .# '#' emit ; : .$ '$' emit ; : ./ '/' emit ;
 : .foot ->foot ." Block #" blk @ .
    bl dirty? if drop '*' then emit space
    lpar row@ 1+ (.) ',' emit col@ 1+ (.) rpar
    repl? if yellow ."  -replace-" white then
    ins?  if purple ."  -insert-"  white then
-   space lpar '#' emit rc->pos c@ (.) rpar clr-eol ;
+   space lpar rc->pos c@ dup .# (.) ./ .$hex rpar clr-eol ;
 : show show? if cur-off .scr cur-on shown then .foot ->cur ;
 : mv-left 0 dup 1-      mv ;   : mv-right 0 1 mv ;
 : mv-up   0 dup 1- swap mv ;   : mv-down  1 0 mv ;
@@ -260,7 +263,7 @@
 [ 'k'  case  mv-up                 'l'  case  mv-right
 [ 32   case  mv-right              'b'  case  ins-bl
 [ 'x'  case  del-ch                'C'  case  clr-line
-[ 'r'  case  ->repl                'i'  case  ->ins
+[ 'R'  case  ->repl                'i'  case  ->ins
 [ 'O'  case  ins-line              'D'  case  del-line
 [ '+'  case  next-pg               '-'  case  prev-pg
 [ 27   case  ->norm                ':'  case do-cmd
@@ -286,15 +289,6 @@
 : ed-init block->ed 0 mode! show! 0 dup row! col! cls ;
 : ed  ed-init ed-loop ed->block ->cmd ;
 : edit  blk ! ed ;
-
-: reboot
-   -vha- (vha) !  -la- (la) !  -ha- (ha) !
-   " boot.cf" " rb" fopen ?dup if >a
-      vars 10000 + >t 
-      0 t@ 25000 fill 
-      t@ 25000 a@ fread drop a> fclose
-      t> >in !
-   then ;
 
 (( ... from Peter Jakacki ))
 : .ascii ( -- ) a@ $10 - $10 for dup c@ aemit 1+ next drop ;
@@ -348,4 +342,12 @@ vhere const wd-in cell allot
 : lg   " lazygit" system ;
 : ls   " ls -l" system ;
 : pwd  " pwd" system ;
+: reboot
+   -vha- (vha) !  -la- (la) !  -ha- (ha) !
+   " boot.cf" " rb" fopen ?dup if >a
+      vars 10000 + >t
+      0 t@ 25000 fill
+      t@ 25000 a@ fread drop a> fclose
+      t> >in !
+   then ;
 [
