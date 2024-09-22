@@ -50,16 +50,18 @@
 : tdrop  t> drop ; inline
 : atdrop a> drop t> drop ; inline
 
+: comp? state @ 3 = ;
 : (quote) ( -- )  vhere dup >t  >in @ 1+ >a
    begin
       @a '"' = if
          0 !t+  a> 1+ >in !
+         comp? if0 tdrop exit then
          t> (vha) ! (lit4) c, , exit
       then @a+ !t+
    again ;
 
 : "  (quote) ; immediate
-: ." (quote) (ztype) c, exit ; immediate
+: ." (quote) comp? if (ztype) c, exit then ztype ; immediate
 
 (( reboot ))
 : reboot
