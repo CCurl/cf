@@ -64,9 +64,11 @@
 : ." (quote) comp? if (ztype) c, exit then ztype ; immediate
 
 (( reboot ))
+: fopen-r " rb"  fopen ;
+: fopen-w " wb"  fopen ;
 : reboot
    -vha- (vha) !  -la- (la) !  -ha- (ha) !
-   " boot.cf" " rb" fopen -if dup then if >a
+   " boot.cf" fopen-r -if dup then if >a
       vars 10000 + >t
       25000 for 0 i t@ + c! next
       t@ 25000 a@ fread drop a> fclose
@@ -177,14 +179,14 @@
 
 (( blocks ))
 [ cell var blk
-: block-max   499 ; inline
-: block-sz   2000 ; inline
-: disk-sz block-max 1+ block-sz * ;
+: last-block  1023 ; inline
+: block-sz    1024 ; inline
+: disk-sz last-block 1+ block-sz * ;
 : disk vars vars-sz + disk-sz - ;
-: ->block   ( n--a )  block-max min block-sz * disk + ;
-: disk-read " disk.c5" " rb" fopen ?dup
+: ->block   ( n--a )  last-block min block-sz * disk + ;
+: disk-read " disk.c5" fopen-r ?dup
    if >a disk disk-sz a@ fread drop a> fclose then ;
-: disk-flush " disk.c5" " wb" fopen ?dup
+: disk-flush " disk.c5" fopen-w ?dup
    if >a disk disk-sz a@ fwrite drop a> fclose then ;
 [ disk-read
 
@@ -201,17 +203,18 @@
   again ;
 
 (( a simple block editor ))
-: rows 25 ; inline
-: cols 80 ; inline
+: rows 16 ; inline
+: cols 64 ; inline
 [ block-sz var ed-block
 : block->ed ( blk-- ) blk @ ->block ed-block block-sz cmove ;
 : ed->block ( blk-- ) ed-block blk @ ->block block-sz cmove ;
-: last-ch ( --a ) ed-block block-sz + 1- ;
+: last-ch  ( --a ) ed-block block-sz + 1- ;
 [ cell var (r)  : row! (r) ! ;  : row@ (r) @ ;
 [ cell var (c)  : col! (c) ! ;  : col@ (c) @ ;
 : norm-pos ( pos--new ) ed-block max last-ch min ;
 : cr->pos ( col row--pos ) cols * + ed-block + ;
 : rc->pos ( --pos ) col@ row@ cr->pos ;
+: row-last ( r--a ) cols 1- swap cr->pos ;
 : pos->rc ( pos-- ) norm-pos ed-block - cols /mod row! col! ;
 : mv ( r c-- )  (c) +! (r) +! rc->pos  pos->rc ;
 [ 1 var (mode)             : mode@   (mode)  c@ ;
@@ -233,7 +236,9 @@
 : ->cur  col@ 2+ row@ 2+ ->cr ;
 : ->foot 1 rows 3 + ->cr ;
 : ->cmd ->foot cr ;
-: .# '#' emit ; : .$ '$' emit ; : ./ '/' emit ;
+: .# '#' emit ;
+: .$ '$' emit ;
+: ./ '/' emit ;
 : .foot ->foot ." Block #" blk @ .
    bl dirty? if drop '*' then emit space
    lpar row@ 1+ (.) ',' emit col@ 1+ (.) rpar
@@ -243,11 +248,11 @@
 : show show? if cur-off .scr cur-on shown then .foot ->cur ;
 : mv-left 0 dup 1-      mv ;   : mv-right 0 1 mv ;
 : mv-up   0 dup 1- swap mv ;   : mv-down  1 0 mv ;
-: ins-bl  dirty!  last-ch >a  rc->pos >t
+: ins-bl  dirty! row@ row-last >a  rc->pos >t
    begin a@ 1- c@ !a- a@ t@ > while bl a> c! tdrop ;
 : replace-char ( -- ) a@ printable? if a@ rc->pos c! mv-right dirty! then ;
 : insert-char  ( -- ) a@ printable? if ins-bl replace-char then ;
-: del-ch  dirty!  last-ch >a  rc->pos >t
+: del-ch  dirty!  row@ row-last >a  rc->pos >t
    begin t@ 1+ c@ !t+ t@ a@ < while 0 t> c! adrop ;
 : clr-line 0 row@ cr->pos >a cols for 32 !a+ next adrop dirty! ;
 : ins-line  row@ rows < if 
@@ -260,9 +265,9 @@
       begin @a+ !t+  a@ r@ > until 
       atdrop rdrop
    then row@  rows 1- row!  clr-line  row! ;
-: next-pg ed->block  blk @ 1+       blk ! block->ed show! clean ;
+: next-pg ed->block  blk @ 1+ last-block min blk ! block->ed show! clean ;
 : prev-pg ed->block  blk @ 1- 0 max blk ! block->ed show! clean ;
-: do-cmd ->cmd clr-eol ':' emit p accept
+: do-cmd ->cmd ':' emit clr-eol p accept
    p " q" s-eqi if quit! then
    ->cmd clr-eol ;
 
