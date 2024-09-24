@@ -182,9 +182,9 @@
 
 (( blocks ))
 [ cell var blk
-: rows 25 ; inline
-: cols 80 ; inline
-: last-block   499 ; inline
+: rows 20 ; inline
+: cols 70 ; inline
+: last-block   999 ; inline
 [ rows cols * const block-sz
 [ last-block 1+ block-sz * const disk-sz
 [ vars vars-sz + disk-sz - const disk
@@ -197,8 +197,8 @@
 : blk-clr ( blk-- ) 0 swap ->block block-sz fill ;
 : blk-mv  ( src dst-- ) over >t blk-cp t> blk-clr ;
 : aemit ( b-- ) dup $20 < over $7e > or if drop '.' then emit ;
-: cat ( blk-- ) ->block 16 for
-      i .2 space 64 for dup c@ aemit 1+ next cr
+: cat ( blk-- ) ->block rows for
+      i .2 space cols for dup c@ aemit 1+ next cr
    next drop ;
 : blk-cp-n ( src dst n-- ) >r >t >a r> for a@+ t@+ blk-cp next atdrop ;
 : blk-mv-n ( src dst n-- ) >r >t >a r> for a@+ t@+ blk-mv next atdrop ;
