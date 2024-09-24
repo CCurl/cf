@@ -99,9 +99,11 @@
 : decimal #10 base ! ;
 : binary  %10 base ! ;
 : .hex  ( n-- ) base @ >t hex .2 t> base ! ;
-: .$hex ( n-- ) base @ >t hex <# # #s '$' #c #> ztype t> base ! ;
 : .dec  ( n-- ) base @ >t decimal .3 t> base ! ;
-: .bin  ( n-- ) base @ >t binary  .  t> base ! ;
+: .bin  ( n-- ) base @ >t binary . t> base ! ;
+: .$hex ( n-- ) base @ >t '$' emit hex (.) t> base ! ;
+: .#dec ( n-- ) base @ >t '#' emit decimal (.) t> base ! ;
+: .%bin ( n-- ) base @ >t '%' emit binary (.) t> base ! ;
 
 : execute ( xt-- ) >r ;
 : :noname here 1 state ! ;
@@ -246,15 +248,13 @@
 : ->cur  col@ 2+ row@ 2+ ->cr ;
 : ->foot 1 rows 3 + ->cr ;
 : ->cmd ->foot cr ;
-: .# '#' emit ;
-: .$ '$' emit ;
 : ./ '/' emit ;
 : .foot ->foot ." Block #" blk @ .
    bl dirty? if drop '*' then emit space
-   lpar row@ 1+ (.) ',' emit col@ 1+ (.) rpar
+   lpar row@ 1+ (.) .comma col@ 1+ (.) rpar
    repl? if yellow ."  -replace-" white then
    ins?  if purple ."  -insert-"  white then
-   space lpar rc->pos c@ dup .# (.) ./ .$hex rpar clr-eol ;
+   rc->pos c@ dup space lpar .#dec ./ .$hex rpar clr-eol ;
 : show show? if cur-off .scr cur-on shown then .foot ->cur ;
 : mv-left 0 dup 1-      mv ;   : mv-right 0 1 mv ;
 : mv-up   0 dup 1- swap mv ;   : mv-down  1 0 mv ;
