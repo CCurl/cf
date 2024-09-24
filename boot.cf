@@ -123,6 +123,7 @@
 : vc, vhere c! 1 allot ;
 : v, vhere ! cell allot ;
 
+: 0sp 0 (dsp) ! ;
 : depth (dsp) @ 1- ;
 : lpar '(' emit ; inline
 : rpar ')' emit ; inline
@@ -143,11 +144,11 @@
     a@ dict-end < while lpar r> . ." words)" adrop ;
 
 (( memory ))
-: fill ( b a n-- ) for 2dup c! 1+ next 2drop ;
-: cmove ( src dst n-- ) >r >t >a
+: fill ( byte addr num-- ) for 2dup c! 1+ next 2drop ;
+: cmove ( src dst num-- ) >r >t >a
     r> ?dup if for @a+ !t+ next then
     atdrop ;
-: cmove> ( src dst n-- ) >r  r@ + >t  r@ + >a
+: cmove> ( src dst num-- ) >r  r@ + >t  r@ + >a
     r> ?dup if 1+ for @a- !t- next then
     atdrop ;
 
@@ -181,13 +182,23 @@
 [ cell var blk
 : last-block  1023 ; inline
 : block-sz    1024 ; inline
-: disk-sz last-block 1+ block-sz * ;
-: disk vars vars-sz + disk-sz - ;
-: ->block   ( n--a )  last-block min block-sz * disk + ;
+: disk-sz ( --n ) last-block 1+ block-sz * ;
+: disk ( --a ) vars vars-sz + disk-sz - ;
+: ->block ( n--a ) last-block min 0 max block-sz * disk + ;
 : disk-read " disk.c5" fopen-r ?dup
    if >a disk disk-sz a@ fread drop a> fclose then ;
 : disk-flush " disk.c5" fopen-w ?dup
    if >a disk disk-sz a@ fwrite drop a> fclose then ;
+: cp ( src dst-- ) >t ->block t> ->block block-sz cmove ;
+: rm ( blk-- ) 0 swap ->block block-sz fill ;
+: mv ( src dst-- ) over >t cp t> rm ;
+: aemit ( b-- ) dup $20 < over $7e > or if drop '.' then emit ;
+: cat ( blk-- ) ->block 16 for
+      i .2 space 64 for dup c@ aemit 1+ next cr
+   next drop ;
+: xcp ( src dst n-- ) >r >t >a r> for a@+ t@+ cp next atdrop ;
+: xrm ( blk n-- ) for dup rm 1+ next drop ;
+: xmv ( src dst n-- ) >r >t >a r> for a@+ t@+ mv next atdrop ;
 [ disk-read
 
 (( accept ))
@@ -229,7 +240,6 @@
 : quit!  99 mode! ;    : quit?  mode@ 99 = ;  
 : .b1  green cols 2+ for '-' emit next white cr ;
 : .b2  green '|' emit white ;
-: aemit ( b-- ) dup $20 < over $7e > or if drop '.' then emit ;
 : .scr 1 dup ->rc .b1 ed-block >a rows for 
       .b2  cols for @a+ aemit next  .b2 cr
    next .b1 adrop ;
