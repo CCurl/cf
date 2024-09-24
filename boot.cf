@@ -182,25 +182,32 @@
 
 (( blocks ))
 [ cell var blk
-: last-block  1023 ; inline
-: block-sz    1024 ; inline
-: disk-sz ( --n ) last-block 1+ block-sz * ;
-: disk ( --a ) vars vars-sz + disk-sz - ;
+: rows 25 ; inline
+: cols 80 ; inline
+: last-block   499 ; inline
+[ rows cols * const block-sz
+[ last-block 1+ block-sz * const disk-sz
+[ vars vars-sz + disk-sz - const disk
 : ->block ( n--a ) last-block min 0 max block-sz * disk + ;
 : disk-read " disk.c5" fopen-r ?dup
    if >a disk disk-sz a@ fread drop a> fclose then ;
 : disk-flush " disk.c5" fopen-w ?dup
    if >a disk disk-sz a@ fwrite drop a> fclose then ;
-: cp ( src dst-- ) >t ->block t> ->block block-sz cmove ;
-: rm ( blk-- ) 0 swap ->block block-sz fill ;
-: mv ( src dst-- ) over >t cp t> rm ;
+: blk-cp  ( src dst-- ) >t ->block t> ->block block-sz cmove ;
+: blk-clr ( blk-- ) 0 swap ->block block-sz fill ;
+: blk-mv  ( src dst-- ) over >t blk-cp t> blk-clr ;
 : aemit ( b-- ) dup $20 < over $7e > or if drop '.' then emit ;
 : cat ( blk-- ) ->block 16 for
       i .2 space 64 for dup c@ aemit 1+ next cr
    next drop ;
-: xcp ( src dst n-- ) >r >t >a r> for a@+ t@+ cp next atdrop ;
-: xrm ( blk n-- ) for dup rm 1+ next drop ;
-: xmv ( src dst n-- ) >r >t >a r> for a@+ t@+ mv next atdrop ;
+: blk-cp-n ( src dst n-- ) >r >t >a r> for a@+ t@+ blk-cp next atdrop ;
+: blk-mv-n ( src dst n-- ) >r >t >a r> for a@+ t@+ blk-mv next atdrop ;
+: blk-ins ( blk start-- ) >a >t
+   begin a@- a@ swap blk-cp a@ t@ > while
+   atdrop ;
+: blk-del ( blk stop-- ) >a >t
+   begin t@+ t@ swap blk-cp t@ a@ < while
+   t> blk-clr atdrop ;
 [ disk-read
 
 (( accept ))
@@ -216,8 +223,6 @@
   again ;
 
 (( a simple block editor ))
-: rows 16 ; inline
-: cols 64 ; inline
 [ block-sz var ed-block
 : block->ed ( blk-- ) blk @ ->block ed-block block-sz cmove ;
 : ed->block ( blk-- ) ed-block blk @ ->block block-sz cmove ;
