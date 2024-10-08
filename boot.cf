@@ -46,6 +46,7 @@
 : !t  t@  c! ; inline
 : !t+ t@+ c! ; inline
 : !t- t@- c! ; inline
+: t@+c t@ dup cell + t! ; inline
 : adrop  a> drop ; inline
 : tdrop  t> drop ; inline
 : atdrop a> drop t> drop ; inline
@@ -286,8 +287,8 @@
    p " q" s-eqi if quit! then
    ->cmd clr-eol ;
 
-: case ( ch -- ) find drop swap vc, v, ;   ( case-table entry - single word )
-: case! ( ch-- ) vc, here v, 1 state ! ;   ( case-table entry - code )
+: case ( ch -- ) v, find drop v, ;   ( case-table entry - single word )
+: case! ( ch-- ) v, here v, 1 state ! ;   ( case-table entry - code )
 
 (( VI-like commands ))
 [ vhere const ed-cases
@@ -302,13 +303,13 @@
 [ 13   case! ] mv-down 0 col! ;  [ 'X'  case! ] mv-left del-ch ;
 [ '_'  case! ] 0 col! ;          [ 'o'  case! ] mv-down ins-line ;
 [  3   case  quit!
-[ 0 vc, 0 v, (( end ))
+[ 0 v, 0 v, (( end ))
 
 (( switch: case-table process ))
 : switch ( tbl-- )
    >t begin
-      @t if0 tdrop exit then
-      @t+ a@ = if t> @ >r exit then
+      t@ @ if0 tdrop exit then
+      t@+c @ a@ = if t> @ >r exit then
       t@ cell+ t!
    again tdrop ;
 
@@ -328,11 +329,11 @@
    for
       t@ if0 cr a@ .hex ." : " then
       @a+ .hex
-      t@+ $0e = if ."    " .ascii 0 t! then
+      t@+ $0f = if ."    " .ascii 0 t! then
    next drop atdrop ;
 
-(( fg: forget-one ))
-: fg last dup de-sz + (la) ! @ (ha) ! ;  
+(( fg1: forget-one ))
+: fg1 last dup de-sz + (la) ! @ (ha) ! ;  
 
 [ cell var fgh
 [ cell var fgl
@@ -342,8 +343,7 @@
 
 : .version  green ." cf v" version <# # # #. # # #. #s #> ztype white cr ;
 [ marker
-: hi .version ." hello"
-[ hi forget
+[ .version ." hello"
 
 (( temp for testing ))
 vhere const wd 32 allot
