@@ -82,7 +82,7 @@ void boot(const char *fn) {
 		outer((char*)&vars[10000]);
 	} else {
 		zType("WARNING: unable to open source file!\n");
-		zType("If no filename is provided, the default is 'boot.c5'\n");
+		zType("If no filename is provided, the default is 'boot.cf'\n");
 	}
 }
 
