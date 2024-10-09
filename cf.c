@@ -43,7 +43,6 @@ DE_T tmpWords[10];
 	X(LT,      "<",         0, t=pop(); TOS = (TOS < t); ) \
 	X(EQ,      "=",         0, t=pop(); TOS = (TOS == t); ) \
 	X(GT,      ">",         0, t=pop(); TOS = (TOS > t); ) \
-	X(SEMI,    ";",         1, ccomma(EXIT); ) \
 	X(EXIT,    "exit",      0, if (0<rsp) { pc = (byte*)rpop(); } else { return; } ) \
 	X(EQ0,     "0=",        0, TOS = (TOS == 0) ? 1 : 0; ) \
 	X(AND,     "and",       0, t=pop(); TOS &= t; ) \
@@ -257,13 +256,14 @@ int compileWord(DE_T *dp) {
 }
 
 int isStateChange() {
-	if (strEqI(wd, ":"))  return changeState(DEFINE);
-	if (strEqI(wd, "["))  return changeState(INTERP);
-	if (strEqI(wd, "]"))  return changeState(COMPILE);
-	if (strEqI(wd, "("))  return changeState(COMMENT);
-	if (strEqI(wd, ")"))  return changeState(COMPILE);
-	if (strEqI(wd, "((")) return changeState(COMMENT);
-	if (strEqI(wd, "))")) return changeState(INTERP);
+	if (strEqI(wd, ":"))  { return changeState(DEFINE); }
+	if (strEqI(wd, ";"))  { ccomma(EXIT); return changeState(INTERP); } // TODO: Remove
+	if (strEqI(wd, "["))  { return changeState(INTERP); }
+	if (strEqI(wd, "]"))  { return changeState(COMPILE); }
+	if (strEqI(wd, "("))  { return changeState(COMMENT); }
+	if (strEqI(wd, ")"))  { return changeState(COMPILE); }
+	if (strEqI(wd, "((")) { return changeState(COMMENT); }
+	if (strEqI(wd, "))")) { return changeState(INTERP); }
 	return 0;
 }
 

@@ -287,8 +287,8 @@
    p " q" s-eqi if quit! then
    ->cmd clr-eol ;
 
-: case ( ch -- ) v, find drop v, ;   ( case-table entry - single word )
-: case! ( ch-- ) v, here v, 1 state ! ;   ( case-table entry - code )
+: case  ( ch -- ) v, find drop v, ;   ( case-table entry - single word )
+: case! ( ch-- )  v, here v, 1 state ! ;   ( case-table entry - code )
 
 (( VI-like commands ))
 [ vhere const ed-cases
@@ -299,10 +299,18 @@
 [ 'R'  case  ->repl                'i'  case  ->ins
 [ 'O'  case  ins-line              'D'  case  del-line
 [ '+'  case  next-pg               '-'  case  prev-pg
-[ 27   case  ->norm                ':'  case do-cmd
-[ 13   case! ] mv-down 0 col! ;  [ 'X'  case! ] mv-left del-ch ;
+[ ':'  case do-cmd
+[ 'X'  case! ] mv-left del-ch ;
 [ '_'  case! ] 0 col! ;          [ 'o'  case! ] mv-down ins-line ;
-[  3   case  quit!
+[ 0 v, 0 v, (( end ))
+
+[ vhere const ed-ctrl-cases
+[ 1    case  red    ( Define )
+[ 2    case  purple ( Interpret )
+[ 3    case  green  ( Compile )
+[ 4    case  white  ( Comment )
+[ 13   case! mv-down 0 col! ;
+[ 27   case  ->norm
 [ 0 v, 0 v, (( end ))
 
 (( switch: case-table process ))
@@ -314,7 +322,7 @@
    again tdrop ;
 
 : process-key ( -- )
-   a@ 27 = if ->norm exit then
+   a@ 32 < a@ 127 > or if ed-ctrl-cases switch exit then
    ins?  if insert-char exit then
    repl? if replace-char exit then
    ed-cases switch ;
