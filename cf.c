@@ -20,6 +20,7 @@ cell asp, astk[TSTK_SZ+1];
 cell last, base, state, dictEnd, outputFp;
 byte *here, *vhere;
 char *toIn, wd[32];
+DE_T tmpWords[10];
 
 #define PRIMS \
 	X(DUP,     "dup",       0, t=TOS; push(t); ) \
@@ -143,14 +144,21 @@ int checkWhitespace(char c) {
 int nextWord() {
 	int len = 0;
 	while (btwi(*toIn, 1, 32)) { checkWhitespace(*(toIn++)); }
-	// while (btwi(*toIn, 1, 32)) { toIn++; }
 	while (btwi(*toIn, 33, 126)) { wd[len++] = *(toIn++); }
 	wd[len] = 0;
 	return len;
 }
 
+int isTemp(const char* w) {
+	return ((w[0] == 't') && btwi(w[1], '0', '9') && (w[2] == 0)) ? 1 : 0;
+}
+
 DE_T *addWord(const char *w) {
 	if (!w) { nextWord(); w = wd; }
+	if (isTemp(w)) {
+		tmpWords[w[1] - '0'].xt = (cell)here;
+		return &tmpWords[w[1] - '0'];
+	}
 	int ln = strLen(w);
 	last -= DE_SZ;
 	DE_T *dp = (DE_T*)last;
@@ -164,11 +172,11 @@ DE_T *addWord(const char *w) {
 
 DE_T *findWord(const char *w) {
 	if (!w) { nextWord(); w = wd; }
+	if (isTemp(w)) { return &tmpWords[w[1] - '0']; }
 	int len = strLen(w);
 	cell cw = last;
 	while (cw < dictEnd) {
 		DE_T *dp = (DE_T*)cw;
-		// printf("-fw:%lx,(%d,%d,%s)-", cw, dp->flags,dp->len,dp->name);
 		if ((len == dp->len) && strEqI(dp->name, w)) { return dp; }
 		cw += DE_SZ;
 	}
@@ -198,7 +206,6 @@ next:
 		PRIMS
 		default:
 			zType("-ir?-");
-			// printf("-ir:%d?-", *(pc-1));
 			return;
 	}
 }
