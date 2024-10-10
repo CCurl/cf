@@ -51,11 +51,13 @@
 : tdrop  t> drop ; inline
 : atdrop a> drop t> drop ; inline
 
-(( STATES/MODES ))
-(( 1: DEFINE ))
-(( 2: COMPILE ))
-(( 6: INTERP ))
-(( 7: COMMENT ))
+( ***************************************************** )
+( STATES/MODES )
+( 1: DEFINE )
+( 2: COMPILE )
+( 6: INTERP )
+( 7: COMMENT )
+( ***************************************************** )
 
 : comp? state @ 2 = ;
 : (quote) ( -- )  vhere dup >t  >in @ 1+ >a

@@ -19,7 +19,7 @@ cell tsp, tstk[TSTK_SZ+1];
 cell asp, astk[TSTK_SZ+1];
 cell last, base, state, dictEnd, outputFp;
 byte *here, *vhere;
-char *toIn, wd[32];
+char *toIn, wd[128];
 DE_T tmpWords[10];
 
 #define PRIMS \
