@@ -355,6 +355,7 @@ void Init() {
 	base    = 10;
 	here    = &code[0];
 	vhere   = &vars[0];
+	state   = INTERP;
 	last    = (cell)&dict[MAX_DICT];
 	dictEnd = last;
 	dsp = rsp = lsp = tsp = asp = state = 0;

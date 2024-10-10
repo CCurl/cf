@@ -53,10 +53,10 @@
 
 ( ***************************************************** )
 ( STATES/MODES )
-( 1: DEFINE )
-( 2: COMPILE )
-( 6: INTERP )
-( 7: COMMENT )
+: define  1 ;
+: compile 2 ;
+: interp  3 ;
+: comment 4 ;
 ( ***************************************************** )
 
 : comp? state @ 2 = ;
@@ -181,13 +181,14 @@
 : cur-block ( -- )    csi ." 2 q" ;
 : cur-bar   ( -- )    csi ." 5 q" ;
 
-: color   ( bg fg-- ) csi (.) ';' emit (.) 'm' emit ;
-: fg      ( fg-- )    40 swap color ;
-: black  30 fg ;      : red    31 fg ;
-: green  32 fg ;      : yellow 33 fg ;
-: blue   34 fg ;      : purple 35 fg ;
-: cyan   36 fg ;      : grey   37 fg ;
-: white   0 fg ;
+: color ( bg fg-- ) csi (.) ';' emit (.) 'm' emit ;
+: bg    ( color-- ) csi ." 48;5;" (.) 'm' emit ;
+: fg    ( color-- ) csi ." 38;5;" (.) 'm' emit ;
+: black   0 fg ;      : red    196 fg ;
+: green  40 fg ;      : yellow 226 fg ;
+: blue   63 fg ;      : purple 201 fg ;
+: cyan  117 fg ;      : grey   246 fg ;
+: white 255 fg ;
 : colors 31 >a 7 for a@ fg ." color #" a@+ . cr next white adrop ;
 
 (( blocks ))
@@ -233,6 +234,13 @@
   again ;
 
 (( a simple block editor ))
+[ vhere const ed-colors
+[ 219 v, ( 0: default - purple )
+[ 196 v, ( 1: define  - red )
+[  76 v, ( 2: compile - green )
+[ 226 v, ( 3: interp  - yellow )
+[ 255 v, ( 4: comment - white )
+
 [ block-sz var ed-block
 : block->ed ( blk-- ) blk @ ->block ed-block block-sz cmove ;
 : ed->block ( blk-- ) ed-block blk @ ->block block-sz cmove ;
@@ -258,8 +266,8 @@
 : .b1 exit green cols 2+ for '-' emit next white cr ;
 : .b2 exit green '|' emit white ;
 : ed-emit ( ch-- )
-   dup 31 > if emit exit then ( regular ch )
-   dup  8 < if 30 + fg 0 then ( mode-change )
+   dup 31 > if emit exit then ( regular char )
+   dup  5 < if dup cells ed-colors + @ fg then ( change color )
    drop 32 emit ;
 : .scr 1 dup ->rc .b1 ed-block >a rows for 
       .b2 cols for @a+ ed-emit next .b2 cr
@@ -268,7 +276,7 @@
 : ->foot 1 rows 3 + ->cr ;
 : ->cmd ->foot cr ;
 : ./ '/' emit ;
-: .foot ->foot ." Block #" blk @ .
+: .foot ->foot white ." Block #" blk @ .
    bl dirty? if drop '*' then emit space
    lpar row@ 1+ (.) .comma col@ 1+ (.) rpar
    repl? if yellow ."  -replace-" white then
@@ -302,24 +310,32 @@
    ->cmd clr-eol ;
 
 : case  ( ch -- ) v, find drop v, ;   ( case-table entry - single word )
-: case! ( ch-- )  v, here v, 2 state ! ;   ( case-table entry - code )
+: case! ( ch-- )  v, here v, compile state ! ;   ( case-table entry - code )
 
 (( VI-like commands ))
 [ vhere const ed-cases
-[ 'h'  case  mv-left               'j'  case  mv-down  
-[ 'k'  case  mv-up                 'l'  case  mv-right
-[ 32   case  mv-right              'b'  case  ins-bl
-[ 'x'  case  del-ch                'C'  case  clr-line
-[ 'R'  case  ->repl                'i'  case  ->ins
-[ 'O'  case  ins-line              'D'  case  del-line
-[ '+'  case  next-pg               '-'  case  prev-pg
+[ 'h'  case  mv-left
+[ 'j'  case  mv-down
+[ 'k'  case  mv-up
+[ 'l'  case  mv-right
+[ 32   case  mv-right
+[ 'b'  case  ins-bl
+[ 'x'  case  del-ch
+[ 'C'  case  clr-line
+[ 'R'  case  ->repl
+[ 'i'  case  ->ins
+[ 'O'  case  ins-line
+[ 'D'  case  del-line
+[ '+'  case  next-pg 
+[ '-'  case  prev-pg
 [ '!'  case do-cmd
-[ ':'  case! ] 1 replace-char! ; ( DEFINE )
-[ ']'  case! ] 2 replace-char! ; ( COMPILE )
-[ '['  case! ] 6 replace-char! ; ( INTERP )
-[ '('  case! ] 7 replace-char! ; ( COMMENT )
+[ ':'  case! ] define  replace-char! ;
+[ ']'  case! ] compile replace-char! ;
+[ '['  case! ] interp  replace-char! ;
+[ '('  case! ] comment replace-char! ;
 [ 'X'  case! ] mv-left del-ch ;
-[ '_'  case! ] 0 col! ;          [ 'o'  case! ] mv-down ins-line ;
+[ '_'  case! ] 0 col! ;
+[ 'o'  case! ] mv-down ins-line ;
 [ 0 v, 0 v, (( end ))
 
 [ vhere const ed-ctrl-cases
@@ -368,17 +384,25 @@
 [ cr .version ." hello" cr
 
 (( temp for testing ))
-vhere const wd 32 allot
-vhere const wd-in cell allot
-: skip-ws ( p1--p2 ) 
+128 var wd
+cell var wd-in
+
+: skip-ws ( a1--a2 ) 
    begin
       dup c@ ?dup if0 exit then
       32 > if exit then 1+ 
    again ;
-: next-wd ( p1 wd--p2 ) >t skip-ws >a
+: next-wd ( a1 wd--a2 ) >t skip-ws >a
    begin
       @a 33 < if 0 !t a@ atdrop exit then
       @a+ !t+
+   again ;
+
+: list-words ( show all words ) vars 10000 + wd-in ! 0 >t
+   begin
+      wd-in @ wd next-wd wd-in !
+      wd c@ if0 cr t> . ." words" exit then
+      t@ 8 mod -if 30 + then 40 swap color emit wd ztype emit space t+
    again ;
 
 (( move this boot code to the disk area ))
