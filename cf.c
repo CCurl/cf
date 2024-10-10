@@ -133,10 +133,10 @@ int changeState(int newState) {
 }
 
 int checkWhitespace(char c) {
-	if (c == 1) { return changeState(DEFINE); }
-	if (c == 2) { return changeState(INTERP); }
-	if (c == 3) { return changeState(COMPILE); }
-	if (c == 4) { return changeState(COMMENT); }
+	if (c == DEFINE)  { return changeState(DEFINE); }
+	if (c == COMPILE) { return changeState(COMPILE); }
+	if (c == INTERP)  { return changeState(INTERP); }
+	if (c == COMMENT) { return changeState(COMMENT); }
 	return 0;
 }
 

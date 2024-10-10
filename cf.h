@@ -34,7 +34,8 @@
     #define addrFmt ": %s $%lx ;"
 #endif
 
-enum { DEFINE=1, INTERP, COMPILE, COMMENT };
+enum { BLACK=0, RED, GREEN, YELLOW, BLUE, PURPLE, CYAN, GREY };
+enum { DEFINE=RED, COMPILE=GREEN, INTERP=YELLOW, COMMENT=GREY };
 
 typedef CELL_T cell;
 typedef UCELL_T ucell;
