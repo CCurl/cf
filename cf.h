@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#define VERSION     20240920
+#define VERSION     20240921
 
 #define MAX_CODE    0x00FFFF
 #define MAX_VARS    1999999
@@ -34,7 +34,7 @@
     #define addrFmt ": %s $%lx ;"
 #endif
 
-enum { DEFINE=1, INTERP, COMPILE, COMMENT };
+enum { DEFINE=1, COMPILE, INTERP, COMMENT };
 
 typedef CELL_T cell;
 typedef UCELL_T ucell;

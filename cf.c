@@ -19,7 +19,8 @@ cell tsp, tstk[TSTK_SZ+1];
 cell asp, astk[TSTK_SZ+1];
 cell last, base, state, dictEnd, outputFp;
 byte *here, *vhere;
-char *toIn, wd[32];
+char *toIn, wd[128];
+DE_T tmpWords[10];
 
 #define PRIMS \
 	X(DUP,     "dup",       0, t=TOS; push(t); ) \
@@ -42,7 +43,6 @@ char *toIn, wd[32];
 	X(LT,      "<",         0, t=pop(); TOS = (TOS < t); ) \
 	X(EQ,      "=",         0, t=pop(); TOS = (TOS == t); ) \
 	X(GT,      ">",         0, t=pop(); TOS = (TOS > t); ) \
-	X(SEMI,    ";",         1, ccomma(EXIT); ) \
 	X(EXIT,    "exit",      0, if (0<rsp) { pc = (byte*)rpop(); } else { return; } ) \
 	X(EQ0,     "0=",        0, TOS = (TOS == 0) ? 1 : 0; ) \
 	X(AND,     "and",       0, t=pop(); TOS &= t; ) \
@@ -133,24 +133,31 @@ int changeState(int newState) {
 }
 
 int checkWhitespace(char c) {
-	if (c == 1) { return changeState(DEFINE); }
-	if (c == 2) { return changeState(INTERP); }
-	if (c == 3) { return changeState(COMPILE); }
-	if (c == 4) { return changeState(COMMENT); }
+	if (c == DEFINE)  { return changeState(DEFINE); }
+	if (c == COMPILE) { return changeState(COMPILE); }
+	if (c == INTERP)  { return changeState(INTERP); }
+	if (c == COMMENT) { return changeState(COMMENT); }
 	return 0;
 }
 
 int nextWord() {
 	int len = 0;
 	while (btwi(*toIn, 1, 32)) { checkWhitespace(*(toIn++)); }
-	// while (btwi(*toIn, 1, 32)) { toIn++; }
 	while (btwi(*toIn, 33, 126)) { wd[len++] = *(toIn++); }
 	wd[len] = 0;
 	return len;
 }
 
+int isTemp(const char* w) {
+	return ((w[0] == 't') && btwi(w[1], '0', '9') && (w[2] == 0)) ? 1 : 0;
+}
+
 DE_T *addWord(const char *w) {
 	if (!w) { nextWord(); w = wd; }
+	if (isTemp(w)) {
+		tmpWords[w[1] - '0'].xt = (cell)here;
+		return &tmpWords[w[1] - '0'];
+	}
 	int ln = strLen(w);
 	last -= DE_SZ;
 	DE_T *dp = (DE_T*)last;
@@ -164,11 +171,11 @@ DE_T *addWord(const char *w) {
 
 DE_T *findWord(const char *w) {
 	if (!w) { nextWord(); w = wd; }
+	if (isTemp(w)) { return &tmpWords[w[1] - '0']; }
 	int len = strLen(w);
 	cell cw = last;
 	while (cw < dictEnd) {
 		DE_T *dp = (DE_T*)cw;
-		// printf("-fw:%lx,(%d,%d,%s)-", cw, dp->flags,dp->len,dp->name);
 		if ((len == dp->len) && strEqI(dp->name, w)) { return dp; }
 		cw += DE_SZ;
 	}
@@ -198,7 +205,6 @@ next:
 		PRIMS
 		default:
 			zType("-ir?-");
-			// printf("-ir:%d?-", *(pc-1));
 			return;
 	}
 }
@@ -250,13 +256,14 @@ int compileWord(DE_T *dp) {
 }
 
 int isStateChange() {
-	if (strEqI(wd, ":"))  return changeState(DEFINE);
-	if (strEqI(wd, "["))  return changeState(INTERP);
-	if (strEqI(wd, "]"))  return changeState(COMPILE);
-	if (strEqI(wd, "("))  return changeState(COMMENT);
-	if (strEqI(wd, ")"))  return changeState(COMPILE);
-	if (strEqI(wd, "((")) return changeState(COMMENT);
-	if (strEqI(wd, "))")) return changeState(INTERP);
+	if (strEqI(wd, ":"))  { return changeState(DEFINE); }
+	if (strEqI(wd, ";"))  { ccomma(EXIT); return changeState(INTERP); } // TODO: Remove
+	if (strEqI(wd, "["))  { return changeState(INTERP); }
+	if (strEqI(wd, "]"))  { return changeState(COMPILE); }
+	if (strEqI(wd, "("))  { return changeState(COMMENT); }
+	if (strEqI(wd, ")"))  { return changeState(COMPILE); }
+	if (strEqI(wd, "((")) { return changeState(COMMENT); }
+	if (strEqI(wd, "))")) { return changeState(INTERP); }
 	return 0;
 }
 
@@ -348,6 +355,7 @@ void Init() {
 	base    = 10;
 	here    = &code[0];
 	vhere   = &vars[0];
+	state   = INTERP;
 	last    = (cell)&dict[MAX_DICT];
 	dictEnd = last;
 	dsp = rsp = lsp = tsp = asp = state = 0;
