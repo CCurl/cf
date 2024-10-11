@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#define VERSION     20240921
+#define VERSION     20241010
 
 #define MAX_CODE    0x00FFFF
 #define MAX_VARS    1999999
