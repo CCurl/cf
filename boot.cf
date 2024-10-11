@@ -284,7 +284,7 @@
       .b2 cols for @a+ ed-emit next .b2 cr
    next .b1 adrop ;
 : ->cur  col@ 1+ row@ 1+ ->cr ;
-: ->foot 1 rows 3 + ->cr ;
+: ->foot 1 rows 1 + ->cr ;
 : ->cmd ->foot cr ;
 : ./ '/' emit ;
 : .foot ->foot white ." Block #" blk @ .
@@ -421,11 +421,18 @@
 128 var wd
 cell var wd-in
 
+[ cell var col#
+[ 0 col# !
+: xemit ( c-- ) emit col# dup @ 1+ swap ! ;
+: xtype ( a-- ) >t begin @t if0 tdrop exit then @t+ xemit again ;
+: to100 ( -- ) begin col# @ 98 > if 10 xemit 0 col# ! exit then 32 xemit again ;
+
 : skip-whitespace ( a1--a2 ) 
    begin
-      dup c@ ?dup if0 exit then
-      dup 10 = if cr then
-      32 > if exit then 1+ 
+      dup c@ if0 exit then
+      dup c@ 32 > if exit then
+      dup c@ 10 = if to100 then
+	  1+
    again ;
 
 : next-wd ( a1 wd--a2 ) >t skip-whitespace >a
@@ -446,22 +453,24 @@ cell var wd-in
    wd " ))" s-eqi if yellow exit then
    wd ztype space ;
 
-: word->color2
-   wd " :"  s-eqi if get-word define emit wd ztype compile emit exit then
-   wd " ]"  s-eqi if compile emit  exit then
-   wd " )"  s-eqi if compile emit  exit then
-   wd " ["  s-eqi if interp emit exit then
-   wd " ))" s-eqi if interp emit exit then
-   wd " ("  s-eqi if comment emit exit then
-   wd " ((" s-eqi if comment emit exit then
-   wd ztype space ;
-
 : text->color1 ( show all words ) source-loc wd-in ! 0 >t
    begin
       get-word
       wd c@ if0 white cr t> . ." words" exit then
       word->color1 t+
    again ;
+
+: tc1 text->color1 ;
+
+: word->color2
+   wd " :"  s-eqi if get-word define xemit wd xtype compile xemit exit then
+   wd " ]"  s-eqi if compile xemit exit then
+   wd " )"  s-eqi if compile xemit exit then
+   wd " ["  s-eqi if interp  xemit exit then
+   wd " ))" s-eqi if interp  xemit exit then
+   wd " ("  s-eqi if comment xemit exit then
+   wd " ((" s-eqi if comment xemit exit then
+   wd xtype 32 xemit ;
 
 : text->color2 ( show all words ) source-loc wd-in !
    begin
@@ -470,15 +479,15 @@ cell var wd-in
       word->color2
    again ;
 
-: rb reboot ; 
-: tc1 text->color1 ;
-: tc2 " test.txt" fopen-w >t t@ ->file text->color2 ->stdout t> fclose  ;
-: load-test " test.txt" fopen-r >t t@ if disk 99999 t@ fread . t@ fclose ."  bytes" then tdrop ;
+: tc2 " disk.bin" fopen-w >t t@ ->file text->color2 ->stdout t> fclose  ;
 
-(( move this boot memory to the disk area ))
+: rb reboot ; 
+: load-test " disk.bin" fopen-r >t t@ if disk 99999 t@ fread . t@ fclose ."  bytes" then tdrop ;
+
+(( move this boot code to the disk area ))
 : boot->disk source-loc disk 25000 cmove ;
 
-[ tc2 load-test
+[ ( tc2 load-test )
 
 (( some benchmarks ))
 : mil 1000 dup * * ;
@@ -487,7 +496,9 @@ cell var wd-in
 : fib 1- dup 2 < if drop 1 exit then dup fib swap 1- fib + ;
 : fib-bm timer swap fib . elapsed ;
 
+(( Words for work ))
 : lg   " lazygit" system ;
 : ls   " ls -l" system ;
 : pwd  " pwd" system ;
+: dev  " ccc dev" system ;
 [
