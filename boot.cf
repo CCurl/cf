@@ -185,7 +185,8 @@
 : color ( bg fg-- ) csi (.) ';' emit (.) 'm' emit ;
 : bg    ( color-- ) csi ." 48;5;" (.) 'm' emit ;
 : fg    ( color-- ) csi ." 38;5;" (.) 'm' emit ;
-: black   0 fg ;      : red    196 fg ;
+: c-red 203 ; inline
+: black   0 fg ;      : red    c-red fg ;
 : green  40 fg ;      : yellow 226 fg ;
 : blue   63 fg ;      : purple 201 fg ;
 : cyan  117 fg ;      : grey   246 fg ;
@@ -236,11 +237,11 @@
 
 (( a simple block editor ))
 [ vhere const ed-colors
-[ 219 vc, ( 0: default - purple )
-[ 196 vc, ( 1: define  - red )
-[  76 vc, ( 2: compile - green )
-[ 226 vc, ( 3: interp  - yellow )
-[ 255 vc, ( 4: comment - white )
+[ 219   vc, ( 0: default - purple )
+[ c-red vc, ( 1: define  - red )
+[  76   vc, ( 2: compile - green )
+[ 226   vc, ( 3: interp  - yellow )
+[ 255   vc, ( 4: comment - white )
 
 [ block-sz var ed-block
 : block->ed ( blk-- ) blk @ ->block ed-block block-sz cmove ;
@@ -418,9 +419,12 @@ cell var wd-in
 : text->color ( (show all words) ) vars 10000 + wd-in ! 0 >t
    [ begin ]
       get-word
-      wd c@ [ if0 ] cr t> . ." words" exit [ then ]
+      wd c@ [ if0 ] cr t> . ." words" white exit [ then ]
       translate->color t+
    [ again ] ;
+
+: rb reboot ; 
+: tc text->color ;
 
 (( move this boot code to the disk area ))
 : boot->disk vars 10000 + disk 25000 cmove ;
