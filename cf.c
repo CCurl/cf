@@ -1,3 +1,5 @@
+// A ColorForth inspired system, MIT license
+
 #include "cf.h"
 
 #define NCASE         goto next; case
@@ -9,9 +11,7 @@
 #define L2            lstk[lsp-2]
 #define DE_SZ         sizeof(DE_T)
 
-byte code[MAX_CODE+1];
-byte vars[MAX_VARS+1];
-byte dict[MAX_DICT+1];
+byte mem[MAX_MEM+1];
 cell dsp, dstk[STK_SZ+1];
 cell rsp, rstk[STK_SZ+1];
 cell lsp, lstk[LSTK_SZ+1];
@@ -328,15 +328,11 @@ void baseSys() {
 	defNum("base",   (cell)&base);
 	defNum("state",  (cell)&state);
 
-	defNum("code",        (cell)&code[0]);
-	defNum("vars",        (cell)&vars[0]);
-	defNum("dict",        (cell)&dict[0]);
+	defNum("memory",      (cell)&mem[0]);
 	defNum(">in",         (cell)&toIn);
 	defNum("(output-fp)", (cell)&outputFp);
 
-	defNum("code-sz",  MAX_CODE+1);
-	defNum("vars-sz",  MAX_VARS+1);
-	defNum("dict-sz",  MAX_DICT+1);
+	defNum("mem-sz",   MAX_MEM+1);
 	defNum("de-sz",    sizeof(DE_T));
 	defNum("stk-sz",   STK_SZ+1);
 	defNum("tstk-sz",  TSTK_SZ+1);
@@ -354,10 +350,10 @@ void baseSys() {
 
 void Init() {
 	base    = 10;
-	here    = &code[0];
-	vhere   = &vars[0];
+	here    = &mem[0];
+	vhere   = 0;
 	state   = INTERP;
-	last    = (cell)&dict[MAX_DICT];
+	last    = (cell)&mem[MAX_MEM];
 	dictEnd = last;
 	dsp = rsp = lsp = tsp = asp = state = 0;
 	baseSys();

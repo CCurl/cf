@@ -1,3 +1,5 @@
+// A ColorForth inspired system, MIT license
+
 #ifndef __C5_H__
 
 #ifdef _MSC_VER
@@ -10,11 +12,9 @@
 #include <stdint.h>
 #include <time.h>
 
-#define VERSION     20241010
+#define VERSION     20241011
 
-#define MAX_CODE    0x00FFFF
-#define MAX_VARS    1999999
-#define MAX_DICT    2500*sizeof(DE_T)
+#define MAX_MEM      3999999
 #define STK_SZ            63
 #define LSTK_SZ           60
 #define TSTK_SZ           63
@@ -50,7 +50,7 @@ extern void Init();
 
 // c5.c needs these to be defined
 extern cell state, outputFp;
-extern byte vars[];
+extern byte mem[];
 extern void zType(const char *str);
 extern void emit(const char ch);
 extern void ttyMode(int isRaw);

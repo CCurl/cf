@@ -1,5 +1,6 @@
 (( comments are built in ))
-[ (ha) @ (la) @ (vha) @
+[ memory 50000 + (vha) ! ;
+[ (ha) @ (la) @
 : here  (ha)  @ ;
 : vhere (vha) @ ;
 : last  (la)  @ ;
@@ -10,9 +11,9 @@
 : const addword (lit4) c, , (exit) c, ;
 : var   vhere const allot ;
 
-[ const -vha-
 [ const -la-
 [ const -ha-
+[ vhere const -vha-
 
 : immediate 1 last cell + c! ; [ immediate
 : inline    2 last cell + c! ; [ immediate
@@ -78,11 +79,12 @@
 : ->stdout ( -- ) 0 ->file ;
 
 (( reboot ))
+: source-loc memory 100000 + ;
 : reboot
    -vha- (vha) !  -la- (la) !  -ha- (ha) !
    " boot.cf" fopen-r -if dup then if >a
-      vars 10000 + >t
-      25000 for 0 i t@ + c! next
+      source-loc >t
+      t@ 25000 for 0 i t@ + c! next
       t@ 25000 a@ fread drop a> fclose
       t> >in !
    then ;
@@ -148,16 +150,19 @@
       for i 1+ cells dstk + @ . next
    then rpar ;
 
-: dict-end dict dict-sz + 1- ;
+: dict-end memory mem-sz + 1- ;
 : de>xt    @ ;
 : de>flags cell + c@ ;
 : de>len   cell + 1+ c@ ;
 : de>name  cell + 2+ ;
-: .de-word de>name ztype t@+ 10 > if 0 t! cr exit then tab ;
+: .word de>name ztype ;
+: .de-word .word t@+ 10 > if 0 t! cr exit then tab ;
 : words last >a 1 >t 0 >r begin
-    a@ de>len 7 > if t+ then
+    a@ de>len  7 > if t+ then
+    a@ de>len 12 > if t+ then
     a@ .de-word a@ de-sz + a! r@ 1+ r!
     a@ dict-end < while lpar r> . ." words)" adrop ;
+: words-n last >t for i 8 mod if0 cr then t@ .word tab t@ de-sz + t! next tdrop ;
 
 (( memory ))
 : fill ( addr num ch-- ) >t >r >a  r> for t@ !a+ next atdrop ;
@@ -202,9 +207,9 @@
 : rows 32 ; [ inline
 : cols 100 ; [ inline
 [ rows cols * const block-sz
-: last-block   99 ; [ inline
+: last-block  499 ; [ inline
 [ last-block 1+ block-sz * const disk-sz
-[ vars vars-sz + disk-sz - const disk
+[ memory 2000000 + const disk
 : ->block ( n--a ) last-block min 0 max block-sz * disk + ;
 : disk-read " disk.c5" fopen-r ?dup
    if >a disk disk-sz a@ fread drop a> fclose then ;
@@ -273,7 +278,7 @@
 : .b2 exit green '|' emit white ;
 : ed-emit ( ch-- )
    dup 31 > if emit exit then ( regular char )
-   dup  5 < if dup ed-colors + c@ fg then ( change color )
+   dup  5 < over 0 > and if dup ed-colors + c@ fg then ( change color )
    drop 32 emit ;
 : .scr 1 dup ->rc .b1 ed-block >a rows for 
       .b2 cols for @a+ ed-emit next .b2 cr
@@ -326,15 +331,23 @@
    ->cmd clr-eol ;
 
 : case  ( ch -- ) v, find drop v, ;   ( case-table entry - single word )
-: case! ( ch-- )  v, here v, compile state ! ;   ( case-table entry - code )
+: case! ( ch-- )  v, here v, compile state ! ;   ( case-table entry - memory )
 
 (( VI-like commands ))
+[ vhere const ed-ctrl-cases
+[  9  case! ] 0 8 mv ;
+[ 13  case! ] mv-down 0 col! ;
+[ 27  case  ->norm
+[ 0 v, 0 v, (( end ))
+
 [ vhere const ed-cases
 [ 'j'  case  mv-down
 [ 'k'  case  mv-up
 [ 'h'  case  mv-left
 [ 'l'  case  mv-right
 [ 32   case  mv-right
+[ 'q'  case! ] 0 8 mv ;
+[ 'Q'  case! ] 0 8 negate mv ;
 [ ':'  case! ] define  replace-char! ;
 [ ']'  case! ] compile replace-char! ;
 [ '['  case! ] interp  replace-char! ;
@@ -353,13 +366,8 @@
 [ 'W'  case  ed-prev-word
 [ '+'  case  next-pg
 [ '-'  case  prev-pg
-[ '!'  case do-cmd
+[ '!'  case  do-cmd
 [ '_'  case! ] 0 col! ;
-[ 0 v, 0 v, (( end ))
-
-[ vhere const ed-ctrl-cases
-[ 13   case! mv-down 0 col! ;
-[ 27   case  ->norm
 [ 0 v, 0 v, (( end ))
 
 (( switch: case-table process ))
@@ -448,14 +456,14 @@ cell var wd-in
    wd " ((" s-eqi if comment emit exit then
    wd ztype space ;
 
-: text->color1 ( show all words ) vars 10000 + wd-in ! 0 >t
+: text->color1 ( show all words ) source-loc wd-in ! 0 >t
    begin
       get-word
       wd c@ if0 white cr t> . ." words" exit then
       word->color1 t+
    again ;
 
-: text->color2 ( show all words ) vars 10000 + wd-in !
+: text->color2 ( show all words ) source-loc wd-in !
    begin
       get-word
       wd c@ if0 cr exit then
@@ -465,12 +473,12 @@ cell var wd-in
 : rb reboot ; 
 : tc1 text->color1 ;
 : tc2 " test.txt" fopen-w >t t@ ->file text->color2 ->stdout t> fclose  ;
-: load-test " test.txt" fopen-r >t disk 99999 t@ fread . t> fclose ."  bytes" ;
+: load-test " test.txt" fopen-r >t t@ if disk 99999 t@ fread . t@ fclose ."  bytes" then tdrop ;
 
-(( move this boot code to the disk area ))
-: boot->disk vars 10000 + disk 25000 cmove ;
+(( move this boot memory to the disk area ))
+: boot->disk source-loc disk 25000 cmove ;
 
-[ load-test
+[ tc2 load-test
 
 (( some benchmarks ))
 : mil 1000 dup * * ;

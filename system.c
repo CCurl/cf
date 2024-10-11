@@ -1,3 +1,5 @@
+// A ColorForth inspired system, MIT license
+
 #include "cf.h"
 
 #ifdef IS_WINDOWS
@@ -77,9 +79,9 @@ void boot(const char *fn) {
 	if (!fn) { fn = "boot.cf"; }
 	cell fp = fOpen(fn, (cell)"rb");
 	if (fp) {
-		fRead((cell)&vars[10000], 99999, fp);
+		fRead((cell)&mem[100000], 99999, fp);
 		fClose(fp);
-		outer((char*)&vars[10000]);
+		outer((char*)&mem[100000]);
 	} else {
 		zType("WARNING: unable to open source file!\n");
 		zType("If no filename is provided, the default is 'boot.cf'\n");
