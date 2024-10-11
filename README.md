@@ -15,8 +15,8 @@
 | Char  | Word(s)     | New State |
 | :--   | :--         | :--       |
 | 1     | ":"         | DEFINE    |
-| 2     | "[" or "))" | INTERPRET |
-| 3     | "]" or ")"  | COMPILE   |
+| 2     | "]" or ")"  | COMPILE   |
+| 3     | "[" or "))" | INTERPRET |
 | 4     | "(" or "((" | COMMENT   |
 
 ## Notes:
