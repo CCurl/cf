@@ -14,7 +14,7 @@
 
 #define VERSION     20241011
 
-#define MAX_MEM      3999999
+#define MEM_SZ       4*(1024*1024)
 #define STK_SZ            63
 #define LSTK_SZ           60
 #define TSTK_SZ           63

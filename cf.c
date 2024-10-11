@@ -11,7 +11,7 @@
 #define L2            lstk[lsp-2]
 #define DE_SZ         sizeof(DE_T)
 
-byte mem[MAX_MEM+1];
+byte mem[MEM_SZ];
 cell dsp, dstk[STK_SZ+1];
 cell rsp, rstk[STK_SZ+1];
 cell lsp, lstk[LSTK_SZ+1];
@@ -332,7 +332,7 @@ void baseSys() {
 	defNum(">in",         (cell)&toIn);
 	defNum("(output-fp)", (cell)&outputFp);
 
-	defNum("mem-sz",   MAX_MEM+1);
+	defNum("mem-sz",   MEM_SZ);
 	defNum("de-sz",    sizeof(DE_T));
 	defNum("stk-sz",   STK_SZ+1);
 	defNum("tstk-sz",  TSTK_SZ+1);
@@ -353,7 +353,7 @@ void Init() {
 	here    = &mem[0];
 	vhere   = 0;
 	state   = INTERP;
-	last    = (cell)&mem[MAX_MEM];
+	last    = (cell)&mem[MEM_SZ-1];
 	dictEnd = last;
 	dsp = rsp = lsp = tsp = asp = state = 0;
 	baseSys();
