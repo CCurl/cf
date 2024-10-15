@@ -1,11 +1,15 @@
+// A ColorForth inspired system, MIT license
+
 #include "cf.h"
 
 #ifdef IS_WINDOWS
 
+#include <windows.h>
 #include <conio.h>
 int qKey() { return _kbhit(); }
 int key() { return _getch(); }
 void ttyMode(int isRaw) {}
+void ms(cell sleepForMS) { Sleep(sleepForMS); }
 
 #endif
 
@@ -52,6 +56,14 @@ int key() {
 	// ttyMode(0);
 	return x;
 }
+void ms(cell sleepForMS) {
+	while (sleepForMS > 1000) {
+		usleep(500000);
+		usleep(500000);
+		sleepForMS -= 1000;
+	}
+	if (sleepForMS > 0) { usleep(sleepForMS * 1000); }
+}
 
 #endif // Linux, OpenBSD, FreeBSD
 
@@ -66,9 +78,9 @@ cell fWrite(cell buf, cell sz, cell fh) { return (cell)fwrite((char*)buf, 1, sz,
 cell fSeek(cell fh, cell offset) { return (cell)fseek((FILE*)fh, (long)offset, SEEK_SET); }
 
 void repl() {
+	char tib[256];
 	ttyMode(0);
 	zType((state == COMPILE) ? " ... "  : " ok\n");
-	char tib[256];
 	if (fgets(tib, 256, stdin) != tib) { exit(0); }
 	outer(tib);
 }
@@ -77,12 +89,12 @@ void boot(const char *fn) {
 	if (!fn) { fn = "boot.cf"; }
 	cell fp = fOpen(fn, (cell)"rb");
 	if (fp) {
-		fRead((cell)&vars[10000], 99999, fp);
+		fRead((cell)&mem[100000], 99999, fp);
 		fClose(fp);
-		outer((char*)&vars[10000]);
+		outer((char*)&mem[100000]);
 	} else {
 		zType("WARNING: unable to open source file!\n");
-		zType("If no filename is provided, the default is 'boot.c5'\n");
+		zType("If no filename is provided, the default is 'boot.cf'\n");
 	}
 }
 

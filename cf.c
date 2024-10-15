@@ -1,3 +1,5 @@
+// A ColorForth inspired system, MIT license
+
 #include "cf.h"
 
 #define NCASE         goto next; case
@@ -9,9 +11,7 @@
 #define L2            lstk[lsp-2]
 #define DE_SZ         sizeof(DE_T)
 
-byte code[MAX_CODE+1];
-byte vars[MAX_VARS+1];
-byte dict[MAX_DICT+1];
+byte mem[MEM_SZ];
 cell dsp, dstk[STK_SZ+1];
 cell rsp, rstk[STK_SZ+1];
 cell lsp, lstk[LSTK_SZ+1];
@@ -19,7 +19,8 @@ cell tsp, tstk[TSTK_SZ+1];
 cell asp, astk[TSTK_SZ+1];
 cell last, base, state, dictEnd, outputFp;
 byte *here, *vhere;
-char *toIn, wd[32];
+char *toIn, wd[128];
+DE_T tmpWords[10];
 
 #define PRIMS \
 	X(DUP,     "dup",       0, t=TOS; push(t); ) \
@@ -42,8 +43,8 @@ char *toIn, wd[32];
 	X(LT,      "<",         0, t=pop(); TOS = (TOS < t); ) \
 	X(EQ,      "=",         0, t=pop(); TOS = (TOS == t); ) \
 	X(GT,      ">",         0, t=pop(); TOS = (TOS > t); ) \
-	X(SEMI,    ";",         1, ccomma(EXIT); ) \
 	X(EXIT,    "exit",      0, if (0<rsp) { pc = (byte*)rpop(); } else { return; } ) \
+	X(SEMI,    ";",         1, ccomma(EXIT); ) \
 	X(EQ0,     "0=",        0, TOS = (TOS == 0) ? 1 : 0; ) \
 	X(AND,     "and",       0, t=pop(); TOS &= t; ) \
 	X(OR,      "or",        0, t=pop(); TOS |= t; ) \
@@ -78,6 +79,7 @@ char *toIn, wd[32];
 	X(ADDWORD, "addword",   0, addWord(0); ) \
 	X(FIND,    "find",      0, { DE_T *dp=findWord(0); push(dp?dp->xt:0); push((cell)dp); } ) \
 	X(CLK,     "timer",     0, push(timer()); ) \
+	X(MS,      "ms",        0, ms(pop()); ) \
 	X(ZTYPE,   "ztype",     0, zType((const char *)pop()); ) \
 	X(FOPEN,   "fopen",     0, t=pop(); TOS=fOpen((char*)TOS, t); ) \
 	X(FCLOSE,  "fclose",    0, t=pop(); fClose(t); ) \
@@ -133,25 +135,33 @@ int changeState(int newState) {
 }
 
 int checkWhitespace(char c) {
-	if (c == 1) { return changeState(DEFINE); }
-	if (c == 2) { return changeState(INTERP); }
-	if (c == 3) { return changeState(COMPILE); }
-	if (c == 4) { return changeState(COMMENT); }
+	if (c == DEFINE)  { return changeState(DEFINE); }
+	if (c == COMPILE) { return changeState(COMPILE); }
+	if (c == INTERP)  { return changeState(INTERP); }
+	if (c == COMMENT) { return changeState(COMMENT); }
 	return 0;
 }
 
 int nextWord() {
 	int len = 0;
 	while (btwi(*toIn, 1, 32)) { checkWhitespace(*(toIn++)); }
-	// while (btwi(*toIn, 1, 32)) { toIn++; }
 	while (btwi(*toIn, 33, 126)) { wd[len++] = *(toIn++); }
 	wd[len] = 0;
 	return len;
 }
 
-DE_T *addWord(const char *w) {
+int isTemp(const char* w) {
+	return ((w[0] == 't') && btwi(w[1], '0', '9') && (w[2] == 0)) ? 1 : 0;
+}
+
+DE_T *addWord(char *w) {
 	if (!w) { nextWord(); w = wd; }
+	if (isTemp(w)) {
+		tmpWords[w[1]-'0'].xt = (cell)here;
+		return &tmpWords[w[1]-'0'];
+	}
 	int ln = strLen(w);
+	if (ln > NAME_MAX) { ln=NAME_MAX; w[ln]=0; }
 	last -= DE_SZ;
 	DE_T *dp = (DE_T*)last;
 	dp->xt = (cell)here;
@@ -164,11 +174,11 @@ DE_T *addWord(const char *w) {
 
 DE_T *findWord(const char *w) {
 	if (!w) { nextWord(); w = wd; }
+	if (isTemp(w)) { return &tmpWords[w[1] - '0']; }
 	int len = strLen(w);
 	cell cw = last;
 	while (cw < dictEnd) {
 		DE_T *dp = (DE_T*)cw;
-		// printf("-fw:%lx,(%d,%d,%s)-", cw, dp->flags,dp->len,dp->name);
 		if ((len == dp->len) && strEqI(dp->name, w)) { return dp; }
 		cw += DE_SZ;
 	}
@@ -198,7 +208,6 @@ next:
 		PRIMS
 		default:
 			zType("-ir?-");
-			// printf("-ir:%d?-", *(pc-1));
 			return;
 	}
 }
@@ -250,13 +259,14 @@ int compileWord(DE_T *dp) {
 }
 
 int isStateChange() {
-	if (strEqI(wd, ":"))  return changeState(DEFINE);
-	if (strEqI(wd, "["))  return changeState(INTERP);
-	if (strEqI(wd, "]"))  return changeState(COMPILE);
-	if (strEqI(wd, "("))  return changeState(COMMENT);
-	if (strEqI(wd, ")"))  return changeState(COMPILE);
-	if (strEqI(wd, "((")) return changeState(COMMENT);
-	if (strEqI(wd, "))")) return changeState(INTERP);
+	if (strEqI(wd, ")"))  { return changeState(COMPILE); }
+	if (strEqI(wd, "))")) { return changeState(INTERP); }
+	if (state == COMMENT) { return 0; }
+	if (strEqI(wd, ":"))  { return changeState(DEFINE); }
+	if (strEqI(wd, "["))  { return changeState(INTERP); }
+	if (strEqI(wd, "]"))  { return changeState(COMPILE); }
+	if (strEqI(wd, "("))  { return changeState(COMMENT); }
+	if (strEqI(wd, "((")) { return changeState(COMMENT); }
 	return 0;
 }
 
@@ -286,7 +296,7 @@ int outer(const char *src) {
 	return 1;
 }
 
-void defNum(const char *name, cell val) {
+void defNum(char *name, cell val) {
 	addWord(name); compileNumber(val); ccomma(EXIT);
 }
 
@@ -320,15 +330,11 @@ void baseSys() {
 	defNum("base",   (cell)&base);
 	defNum("state",  (cell)&state);
 
-	defNum("code",        (cell)&code[0]);
-	defNum("vars",        (cell)&vars[0]);
-	defNum("dict",        (cell)&dict[0]);
+	defNum("memory",      (cell)&mem[0]);
 	defNum(">in",         (cell)&toIn);
 	defNum("(output-fp)", (cell)&outputFp);
 
-	defNum("code-sz",  MAX_CODE+1);
-	defNum("vars-sz",  MAX_VARS+1);
-	defNum("dict-sz",  MAX_DICT+1);
+	defNum("mem-sz",   MEM_SZ);
 	defNum("de-sz",    sizeof(DE_T));
 	defNum("stk-sz",   STK_SZ+1);
 	defNum("tstk-sz",  TSTK_SZ+1);
@@ -337,7 +343,7 @@ void baseSys() {
 
 	for (int i = 0; prims[i].name; i++) {
 		PRIM_T* p = &prims[i];
-		DE_T* dp = addWord(p->name);
+		DE_T* dp = addWord((char*)p->name);
 		dp->flags = (p->fl) ? p->fl : 0x02;
 		ccomma(p->op);
 		ccomma(EXIT);
@@ -346,9 +352,10 @@ void baseSys() {
 
 void Init() {
 	base    = 10;
-	here    = &code[0];
-	vhere   = &vars[0];
-	last    = (cell)&dict[MAX_DICT];
+	here    = &mem[0];
+	vhere   = 0;
+	state   = INTERP;
+	last    = (cell)&mem[MEM_SZ-1];
 	dictEnd = last;
 	dsp = rsp = lsp = tsp = asp = state = 0;
 	baseSys();

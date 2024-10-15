@@ -12,19 +12,17 @@
 
 ## Whitespace characters and that change the state:
 
-| Char  | Word(s)     | New State |
+| Byte  | Word(s)     | New State |
 | :--   | :--         | :--       |
-| 1     | ":"         | DEFINE    |
-| 2     | "[" or "))" | INTERPRET |
-| 3     | "]" or ")"  | COMPILE   |
-| 4     | "(" or "((" | COMMENT   |
+| $01   | ":"         | DEFINE    |
+| $02   | "]" or ")"  | COMPILE   |
+| $03   | "[" or "))" | INTERPRET |
+| $04   | "(" or "((" | COMMENT   |
 
 ## Notes:
 - DEFINE changes the state to COMPILE after adding the word to the dictionary
 - `;` does NOT change the state to INTERPRET
 - There is no difference between `(` and `((`, they make the code more readable
-- `)` is simply an alias for `]`, and makes the code more readable
-- `))` is simply an alias for `[`, and makes the code more readable
 - cf still supports IMMEDIATE words
 - Flow control words like IF/THEN are IMMEDIATE
 - They and are defined in the source file.
