@@ -53,14 +53,18 @@
 
 ( ***************************************************** )
 ( STATES/MODES )
-: define  1 ;
-: compile 2 ;
-: interp  3 ;
-: comment 4 ;
+: define  1 ; [ inline
+: compile 2 ; [ inline
+: interp  3 ; [ inline
+: comment 4 ; [ inline
 ( ***************************************************** )
 
-: comp? state @ 2 = ;
-: (quote) ( -- )  vhere dup >t  >in @ 1+ >a
+
+
+
+: comp? state @ compile = ;
+
+: (quote)  vhere dup >t  >in @ 1+ >a
    begin
       @a '"' = if
          0 !t+  a> 1+ >in !
@@ -76,7 +80,7 @@
 : fopen-r " rb"  fopen ;
 : fopen-w " wb"  fopen ;
 : ->file ( fh-- ) (output-fp) ! ;
-: ->stdout ( -- ) 0 ->file ;
+: ->stdout 0 ->file ;
 
 (( reboot ))
 : source-loc memory 100000 + ;
@@ -84,10 +88,11 @@
    -vha- (vha) !  -la- (la) !  -ha- (ha) !
    " boot.cf" fopen-r -if dup then if >a
       source-loc >t
-      t@ 25000 for 0 i t@ + c! next
+      t@ 25000 for 0 over c! 1+ next drop
       t@ 25000 a@ fread drop a> fclose
       t> >in !
    then ;
+: rb reboot ;
 
 : bl 32 ; [ inline
 : tab 9 emit ; [ inline
@@ -122,7 +127,7 @@
 : .%bin ( n-- ) base @ >t '%' emit binary (.) t> base ! ;
 
 : execute ( xt-- ) >r ;
-: :noname here 2 state ! ;
+: :noname here compile state ! ;
 : cells cell * ; [ inline
 : cell+ cell + ; [ inline
 : 2+ 1+ 1+ ; [ inline
@@ -181,15 +186,15 @@
 : p ( --a ) vhere 100 + ;
 
 (( screen ))
-: csi       ( -- )    27 emit '[' emit ;
+: csi          27 emit '[' emit ;
 : ->cr      ( c r-- ) csi (.) ';' emit (.) 'H' emit ;
 : ->rc      ( r c-- ) swap ->cr ;
-: cls       ( -- )    csi ." 2J" 1 dup ->cr ;
-: clr-eol   ( -- )    csi ." 0K" ;
-: cur-on    ( -- )    csi ." ?25h" ;
-: cur-off   ( -- )    csi ." ?25l" ;
-: cur-block ( -- )    csi ." 2 q" ;
-: cur-bar   ( -- )    csi ." 5 q" ;
+: cls          csi ." 2J" 1 dup ->cr ;
+: clr-eol      csi ." 0K" ;
+: cur-on       csi ." ?25h" ;
+: cur-off      csi ." ?25l" ;
+: cur-block    csi ." 2 q" ;
+: cur-bar      csi ." 5 q" ;
 
 : color ( bg fg-- ) csi (.) ';' emit (.) 'm' emit ;
 : bg    ( color-- ) csi ." 48;5;" (.) 'm' emit ;
@@ -215,25 +220,25 @@
    if >a disk disk-sz a@ fread drop a> fclose then ;
 : disk-flush " disk.c5" fopen-w ?dup
    if >a disk disk-sz a@ fwrite drop a> fclose then ;
-: blk-cp  ( src dst-- ) >t ->block t> ->block block-sz cmove ;
-: blk-clr ( blk-- ) ->block block-sz 0 fill ;
-: blk-mv  ( src dst-- ) over >t blk-cp t> blk-clr ;
-: aemit ( b-- ) dup $20 < over $7e > or if drop '.' then emit ;
-: blk-cat ( blk-- ) ->block rows for
+: blk-cp  ( (src dst--) ) >t ->block t> ->block block-sz cmove ;
+: blk-clr ( (blk--) ) ->block block-sz 0 fill ;
+: blk-mv  ( (src dst--) ) over >t blk-cp t> blk-clr ;
+: aemit ( (b--) ) dup $20 < over $7e > or if drop '.' then emit ;
+: blk-cat ( (blk--) ) ->block rows for
       i .2 space cols for dup c@ aemit 1+ next cr
    next drop ;
-: blk-cp-n ( src dst n-- ) >r >t >a r> for a@+ t@+ blk-cp next atdrop ;
-: blk-mv-n ( src dst n-- ) >r >t >a r> for a@+ t@+ blk-mv next atdrop ;
-: blk-ins ( blk start-- ) >a >t
+: blk-cp-n ( (src dst n--) ) >r >t >a r> for a@+ t@+ blk-cp next atdrop ;
+: blk-mv-n ( (src dst n--) ) >r >t >a r> for a@+ t@+ blk-mv next atdrop ;
+: blk-ins ( (blk start--) ) >a >t
    begin a@- a@ swap blk-cp a@ t@ > while
    atdrop ;
-: blk-del ( blk stop-- ) >a >t
+: blk-del ( (blk stop--) ) >a >t
    begin t@+ t@ swap blk-cp t@ a@ < while
    t> blk-clr atdrop ;
 [ disk-read
 
 (( accept ))
-: printable? ( c--f ) dup 31 > swap 127 < and ;
+: printable? ( (c--f) ) dup 31 > swap 127 < and ;
 : bs 8 emit ; [ inline
 : accept ( dst-- ) dup >r >t 0 >a
   begin key a!
@@ -251,6 +256,9 @@
 [  76   vc, ( 2: compile - green )
 [ 226   vc, ( 3: interp  - yellow )
 [ 255   vc, ( 4: comment - white )
+
+: ed-color@ ( (n--) ) ed-colors + c@ ;
+: ed-color! ( (fg n--) ) ed-colors + c! ;
 
 [ block-sz var ed-block
 : block->ed ( blk-- ) blk @ ->block ed-block block-sz cmove ;
@@ -276,9 +284,11 @@
 : quit!  99 mode! ;    : quit?  mode@ 99 = ;  
 : .b1 exit green cols 2+ for '-' emit next white cr ;
 : .b2 exit green '|' emit white ;
+
+
 : ed-emit ( ch-- )
    dup 31 > if emit exit then ( regular char )
-   dup  5 < over 0 > and if dup ed-colors + c@ fg then ( change color )
+   dup  5 < over 0 > and if dup ed-color@ fg then ( change color )
    drop 32 emit ;
 : .scr 1 dup ->rc .b1 ed-block >a rows for 
       .b2 cols for @a+ ed-emit next .b2 cr
@@ -298,28 +308,26 @@
 : mv-up   0 dup 1- swap mv ;   : mv-down  1 0 mv ;
 : ins-bl  dirty! row@ row-last >a  rc->pos >t
    begin a@ 1- c@ !a- a@ t@ > while bl a> c! tdrop ;
-: replace-char! ( ch-- ) rc->pos c! mv-right dirty! ;
-: replace-char  ( -- ) a@ printable? if a@ replace-char! then ;
-: insert-char   ( -- ) a@ printable? if ins-bl a@ replace-char! then ;
+: replace-char! ( (ch--) ) rc->pos c! mv-right dirty! ;
+: replace-char  a@ printable? if a@ replace-char! then ;
+: insert-char   a@ printable? if ins-bl a@ replace-char! then ;
 : del-ch  dirty!  row@ row-last >a  rc->pos >t
    begin t@ 1+ c@ !t+ t@ a@ < while 32 t> c! adrop ;
 : clr-line 0 row@ cr->pos >a cols for 32 !a+ next adrop dirty! ;
 : ins-line  row@ rows < if 
       last-ch >a  a@ cols - >t  0 row@ cr->pos >r
-      begin @t- !a- t@ r@ < until
-      atdrop rdrop
+      begin @t- !a- t@ r@ < until atdrop rdrop
    then clr-line ;
 : del-line  row@ rows < if
       0 row@ cr->pos >t  t@ cols + >a  last-ch >r
-      begin @a+ !t+  a@ r@ > until 
-      atdrop rdrop
+      begin @a+ !t+  a@ r@ > until atdrop rdrop
    then row@  rows 1- row!  clr-line  row! ;
-: ed-prev-word ( -- ) rc->pos 1- >t
+: ed-prev-word rc->pos 1- >t
    begin
       t@ ed-block < if t> pos->rc exit then
       @t- 33 < if t> 1+ pos->rc exit then
    again ;
-: ed-next-word ( -- ) rc->pos 1+ >t
+: ed-next-word rc->pos 1+ >t
    begin
       t@ last-ch > if t> pos->rc exit then
       @t+ 33 < if t> 1- pos->rc exit then
@@ -330,8 +338,8 @@
    p " q" s-eqi if quit! then
    ->cmd clr-eol ;
 
-: case  ( ch -- ) v, find drop v, ;   ( case-table entry - single word )
-: case! ( ch-- )  v, here v, compile state ! ;   ( case-table entry - memory )
+: case  ( (ch--) )  v, find drop v, ;   ( case-table entry - single word )
+: case! ( (ch--) )  v, here v, compile state ! ;   ( case-table entry - memory )
 
 (( VI-like commands ))
 [ vhere const ed-ctrl-cases
@@ -339,6 +347,8 @@
 [ 13  case! ] mv-down 0 col! ;
 [ 27  case  ->norm
 [ 0 v, 0 v, (( end ))
+
+
 
 [ vhere const ed-cases
 [ 'j'  case  mv-down
@@ -370,15 +380,17 @@
 [ '_'  case! ] 0 col! ;
 [ 0 v, 0 v, (( end ))
 
+
+
 (( switch: case-table process ))
-: switch ( tbl-- )
+: switch ( (tbl--) )
    >t begin
       t@ @ if0 tdrop exit then
       t@+c @ a@ = if t> @ >r exit then
       t@ cell+ t!
-   again tdrop ;
+   again ;
 
-: process-key ( -- )
+: process-key ( (--) )
    a@ 32 < a@ 127 > or if ed-ctrl-cases switch exit then
    ins?  if insert-char exit then
    repl? if replace-char exit then
@@ -388,17 +400,17 @@
 : ed  ed-init ed-loop ed->block ->cmd ;
 : edit  blk ! ed ;
 
-(( ... from Peter Jakacki ))
-: .ascii ( -- ) a@ $10 - $10 for dup c@ aemit 1+ next drop ;
-: dump ( f n-- ) swap >a 0 >t
+(( This dump is from Peter Jakacki ))
+: .ascii ( (--) ) a@ $10 - $10 for dup c@ aemit 1+ next drop ;
+: dump ( (f n--) ) swap >a 0 >t
    for
       t@ if0 cr a@ .hex ':' emit space then
       @a+ .hex
       t@+ $0f = if 4 spaces .ascii 0 t! then
    next drop atdrop ;
 
-(( fg1: forget-one ))
-: fg1 last dup de-sz + (la) ! @ (ha) ! ;  
+(( fgl: forget the last word ))
+: fgl last dup de-sz + (la) ! @ (ha) ! ;  
 
 [ cell var fgh
 [ cell var fgl
@@ -418,76 +430,42 @@
 : f- - ;
 
 (( temp for testing ))
-128 var wd
-cell var wd-in
+[ 128 var wd
+[ cell var to-in
+[ 0 col!
+: xemit ( (c--) ) emit col@ 1+ col! ;
+: memit ( (c--) ) dup mode! xemit ;
+: xtype ( (a--) ) >t : t1 @t if0 tdrop exit then @t+ xemit t1 ;
+: to100 ( (--) )  : t1 col@ 98 > if 10 xemit 0 col! exit then 32 xemit t1 ;
 
-[ cell var col#
-[ 0 col# !
-: xemit ( c-- ) emit col# dup @ 1+ swap ! ;
-: xtype ( a-- ) >t begin @t if0 tdrop exit then @t+ xemit again ;
-: to100 ( -- ) begin col# @ 98 > if 10 xemit 0 col# ! exit then 32 xemit again ;
+: skip-whitespace ( (a1--a2) ) >a
+   : t1 @a if0 a> exit then @a 32 > if a> exit then @a+ 10 = if to100 then t1 ;
 
-: skip-whitespace ( a1--a2 ) 
-   begin
-      dup c@ if0 exit then
-      dup c@ 32 > if exit then
-      dup c@ 10 = if to100 then
-	  1+
-   again ;
+: next-wd ( (a1 wd--a2) ) >t skip-whitespace >a
+   : t1 @a 33 < if 0 !t tdrop a> exit then @a+ !t+ t1 ;
 
-: next-wd ( a1 wd--a2 ) >t skip-whitespace >a
-   begin
-      @a 33 < if 0 !t a@ atdrop exit then
-      @a+ !t+
-   again ;
+: get-word ( (--) ) to-in @ wd next-wd to-in ! ;
 
-: get-word wd-in @ wd next-wd wd-in ! ;
-
-: word->color1
-   wd " :" s-eqi if get-word red wd ztype space green exit then
-   wd " ]" s-eqi  if green  exit then
-   wd " [" s-eqi  if yellow exit then
-   wd " (" s-eqi  if white  exit then
-   wd " )" s-eqi  if green  exit then
-   wd " ((" s-eqi if white  exit then
-   wd " ))" s-eqi if yellow exit then
-   wd ztype space ;
-
-: text->color1 ( show all words ) source-loc wd-in ! 0 >t
-   begin
-      get-word
-      wd c@ if0 white cr t> . ." words" exit then
-      word->color1 t+
-   again ;
-
-: tc1 text->color1 ;
-
-: word->color2
-   wd " :"  s-eqi if get-word define xemit wd xtype compile xemit exit then
-   wd " ]"  s-eqi if compile xemit exit then
-   wd " )"  s-eqi if compile xemit exit then
-   wd " ["  s-eqi if interp  xemit exit then
-   wd " ))" s-eqi if interp  xemit exit then
-   wd " ("  s-eqi if comment xemit exit then
-   wd " ((" s-eqi if comment xemit exit then
+: word->color
+   wd " :"  s-eqi if get-word define memit wd xtype compile memit exit then
+   wd " ]"  s-eqi if compile memit exit then
+   wd " )"  s-eqi if compile memit exit then
+   wd " ["  s-eqi if interp  memit exit then
+   wd " ))" s-eqi if interp  memit exit then
+   wd " ("  s-eqi if comment memit exit then
+   wd " ((" s-eqi if comment memit exit then
    wd xtype 32 xemit ;
 
-: text->color2 ( show all words ) source-loc wd-in !
+: src->color ( colorize words ) source-loc to-in !
    begin
-      get-word
-      wd c@ if0 cr exit then
-      word->color2
+      get-word wd c@ if0 cr exit then word->color
    again ;
 
-: tc2 " disk.bin" fopen-w >t t@ ->file text->color2 ->stdout t> fclose  ;
+: src->disk " disk.bin" fopen-w >t t@ ->file src->color ->stdout t> fclose  ;
+: load-disk " disk.bin" fopen-r >t t@ if disk 99999 t@ fread . t@ fclose ."  bytes" then tdrop ;
 
-: rb reboot ; 
-: load-test " disk.bin" fopen-r >t t@ if disk 99999 t@ fread . t@ fclose ."  bytes" then tdrop ;
-
-(( move this boot code to the disk area ))
-: boot->disk source-loc disk 25000 cmove ;
-
-[ ( tc2 load-test )
+[ src->disk
+[ load-disk
 
 (( some benchmarks ))
 : mil 1000 dup * * ;

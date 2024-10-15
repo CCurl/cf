@@ -4,10 +4,12 @@
 
 #ifdef IS_WINDOWS
 
+#include <windows.h>
 #include <conio.h>
 int qKey() { return _kbhit(); }
 int key() { return _getch(); }
 void ttyMode(int isRaw) {}
+void ms(cell sleepForMS) { Sleep(sleepForMS); }
 
 #endif
 
@@ -53,6 +55,14 @@ int key() {
 	int x = fgetc(stdin);
 	// ttyMode(0);
 	return x;
+}
+void ms(cell sleepForMS) {
+	while (sleepForMS > 1000) {
+		usleep(500000);
+		usleep(500000);
+		sleepForMS -= 1000;
+	}
+	if (sleepForMS > 0) { usleep(sleepForMS * 1000); }
 }
 
 #endif // Linux, OpenBSD, FreeBSD

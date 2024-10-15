@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#define VERSION     20241011
+#define VERSION     20241015
 
 #define MEM_SZ       4*(1024*1024)
 #define STK_SZ            63
@@ -32,6 +32,7 @@
     #define CELL_SZ   4
     #define FLT_T     float
     #define addrFmt ": %s $%lx ;"
+    #define NAME_MAX  25
 #endif
 
 enum { DEFINE=1, COMPILE, INTERP, COMMENT };
@@ -40,7 +41,7 @@ typedef CELL_T cell;
 typedef UCELL_T ucell;
 typedef unsigned short ushort;
 typedef unsigned char byte;
-typedef struct { cell xt; byte flags, len; char name[32-(CELL_SZ+3)]; } DE_T;
+typedef struct { cell xt; byte flags, len; char name[NAME_MAX+1]; } DE_T;
 typedef struct { byte op; const char* name; byte fl; } PRIM_T;
 
 // These are defined by c5.cpp
@@ -57,6 +58,7 @@ extern void ttyMode(int isRaw);
 extern int  key();
 extern int  qKey();
 extern cell timer();
+extern void ms(cell sleepForMS);
 extern cell fOpen(const char *name, cell mode);
 extern void fClose(cell fh);
 extern cell fRead(cell buf, cell sz, cell fh);

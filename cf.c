@@ -79,6 +79,7 @@ DE_T tmpWords[10];
 	X(ADDWORD, "addword",   0, addWord(0); ) \
 	X(FIND,    "find",      0, { DE_T *dp=findWord(0); push(dp?dp->xt:0); push((cell)dp); } ) \
 	X(CLK,     "timer",     0, push(timer()); ) \
+	X(MS,      "ms",        0, ms(pop()); ) \
 	X(ZTYPE,   "ztype",     0, zType((const char *)pop()); ) \
 	X(FOPEN,   "fopen",     0, t=pop(); TOS=fOpen((char*)TOS, t); ) \
 	X(FCLOSE,  "fclose",    0, t=pop(); fClose(t); ) \
@@ -153,13 +154,14 @@ int isTemp(const char* w) {
 	return ((w[0] == 't') && btwi(w[1], '0', '9') && (w[2] == 0)) ? 1 : 0;
 }
 
-DE_T *addWord(const char *w) {
+DE_T *addWord(char *w) {
 	if (!w) { nextWord(); w = wd; }
 	if (isTemp(w)) {
-		tmpWords[w[1] - '0'].xt = (cell)here;
-		return &tmpWords[w[1] - '0'];
+		tmpWords[w[1]-'0'].xt = (cell)here;
+		return &tmpWords[w[1]-'0'];
 	}
 	int ln = strLen(w);
+	if (ln > NAME_MAX) { ln=NAME_MAX; w[ln]=0; }
 	last -= DE_SZ;
 	DE_T *dp = (DE_T*)last;
 	dp->xt = (cell)here;
@@ -257,14 +259,14 @@ int compileWord(DE_T *dp) {
 }
 
 int isStateChange() {
+	if (strEqI(wd, ")"))  { return changeState(COMPILE); }
+	if (strEqI(wd, "))")) { return changeState(INTERP); }
+	if (state == COMMENT) { return 0; }
 	if (strEqI(wd, ":"))  { return changeState(DEFINE); }
-	// if (strEqI(wd, ";"))  { ccomma(EXIT); return changeState(INTERP); } // TODO: Remove
 	if (strEqI(wd, "["))  { return changeState(INTERP); }
 	if (strEqI(wd, "]"))  { return changeState(COMPILE); }
 	if (strEqI(wd, "("))  { return changeState(COMMENT); }
-	if (strEqI(wd, ")"))  { return changeState(COMPILE); }
 	if (strEqI(wd, "((")) { return changeState(COMMENT); }
-	if (strEqI(wd, "))")) { return changeState(INTERP); }
 	return 0;
 }
 
@@ -294,7 +296,7 @@ int outer(const char *src) {
 	return 1;
 }
 
-void defNum(const char *name, cell val) {
+void defNum(char *name, cell val) {
 	addWord(name); compileNumber(val); ccomma(EXIT);
 }
 
@@ -341,7 +343,7 @@ void baseSys() {
 
 	for (int i = 0; prims[i].name; i++) {
 		PRIM_T* p = &prims[i];
-		DE_T* dp = addWord(p->name);
+		DE_T* dp = addWord((char*)p->name);
 		dp->flags = (p->fl) ? p->fl : 0x02;
 		ccomma(p->op);
 		ccomma(EXIT);
