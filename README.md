@@ -10,7 +10,7 @@
 - cf supports using either a character in the whitespace or a word to change the state.
 - cf is a work in progress. **Please collaborate with me on it!**
 
-## Whitespace characters and that change the state:
+## Whitespace characters and WORDS that change the state:
 
 | Byte  | Word(s)     | New State |
 | :--   | :--         | :--       |
@@ -25,7 +25,7 @@
 - There is no difference between `(` and `((`, they make the code more readable
 - cf still supports IMMEDIATE words
 - Flow control words like IF/THEN are IMMEDIATE
-- They and are defined in the source file.
+- They are defined in the source file.
 
 ```
 (( A comment in INTERPRET mode ))

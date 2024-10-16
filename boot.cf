@@ -216,9 +216,9 @@
 [ last-block 1+ block-sz * const disk-sz
 [ memory 2000000 + const disk
 : ->block ( n--a ) last-block min 0 max block-sz * disk + ;
-: disk-read " disk.c5" fopen-r ?dup
+: disk-read " disk.cf" fopen-r ?dup
    if >a disk disk-sz a@ fread drop a> fclose then ;
-: disk-flush " disk.c5" fopen-w ?dup
+: disk-flush " disk.cf" fopen-w ?dup
    if >a disk disk-sz a@ fwrite drop a> fclose then ;
 : blk-cp  ( (src dst--) ) >t ->block t> ->block block-sz cmove ;
 : blk-clr ( (blk--) ) ->block block-sz 0 fill ;
@@ -236,6 +236,40 @@
    begin t@+ t@ swap blk-cp t@ a@ < while
    t> blk-clr atdrop ;
 [ disk-read
+
+
+(( vkey ))
+#256  #75 or const key-left  (( (VT: 27 91 68) ))
+#256  #77 or const key-right (( (VT: 27 91 67) ))
+#256  #72 or const key-up    (( (VT: 27 91 65) ))
+#256  #80 or const key-down  (( (VT: 27 91 66) ))
+#256  #71 or const key-home  (( (VT: 27 91 72) ))
+#256  #79 or const key-end   (( (VT: 27 91 70) ))
+#256  #82 or const key-ins   (( (VT: 27 91 50 126) ))
+#256  #83 or const key-del   (( (VT: 27 91 51 126) ))
+#256  #73 or const key-pgup  (( (VT: 27 91 53 126) ))
+#256  #81 or const key-pgdn  (( (VT: 27 91 54 126) ))
+#256 #119 or const key-chome (( (VT: 27 91 ?? ???) ))
+#256 #117 or const key-cend  (( (VT: 27 91 ?? ???) ))
+
+: vk2 ( (--k) ) key 126 = if0 3 exit then
+    a@ 50 = if key-ins   exit then
+    a@ 51 = if key-del   exit then
+    a@ 53 = if key-pgup  exit then
+    a@ 54 = if key-pgdn  exit then    3 ;
+: vk1 ( (--k) ) key a!
+    a@ 68 = if key-left  exit then
+    a@ 67 = if key-right exit then
+    a@ 65 = if key-up    exit then
+    a@ 66 = if key-down  exit then
+    a@ 72 = if key-home  exit then
+    a@ 70 = if key-end   exit then
+    a@ 49 > a@ 55 < and if vk2 exit then    3 ;
+: vt-key ( (--k) )  key 91 = if vk1 exit then 3 ;
+: vkey ( (--k) ) key
+    dup 224 = if drop key #256 or exit then ( Windows )
+    dup  27 = if drop vt-key  exit then ; ( VT )
+
 
 (( accept ))
 : printable? ( (c--f) ) dup 31 > swap 127 < and ;
@@ -314,6 +348,8 @@
 : del-ch  dirty!  row@ row-last >a  rc->pos >t
    begin t@ 1+ c@ !t+ t@ a@ < while 32 t> c! adrop ;
 : clr-line 0 row@ cr->pos >a cols for 32 !a+ next adrop dirty! ;
+
+
 : ins-line  row@ rows < if 
       last-ch >a  a@ cols - >t  0 row@ cr->pos >r
       begin @t- !a- t@ r@ < until atdrop rdrop
@@ -341,13 +377,28 @@
 : case  ( (ch--) )  v, find drop v, ;   ( case-table entry - single word )
 : case! ( (ch--) )  v, here v, compile state ! ;   ( case-table entry - memory )
 
+
+
+
+
+
 (( VI-like commands ))
 [ vhere const ed-ctrl-cases
-[  9  case! ] 0 8 mv ;
-[ 13  case! ] mv-down 0 col! ;
-[ 27  case  ->norm
+[ key-left   case  mv-left
+[ key-right  case  mv-right
+[ key-up     case  mv-up
+[ key-down   case  mv-down
+[ key-home   case! ] 0 col! ;
+[ key-ins    case! ] ins? if ->norm exit then ->ins ;
+[ key-del    case  del-ch
+[ key-pgup   case  prev-pg
+[ key-pgdn   case  next-pg
+[ key-chome  case! ] 0 dup row! col! ;
+[  9         case! ] 0 8 mv ;
+[ 13         case! ] mv-down 0 col! ;
+[ 27         case  ->norm
+( key-cend   case xxx )
 [ 0 v, 0 v, (( end ))
-
 
 
 [ vhere const ed-cases
@@ -390,12 +441,12 @@
       t@ cell+ t!
    again ;
 
-: process-key ( (--) )
+: process-key ( (--), key is in a )
    a@ 32 < a@ 127 > or if ed-ctrl-cases switch exit then
    ins?  if insert-char exit then
    repl? if replace-char exit then
    ed-cases switch ;
-: ed-loop begin show key >a process-key adrop quit? until ;
+: ed-loop begin show vkey >a process-key adrop quit? until ;
 : ed-init block->ed 0 mode! show! 0 dup row! col! cls ;
 : ed  ed-init ed-loop ed->block ->cmd ;
 : edit  blk ! ed ;
@@ -436,10 +487,13 @@
 : xemit ( (c--) ) emit col@ 1+ col! ;
 : memit ( (c--) ) dup mode! xemit ;
 : xtype ( (a--) ) >t : t1 @t if0 tdrop exit then @t+ xemit t1 ;
-: to100 ( (--) )  : t1 col@ 98 > if 10 xemit 0 col! exit then 32 xemit t1 ;
+: to100 ( (--) )  col@ 98 > if 10 xemit 0 col! exit then 32 xemit to100 ;
 
 : skip-whitespace ( (a1--a2) ) >a
-   : t1 @a if0 a> exit then @a 32 > if a> exit then @a+ 10 = if to100 then t1 ;
+   : t1 @a 32 > @a 0= or if a> exit then
+   @a 13 > if 32 xemit then
+   @a+ 10 = if to100 then
+   t1 ;
 
 : next-wd ( (a1 wd--a2) ) >t skip-whitespace >a
    : t1 @a 33 < if 0 !t tdrop a> exit then @a+ !t+ t1 ;
@@ -454,18 +508,14 @@
    wd " ))" s-eqi if interp  memit exit then
    wd " ("  s-eqi if comment memit exit then
    wd " ((" s-eqi if comment memit exit then
-   wd xtype 32 xemit ;
+   wd xtype ;
 
 : src->color ( colorize words ) source-loc to-in !
-   begin
-      get-word wd c@ if0 cr exit then word->color
-   again ;
+   : t1 get-word wd c@ if0 cr exit then word->color t1 ;
 
-: src->disk " disk.bin" fopen-w >t t@ ->file src->color ->stdout t> fclose  ;
-: load-disk " disk.bin" fopen-r >t t@ if disk 99999 t@ fread . t@ fclose ."  bytes" then tdrop ;
+: src->disk " disk.cf" fopen-w >t t@ ->file src->color ->stdout t> fclose  ;
 
-[ src->disk
-[ load-disk
+[ src->disk disk-read
 
 (( some benchmarks ))
 : mil 1000 dup * * ;
