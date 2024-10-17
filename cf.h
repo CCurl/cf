@@ -1,6 +1,6 @@
 // A ColorForth inspired system, MIT license
 
-#ifndef __C5_H__
+#ifndef __CF_H__
 
 #ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
@@ -15,11 +15,11 @@
 #define VERSION     20241017
 
 #define MEM_SZ       4*(1024*1024)
+#define NAME_MAX          25
 #define STK_SZ            63
 #define LSTK_SZ           60
 #define TSTK_SZ           63
 #define btwi(n,l,h)   ((l<=n) && (n<=h))
-#define NAME_MAX          25
 
 #if INTPTR_MAX > INT32_MAX
     #define CELL_T    int64_t
@@ -27,7 +27,6 @@
     #define CELL_SZ   8
     #define FLT_T     double
     #define addrFmt ": %s $%llx ;"
-    #define NAME_MAX  25
 #else
     #define CELL_T    int32_t
     #define UCELL_T   uint32_t
@@ -45,12 +44,12 @@ typedef unsigned char byte;
 typedef struct { cell xt; byte flags, len; char name[NAME_MAX+1]; } DE_T;
 typedef struct { byte op; const char* name; byte fl; } PRIM_T;
 
-// These are defined by c5.cpp
+// These are defined by cf.c
 extern void inner(cell start);
 extern int  outer(const char *src);
 extern void Init();
 
-// c5.c needs these to be defined
+// cf.c needs these to be defined
 extern cell state, outputFp;
 extern byte mem[];
 extern void zType(const char *str);
@@ -66,4 +65,4 @@ extern cell fRead(cell buf, cell sz, cell fh);
 extern cell fWrite(cell buf, cell sz, cell fh);
 extern cell fSeek(cell fh, cell offset);
 
-#endif //  __C5_H__
+#endif //  __CF_H__
