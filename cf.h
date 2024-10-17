@@ -12,13 +12,14 @@
 #include <stdint.h>
 #include <time.h>
 
-#define VERSION     20241016
+#define VERSION     20241017
 
 #define MEM_SZ       4*(1024*1024)
 #define STK_SZ            63
 #define LSTK_SZ           60
 #define TSTK_SZ           63
 #define btwi(n,l,h)   ((l<=n) && (n<=h))
+#define NAME_MAX          25
 
 #if INTPTR_MAX > INT32_MAX
     #define CELL_T    int64_t
@@ -26,14 +27,13 @@
     #define CELL_SZ   8
     #define FLT_T     double
     #define addrFmt ": %s $%llx ;"
-    #define NAME_MAX  21
+    #define NAME_MAX  25
 #else
     #define CELL_T    int32_t
     #define UCELL_T   uint32_t
     #define CELL_SZ   4
     #define FLT_T     float
     #define addrFmt ": %s $%lx ;"
-    #define NAME_MAX  25
 #endif
 
 enum { DEFINE=1, COMPILE, INTERP, COMMENT };

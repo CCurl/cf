@@ -131,7 +131,7 @@ void strCpy(char *d, const char *s) {
 
 int changeState(int newState) {
 	state = newState;
-	return state;
+	return newState;
 }
 
 int checkWhitespace(char c) {
