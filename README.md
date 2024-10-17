@@ -13,7 +13,7 @@
 ## Whitespace characters and WORDS that change the state:
 
 | Byte  | Word(s)     | New State | Editor Key |
-| :--   | :--         | :--       | : -- |
+| :--   | :--         | :--       | :-- |
 | $01   | ":"         | DEFINE    | F1 |
 | $02   | "]" or ")"  | COMPILE   | F2 |
 | $03   | "[" or "))" | INTERPRET | F3 |
