@@ -3,21 +3,21 @@
 <img src="/images/editing.jpg" width="400" height="300" />
 
 ## What is cf?
+- NOTE: **cf is a work in progress. Please collaborate with me on it!**
 - cf is inspired by ColorForth, but it is NOT ColorForth.
-- Like ColorForth, cf uses markers in the source to control its state.
-- cf builds on the VM from c5. See this for details: https://github.com/CCurl/c5
 - cf has 4 states: DEFINE, INTERPRET, COMPILE, and COMMENT.
-- cf supports using either a character in the whitespace or a word to change the state.
-- cf is a work in progress. **Please collaborate with me on it!**
+- Like ColorForth, cf uses markers in the source to control its state.
+- cf supports using either a byte in the whitespace or a word to change the state.
+- cf builds on the VM from c5. See this for details: https://github.com/CCurl/c5
 
 ## Whitespace characters and WORDS that change the state:
 
-| Byte  | Word(s)     | New State |
-| :--   | :--         | :--       |
-| $01   | ":"         | DEFINE    |
-| $02   | "]" or ")"  | COMPILE   |
-| $03   | "[" or "))" | INTERPRET |
-| $04   | "(" or "((" | COMMENT   |
+| Byte  | Word(s)     | New State | Editor Key |
+| :--   | :--         | :--       | : -- |
+| $01   | ":"         | DEFINE    | F1 |
+| $02   | "]" or ")"  | COMPILE   | F2 |
+| $03   | "[" or "))" | INTERPRET | F3 |
+| $04   | "(" or "((" | COMMENT   | F4 |
 
 ## Notes:
 - DEFINE changes the state to COMPILE after adding the word to the dictionary
