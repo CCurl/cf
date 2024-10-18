@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#define VERSION     20241017
+#define VERSION     20241018
 
 #define MEM_SZ       4*(1024*1024)
 #define NAME_MAX          25

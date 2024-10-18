@@ -9,7 +9,7 @@
 int qKey() { return _kbhit(); }
 int key() { return _getch(); }
 void ttyMode(int isRaw) {}
-void ms(cell sleepForMS) { Sleep(sleepForMS); }
+void ms(cell sleepForMS) { Sleep((DWORD)sleepForMS); }
 
 #endif
 

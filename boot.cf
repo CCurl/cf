@@ -286,7 +286,7 @@
 : vkey ( (--k) ) key dup if0 drop #256 key + exit then ( Windows FK )
     dup 224 = if drop #256 key + exit then ( Windows )
     dup  27 = if drop vt-key exit then ; ( VT )
-( Block #9 - accept )
+( Block #9 - accept, start of editor )
 
 : printable? ( (c--f) ) dup 31 > swap 127 < and ;
 : bs 8 emit ; [ inline
@@ -376,7 +376,7 @@
 : del-ch  dirty!  row@ row-last >a  rc->pos >t
    begin t@ 1+ c@ !t+ t@ a@ < while 32 t> c! adrop ;
 : clr-line 0 row@ cr->pos >a cols for 32 !a+ next adrop dirty! ;
-
+: ed-goto ( (blk--) ) blk ! block->ed show! ;
 
 
 
@@ -392,27 +392,27 @@
       0 row@ cr->pos >t  t@ cols + >a  last-ch >r
       begin @a+ !t+  a@ r@ > until atdrop rdrop
    then row@  rows 1- row!  clr-line  row! ;
-: ed-prev-word rc->pos 1- >t
-   begin
+: ed-prev-word rc->pos 1- >t [ begin ]
       t@ ed-block < if t> pos->rc exit then
       @t- 33 < if t> 1+ pos->rc exit then
-   again ;
-: ed-next-word rc->pos 1+ >t
-   begin
+ [ again ] ;
+: ed-next-word rc->pos 1+ >t [ begin ]
       t@ last-ch > if t> pos->rc exit then
       @t+ 33 < if t> 1- pos->rc exit then
-   again ;
+ [ again ] ;
 : next-pg ed->block  blk @ 1+ last-block min blk ! block->ed show! clean ;
 : prev-pg ed->block  blk @ 1- 0 max blk ! block->ed show! clean ;
 : do-cmd ->cmd '!' emit clr-eol pad accept
+   pad " rl" s-eqi if blk @ ed-goto then
    pad " q" s-eqi if quit! then
+   pad c@ '!' = if pad 1+ outer show! then
    ->cmd clr-eol 0 pad ! ;
+
 
 
 
 : case  ( (ch--) )  v, find drop v, ;   ( case-table entry - single word )
 : case! ( (ch--) )  v, here v, compile state ! ;   ( case-table entry - memory )
-
 
 ( Block #13 - case, case!, switch )
 
@@ -486,7 +486,7 @@
    repl? if replace-char exit then
    ed-cases switch ;
 : ed-loop begin show vkey >a process-key adrop quit? until ;
-: ed-init block->ed 0 mode! show! 0 dup row! col! cls ;
+: ed-init cls 0 mode! 0 dup row! col! blk @ ed-goto ;
 : ed  ed-init ed-loop ed->block ->cmd ;
 : edit  blk ! ed ;
 
@@ -576,16 +576,17 @@
 
 ( Block #18 - Words for work )
 
-: go pad dup ztype cr system 0 pad c! ;
+: go pad dup green ztype white cr system 0 pad c! ;
 : t1 pad swap s-cat drop ;
 : cd   " cd"   t1 ;
 : &&   "  && " t1 ;
-: cf   "  d:\code\mine\cf" t1 ;  : bin  "  d:\bin" t1 ;
-: c3   "  d:\code\mine\c3" t1 ;  : c4   "  d:\code\mine\c4" t1 ;
-: c4w  "  d:\code\work\c4" t1 ;  : cfw  "  d:\code\work\cf" t1 ;
+: cf   "  d:\code\mine\cf" t1 ;  : cfw  "  d:\code\work\cf" t1 ;
+: c4   "  d:\code\mine\c4" t1 ;  : c4w  "  d:\code\work\c4" t1 ;
+: bin  "  d:\bin" t1 ;
 : sia  "  d:\code\SIA" t1 ;      : db   "  d:\code\360DB" t1 ;
 : bws  "  d:\code\BWServiceDefinitions" t1 ;
 : bwp  "  d:\code\BWPluginModules" t1 ;
+: ngc  "  d:\code\NgComponents" t1 ;
 : aed  sia " \SPA\AuditExpertDashboard" t1 ;
 : aew  sia " \SPA\AuditExpertWorkflow" t1 ;
 : pb   sia " \SPA\PrebillDashboard" t1 ;
@@ -596,11 +597,10 @@
 : ls       " ls -l" t1 go ;
 : pwd  " pwd" system ;
 : dev  " ccc dev" system ;
-
-
-
-
-
+: pull-all 0 pad c!
+   cd sia && pull     cd db && pull   cd ngc && pull
+   cd bwp && pull     cd bws && pull
+   cd cfw && pull     cd cf && pull ;
 
 
 
@@ -618,4 +618,25 @@
 (( Sandbox ))
 
 : ba 26 for cr ." block " i . ." - " i 32 * 1+ . next ;
+
+(( ... compile then execute ... ))
+[ cell var there
+: [[ here there ! compile state ! ;
+: ]] (exit) c, there @ (ha) ! interp state ! here execute ;
+[ immediate
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(( Block #20 - sandbox ))
 [
