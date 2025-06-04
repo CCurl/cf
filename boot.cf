@@ -402,7 +402,7 @@
  [ again ] ;
 : next-pg ed->block  blk @ 1+ last-block min blk ! block->ed show! clean ;
 : prev-pg ed->block  blk @ 1- 0 max blk ! block->ed show! clean ;
-: do-cmd ->cmd '!' emit clr-eol pad accept
+: do-cmd ->cmd ':' emit clr-eol pad accept
    pad " rl" s-eqi if blk @ ed-goto then
    pad " q" s-eqi if quit! then
    pad c@ '!' = if pad 1+ outer show! then
@@ -447,7 +447,6 @@
 
 
 ( Block #14 - more editor )
-
 [ vhere const ed-cases
 [ 'j'  case  mv-down
 [ 'k'  case  mv-up
@@ -456,7 +455,8 @@
 [ 32   case  mv-right
 [ 'q'  case! ] 0 8 mv ;
 [ 'Q'  case! ] 0 8 negate mv ;
-[ ':'  case! ] define  replace-char! ;
+[ '1'  case! ] define  replace-char! ;
+[ ':'  case! do-cmd
 [ ']'  case! ] compile replace-char! ;
 [ '['  case! ] interp  replace-char! ;
 [ '('  case! ] comment replace-char! ;

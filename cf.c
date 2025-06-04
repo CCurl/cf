@@ -139,8 +139,7 @@ int checkWhitespace(char c) {
 	if (c == COMPILE) { return changeState(COMPILE); }
 	if (c == INTERP)  { return changeState(INTERP); }
 	if (c == COMMENT) { return changeState(COMMENT); }
-	return 0;
-}
+	return 0;}
 
 int nextWord() {
 	int len = 0;
