@@ -98,19 +98,12 @@ enum _PRIM  {
 	STOP, LIT1, LIT2, LIT4, CALL, JMP, JMPZ, NJMPZ, JMPNZ, NJMPNZ, PRIMS
 };
 
-
-#undef X
-#define X(op, name, imm, code) { op, name, imm },
-
-PRIM_T prims[] = { PRIMS {0, 0, 0} };
-
 void push(cell x) { if (dsp < STK_SZ) { dstk[++dsp] = x; } }
 cell pop() { return (0<dsp) ? dstk[dsp--] : 0; }
 void rpush(cell x) { if (rsp < STK_SZ) { rstk[++rsp] = x; } }
 cell rpop() { return (0<rsp) ? rstk[rsp--] : 0; }
 int lower(const char c) { return btwi(c, 'A', 'Z') ? c+32 : c; }
 int strLen(const char *s) { int l = 0; while (s[l]) { l++; } return l; }
-
 void storeWord(byte *a, cell v) { *(ushort*)(a) = (ushort)v; }
 ushort fetchWord(byte *a) { return *(ushort*)(a); }
 void storeCell(byte *a, cell v) { *(cell*)(a) = v; }
@@ -118,6 +111,8 @@ cell fetchCell(byte *a) { return *(cell*)(a); }
 void ccomma(byte n)   { *(here++) = n; }
 void wcomma(ushort n) { *(ushort*)(here) = n; here += 2; }
 void comma(cell n)    { storeCell(here, n); here += CELL_SZ; }
+int changeState(int newState) { state = newState; return newState; }
+int checkWhitespace(char c) { return (btwi(c,DEFINE,COMMENT)) ? changeState(c) : 0; }
 
 int strEqI(const char *s, const char *d) {
 	while (lower(*s) == lower(*d)) { if (*s == 0) { return 1; } s++; d++; }
@@ -128,18 +123,6 @@ void strCpy(char *d, const char *s) {
 	while (*s) { *(d++) = *(s++); }
 	*(d) = 0;
 }
-
-int changeState(int newState) {
-	state = newState;
-	return newState;
-}
-
-int checkWhitespace(char c) {
-	if (c == DEFINE)  { return changeState(DEFINE); }
-	if (c == COMPILE) { return changeState(COMPILE); }
-	if (c == INTERP)  { return changeState(INTERP); }
-	if (c == COMMENT) { return changeState(COMMENT); }
-	return 0;}
 
 int nextWord() {
 	int len = 0;
@@ -270,6 +253,7 @@ int isStateChange() {
 }
 
 int outer(const char *src) {
+	char *svIn = toIn;
 	toIn = (char*)src;
 	while (nextWord()) {
 		if (isStateChange()) { continue; }
@@ -284,14 +268,15 @@ int outer(const char *src) {
 		if (!dp) {
 			zType("-["); zType(wd); zType("]?-");
 			state = INTERP;
-			return 0;
+			break;
 		}
 		if (state == INTERP) { executeWord(dp); continue; }
 		if (state == COMPILE) { compileWord(dp); continue; }
 		zType("-state?-");
 		state = INTERP;
-		return 0;
+		break;
 	}
+	toIn = svIn;
 	return 1;
 }
 
@@ -339,6 +324,10 @@ void baseSys() {
 	defNum("tstk-sz",  TSTK_SZ+1);
 	defNum("lstk-sz",  LSTK_SZ+1);
 	defNum("cell",     CELL_SZ);
+
+	#undef X
+	#define X(op, name, imm, code) { op, name, imm },
+	PRIM_T prims[] = { PRIMS {0, 0, 0} };
 
 	for (int i = 0; prims[i].name; i++) {
 		PRIM_T* p = &prims[i];

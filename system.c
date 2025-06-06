@@ -80,13 +80,14 @@ cell fSeek(cell fh, cell offset) { return (cell)fseek((FILE*)fh, (long)offset, S
 void repl() {
 	char tib[256];
 	ttyMode(0);
+	if (state == COMMENT) { state = INTERP; }
 	zType((state == COMPILE) ? " ... "  : " ok\n");
 	if (fgets(tib, 256, stdin) != tib) { exit(0); }
 	outer(tib);
 }
 
 void boot(const char *fn) {
-	if (!fn) { fn = "boot.cf"; }
+	if (!fn) { fn = "boot.fth"; }
 	cell fp = fOpen(fn, (cell)"rb");
 	if (fp) {
 		fRead((cell)&mem[100000], 99999, fp);
@@ -94,7 +95,7 @@ void boot(const char *fn) {
 		outer((char*)&mem[100000]);
 	} else {
 		zType("WARNING: unable to open source file!\n");
-		zType("If no filename is provided, the default is 'boot.cf'\n");
+		zType("If no filename is provided, the default is 'boot.fth'\n");
 	}
 }
 

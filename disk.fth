@@ -1,0 +1,643 @@
+ Block #0 - core                                                                                 
+                                                                                                   
+ memory 50000 + (vha) ! (ha) @ (la) @                                                             
+ here  (ha)  @ ;                                                                                 
+ vhere (vha) @ ;                                                                                 
+ last  (la)  @ ;                                                                                 
+ c, here dup 1+     (ha) ! c! ;                                                                  
+ w, here dup 2 +    (ha) ! w! ;                                                                  
+ ,  here dup cell + (ha) ! ! ;                                                                   
+ allot vhere + (vha) ! ;                                                                         
+ const addword (lit4) c, , (exit) c, ;                                                           
+ var   vhere const allot ;                                                                       
+                                                                                                   
+ const -la- const -ha- vhere const -vha-                                                          
+                                                                                                   
+ immediate 1 last cell + c! ;  immediate                                                        
+ inline    2 last cell + c! ;  immediate                                                        
+                                                                                                   
+ begin here ;  immediate                                                                        
+ while  (jmpnz)  c, , ;  immediate                                                              
+ -while (njmpnz) c, , ;  immediate                                                              
+  until (jmpz)   c, , ;  immediate                                                              
+ -until (njmpz)  c, , ;  immediate                                                              
+ again  (jmp)    c, , ;  immediate                                                              
+                                                                                                   
+ if (jmpz)   c, here 0 , ;  immediate                                                           
+ -if (njmpz) c, here 0 , ;  immediate                                                           
+ if0 (jmpnz) c, here 0 , ;  immediate                                                           
+ then here swap ! ;  immediate                                                                  
+                                                                                                   
+                                                                                                   
+                                                                                                   
+ Block #1 - more core                                                                            
+                                                                                                   
+ *****************************************************                                           
+ STATES/MODES                                                                                    
+ define  1 ;  inline                                                                            
+ compile 2 ;  inline                                                                            
+ interp  3 ;  inline                                                                            
+ comment 4 ;  inline                                                                            
+ *****************************************************                                           
+                                                                                                   
+ a+  a@ 1+ a! ;  inline                                                                         
+ a-  a@ 1- a! ;  inline                                                                         
+ @a  a@  c@ ;  inline                                                                           
+ @a+ a@+ c@ ;  inline                                                                           
+ @a- a@- c@ ;  inline                                                                           
+ !a  a@  c! ;  inline                                                                           
+ !a+ a@+ c! ;  inline                                                                           
+ !a- a@- c! ;  inline                                                                           
+ t+  t@ 1+ t! ;  inline                                                                         
+ t-  t@ 1- t! ;  inline                                                                         
+ @t  t@  c@ ;  inline                                                                           
+ @t+ t@+ c@ ;  inline                                                                           
+ @t- t@- c@ ;  inline                                                                           
+ !t  t@  c! ;  inline                                                                           
+ !t+ t@+ c! ;  inline                                                                           
+ !t- t@- c! ;  inline                                                                           
+ t@+c t@ dup cell + t! ;  inline                                                                
+ adrop  a> drop ;  inline                                                                       
+ tdrop  t> drop ;  inline                                                                       
+ atdrop a> drop t> drop ;  inline                                                               
+                                                                                                   
+                                                                                                   
+ Block #2 - more core                                                                            
+                                                                                                   
+ comp? state @ compile = ;                                                                       
+ (quote)  vhere dup >t  >in @ 1+ >a                                                              
+   begin                                                                                           
+      @a '"' = if                                                                                  
+         0 !t+  a> 1+ >in !                                                                        
+         comp? if0 tdrop exit then                                                                 
+         t> (vha) ! (lit4) c, , exit                                                               
+      then @a+ !t+                                                                                 
+   again ;                                                                                         
+                                                                                                   
+ "  (quote) ;  immediate                                                                        
+ ." (quote) comp? if (ztype) c, exit then ztype ;  immediate                                    
+                                                                                                   
+ Files                                                                                           
+ fopen-r " rb"  fopen ;                                                                          
+ fopen-w " wb"  fopen ;                                                                          
+ ->file  fh--  (output-fp) ! ;                                                                 
+ ->stdout 0 ->file ;                                                                             
+                                                                                                   
+ disk-fname " disk.cf" ;                                                                         
+ source-loc memory 100000 + ;                                                                    
+ rb  (reboot)                                                                                  
+   -vha- (vha) !  -la- (la) !  -ha- (ha) !                                                         
+   " boot.cf" fopen-r -if dup then if >a                                                           
+      source-loc >t                                                                                
+      t@ 25000 for 0 over c! 1+ next drop                                                          
+      t@ 25000 a@ fread drop a> fclose                                                             
+      t> >in !                                                                                     
+   then ;                                                                                          
+                                                                                                   
+ Block #3 - General                                                                              
+                                                                                                   
+ bl 32 ;  inline                                                                                
+ tab 9 emit ;  inline                                                                           
+ cr 13 emit 10 emit ;  inline                                                                   
+ spaces for bl emit next ;  inline                                                              
+ negate com 1+ ;  inline                                                                        
+ abs dup 0 < if negate then ;                                                                    
+                                                                                                   
+ #neg 0 >a dup 0 < if negate a+ then ;                                                           
+ <# #neg last 32 - >t 0 t@ c! ;                                                                  
+ hold t@ 1- dup t! c! ;                                                                          
+ #n '0' + dup '9' > if 7 + then hold ;                                                           
+ # base @ /mod swap #n ;                                                                         
+ #s begin # -while drop ;                                                                        
+ #> a@ if '-' hold then t> adrop ;                                                               
+                                                                                                   
+ (.)   n--  <# #s #> ztype ;                                                                   
+ .   n--  (.)  space bl emit ;                                                               
+ .2  n--  <# # #s #> ztype space ;                                                             
+ .3  n--  <# # # #s #> ztype space ;                                                           
+ .4  n--  <# # # # #s #> ztype space ;                                                         
+ hex     $10 base ! ;                                                                            
+ decimal #10 base ! ;                                                                            
+ binary  %10 base ! ;                                                                            
+ .hex   n--  base @ >t hex .2 t> base ! ;                                                      
+ .dec   n--  base @ >t decimal .3 t> base ! ;                                                  
+ .bin   n--  base @ >t binary . t> base ! ;                                                    
+ .$hex  n--  base @ >t '$' emit hex (.) t> base ! ;                                            
+ .#dec  n--  base @ >t '#' emit decimal (.) t> base ! ;                                        
+ .%bin  n--  base @ >t '%' emit binary (.) t> base ! ;                                         
+                                                                                                   
+ Block #4 - General                                                                              
+                                                                                                   
+ execute  xt--  >r ;                                                                           
+ :noname here compile state ! ;                                                                  
+ cells cell * ;  inline                                                                         
+ cell+ cell + ;  inline                                                                         
+ 2+ 1+ 1+ ;  inline                                                                             
+ 2* dup + ;  inline                                                                             
+ 2/ 2 / ;  inline                                                                               
+ 2dup over over ;  inline                                                                       
+ 2drop drop drop ;  inline                                                                      
+ mod /mod drop ;  inline                                                                        
+ ?dup -if dup then ;                                                                             
+ ? @ . ;                                                                                         
+ nip  swap drop ;  inline                                                                       
+ tuck swap over ;  inline                                                                       
+ +!  n a--  tuck @ + swap ! ;                                                                  
+ min  a b--c  2dup > if swap then drop ;                                                       
+ max  a b--c  2dup < if swap then drop ;                                                       
+ vc, vhere c! 1 allot ;                                                                          
+ v, vhere ! cell allot ;                                                                         
+                                                                                                   
+ 0sp 0 (dsp) ! ;                                                                                 
+ depth (dsp) @ 1- ;                                                                              
+ lpar '(' emit ;  inline                                                                        
+ rpar ')' emit ;  inline                                                                        
+ .comma ',' emit ;  inline                                                                      
+ .s lpar space depth ?dup if                                                                     
+      for i 1+ cells dstk + @ . next                                                               
+   then rpar ;                                                                                     
+                                                                                                   
+                                                                                                   
+ Block #5 - words, memory, and strings                                                           
+                                                                                                   
+ dict-end memory mem-sz + 1- ;                                                                   
+ de>xt    @ ;  inline                                                                           
+ de>flags cell + c@ ;  inline                                                                   
+ de>len   cell + 1+ c@ ;  inline                                                                
+ de>name  cell + 2+ ;  inline                                                                   
+ .word de>name ztype ;                                                                           
+ .de-word .word t@+ 10 > if 0 t! cr exit then tab ;                                              
+                                                                                                   
+ words last >a 1 >t 0 >r begin                                                                   
+    a@ de>len  7 > if t+ then                                                                      
+    a@ de>len 12 > if t+ then                                                                      
+    a@ .de-word a@ de-sz + a! r@ 1+ r!                                                             
+    a@ dict-end < while                                                                            
+    lpar r> . ." words)" adrop ;                                                                   
+ words-n last >t for i 8 mod if0 cr then t@ .word tab t@ de-sz + t! next tdrop ;                 
+                                                                                                   
+ fill  addr num ch--  >t >r >a  r> for t@ !a+ next atdrop ;                                    
+ cmove  src dst num--  >r >t >a                                                                
+    r> ?dup if for @a+ !t+ next then                                                               
+    atdrop ;                                                                                       
+ cmove>  src dst num--  >r  r@ + >t  r@ + >a                                                   
+    r> ?dup if 1+ for @a- !t- next then                                                            
+    atdrop ;                                                                                       
+                                                                                                   
+ s-end   str--end      dup s-len + ;  inline                                                  
+ s-cat   dst src--dst  over s-end swap s-cpy drop ;                                            
+ s-catc  dst ch--dst   over s-end tuck c! 0 swap 1+ c! ;                                       
+ s-catn  dst num--dst  <# #s #> over s-end swap s-cpy drop ;                                   
+ pad  --a  vhere 100 + ;                                                                       
+                                                                                                   
+ Block #6 - Screen                                                                               
+                                                                                                   
+ csi          27 emit '[' emit ;                                                                 
+ ->cr       c r--  csi (.) ';' emit (.) 'H' emit ;                                             
+ ->rc       r c--  swap ->cr ;                                                                 
+ cls          csi ." 2J" 1 dup ->cr ;                                                            
+ clr-eol      csi ." 0K" ;                                                                       
+ cur-on       csi ." ?25h" ;                                                                     
+ cur-off      csi ." ?25l" ;                                                                     
+ cur-block    csi ." 2 q" ;                                                                      
+ cur-bar      csi ." 5 q" ;                                                                      
+                                                                                                   
+ color  bg fg--  csi (.) ';' emit (.) 'm' emit ;                                               
+ bg     color--  csi ." 48;5;" (.) 'm' emit ;                                                  
+ fg     color--  csi ." 38;5;" (.) 'm' emit ;                                                  
+ c-red 203 ;  inline                                                                            
+ black   0 fg ;       red    c-red fg ;                                                        
+ green  40 fg ;       yellow 226 fg ;                                                          
+ blue   63 fg ;       purple 201 fg ;                                                          
+ cyan  117 fg ;       grey   246 fg ;                                                          
+ white 255 fg ;                                                                                  
+ colors 31 >a 7 for a@ fg ." color #" a@+ . cr next white adrop ;                                
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+ Block #7 - blocks                                                                               
+                                                                                                   
+ cell var blk                                                                                     
+ rows 32 ;  inline                                                                              
+ cols 100 ;  inline                                                                             
+ rows cols * const block-sz                                                                       
+ last-block  499 ;  inline                                                                      
+ last-block 1+ block-sz * const disk-sz                                                           
+ memory 2000000 + const disk                                                                      
+ ->block  n--a  last-block min 0 max block-sz * disk + ;                                       
+ disk-read disk-fname fopen-r ?dup                                                               
+   if >a disk disk-sz a@ fread drop a> fclose then ;                                               
+ disk-flush disk-fname fopen-w ?dup                                                              
+   if >a disk disk-sz a@ fwrite drop a> fclose then ;                                              
+ blk-cp   (src dst--)  >t ->block t> ->block block-sz cmove ;                                  
+ blk-clr  (blk--)  ->block block-sz 0 fill ;                                                   
+ blk-mv   (src dst--)  over >t blk-cp t> blk-clr ;                                             
+ blk-cp-n  (src dst n--)  >r >t >a r> for a@+ t@+ blk-cp next atdrop ;                         
+ blk-mv-n  (src dst n--)  >r >t >a r> for a@+ t@+ blk-mv next atdrop ;                         
+ blk-ins  (blk start--)  >a >t                                                                 
+   begin a@- a@ swap blk-cp a@ t@ > while                                                          
+   atdrop ;                                                                                        
+ blk-del  (blk stop--)  >a >t                                                                  
+   begin t@+ t@ swap blk-cp t@ a@ < while                                                          
+   a> blk-clr tdrop ;                                                                              
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+ Block #8 - vkey                                                                                 
+ #256  #59 + const key-f1    #256  #60 + const key-f2                                            
+ #256  #61 + const key-f3    #256  #62 + const key-f4                                            
+ #256  #71 + const key-home    (VT: 27 91 72)                                                   
+ #256  #72 + const key-up      (VT: 27 91 65)                                                   
+ #256  #73 + const key-pgup    (VT: 27 91 53 126)                                               
+ #256  #75 + const key-left    (VT: 27 91 68)                                                   
+ #256  #77 + const key-right   (VT: 27 91 67)                                                   
+ #256  #79 + const key-end     (VT: 27 91 70)                                                   
+ #256  #80 + const key-down    (VT: 27 91 66)                                                   
+ #256  #81 + const key-pgdn    (VT: 27 91 54 126)                                               
+ #256  #82 + const key-ins     (VT: 27 91 50 126)                                               
+ #256  #83 + const key-del     (VT: 27 91 51 126)                                               
+ #256 #119 + const key-chome   (VT: 27 91 ?? ???)                                               
+ #256 #117 + const key-cend    (VT: 27 91 ?? ???)                                               
+ vk2  (--k)  key 126 = if0 27 exit then                                                        
+    a@ 50 = if key-ins   exit then                                                                 
+    a@ 51 = if key-del   exit then                                                                 
+    a@ 53 = if key-pgup  exit then                                                                 
+    a@ 54 = if key-pgdn  exit then    27 ;                                                         
+ vk1  (--k)  key a!                                                                            
+    a@ 68 = if key-left  exit then                                                                 
+    a@ 67 = if key-right exit then                                                                 
+    a@ 65 = if key-up    exit then                                                                 
+    a@ 66 = if key-down  exit then                                                                 
+    a@ 72 = if key-home  exit then                                                                 
+    a@ 70 = if key-end   exit then                                                                 
+    a@ 49 > a@ 55 < and if vk2 exit then   27 ;                                                    
+ vt-key  (--k)   key 91 = if vk1 exit then 27 ;                                                
+ vkey  (--k)  key dup if0 drop #256 key + exit then  Windows FK                              
+    dup 224 = if drop #256 key + exit then  Windows                                              
+    dup  27 = if drop vt-key exit then ;  VT                                                     
+ Block #9 - accept, start of editor                                                              
+                                                                                                   
+ printable?  (c--f)  dup 31 > swap 127 < and ;                                                 
+ bs 8 emit ;  inline                                                                            
+ accept  dst--  dup >r >t 0 >a                                                                 
+  begin key a!                                                                                     
+     a@   3 =  a@ 27 = or if 0 r> c! atdrop exit then                                              
+     a@  13 = if 0 !t atdrop rdrop exit then                                                       
+     a@   8 = if 127 a! then  Windows: 8=backspace                                               
+     a@ 127 = if r@ t@ < if t- bs space bs then then                                               
+     a@ printable? if a@ dup !t+ emit then                                                         
+  again ;                                                                                          
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+ ... a simple block editor ...                                                                   
+                                                                                                   
+ vhere const ed-colors                                                                            
+ 219   vc,  0: default - purple                                                                 
+ c-red vc,  1: define  - red                                                                    
+  76   vc,  2: compile - green                                                                  
+ 226   vc,  3: interp  - yellow                                                                 
+ 255   vc,  4: comment - white                                                                  
+                                                                                                   
+ ed-color@  (n--)  ed-colors + c@ ;                                                            
+ ed-color!  (fg n--)  ed-colors + c! ;                                                         
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+ Block #10 - more editor                                                                         
+                                                                                                   
+ block-sz var ed-block                                                                            
+ cell var (r)   row! (r) ! ;        row@ (r) @ ;                                              
+ cell var (c)   col! (c) ! ;        col@ (c) @ ;                                              
+ 1 var (mode)   mode! (mode) c! ;   mode@ (mode) c@ ;                                         
+ 1 var (show)   show? (show) c@ ;                                                               
+ 1 var (dirty)  dirty? (dirty) c@ ;                                                             
+ shown 0 (show) c! ;                                                                             
+ show! 1 (show) c! ;                                                                             
+ dirty! 1 (dirty) c! show! ;                                                                     
+ clean 0 (dirty) c! ;                                                                            
+ block->ed  --  blk @ ->block ed-block block-sz cmove ;                                        
+ ed->block  --  ed-block blk @ ->block block-sz cmove ;                                        
+ last-ch   --a  ed-block block-sz + 1- ;                                                       
+ norm-pos  pos--new  ed-block max last-ch min ;                                                
+ cr->pos  col row--pos  cols * + ed-block + ;                                                  
+ rc->pos  --pos  col@ row@ cr->pos ;                                                           
+ row-last  r--a  cols 1- swap cr->pos ;                                                        
+ pos->rc  pos--  norm-pos ed-block - cols /mod row! col! ;                                     
+ mv  r c--   (c) +! (r) +! rc->pos  pos->rc ;                                                  
+ ->norm  0 mode! ;                                                                               
+ ->repl  1 mode! ;     repl? mode@ 1 = ;                                                       
+ ->ins   2 mode! ;     ins?  mode@ 2 = ;                                                       
+ quit!  99 mode! ;     quit?  mode@ 99 = ;                                                     
+ ed-emit  ch--                                                                                 
+   dup 31 > if emit exit then  regular char                                                      
+   dup  5 < over 0 > and if dup ed-color@ fg then  change color                                  
+   drop 32 emit ;                                                                                  
+                                                                                                   
+                                                                                                   
+                                                                                                   
+ Block #11 - more editor                                                                         
+                                                                                                   
+ .scr 1 dup ->rc ed-block >a rows for                                                            
+      cols for @a+ ed-emit next cr                                                                 
+   next adrop ;                                                                                    
+ ->cur  col@ 1+ row@ 1+ ->cr ;                                                                   
+ ->foot 1 rows 1 + ->cr ;                                                                        
+ ->cmd ->foot cr ;                                                                               
+ ./ '/' emit ;                                                                                   
+ .foot ->foot white ." Block #" blk @ .                                                          
+   bl dirty? if drop '*' then emit space                                                           
+   lpar row@ 1+ (.) .comma col@ 1+ (.) rpar                                                        
+   repl? if yellow ."  -replace-" white then                                                       
+   ins?  if purple ."  -insert-"  white then                                                       
+   rc->pos c@ dup space lpar .#dec ./ .$hex rpar clr-eol ;                                         
+ show show? if cur-off .scr cur-on shown then .foot ->cur ;                                      
+ mv-left 0 dup 1-      mv ;    mv-right 0 1 mv ;                                               
+ mv-up   0 dup 1- swap mv ;    mv-down  1 0 mv ;                                               
+ ins-bl  dirty! row@ row-last >a  rc->pos >t                                                     
+   begin a@ 1- c@ !a- a@ t@ > while bl a> c! tdrop ;                                               
+ replace-char!  (ch--)  rc->pos c! mv-right dirty! ;                                           
+ replace-char  a@ printable? if a@ replace-char! then ;                                          
+ insert-char   a@ printable? if ins-bl a@ replace-char! then ;                                   
+ del-ch  dirty!  row@ row-last >a  rc->pos >t                                                    
+   begin t@ 1+ c@ !t+ t@ a@ < while 32 t> c! adrop ;                                               
+ clr-line 0 row@ cr->pos >a cols for 32 !a+ next adrop dirty! ;                                  
+ ed-goto  (blk--)  blk ! block->ed show! ;                                                     
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+ Block #12 - more editor                                                                         
+                                                                                                   
+ ins-line  row@ rows < if                                                                        
+      last-ch >a  a@ cols - >t  0 row@ cr->pos >r                                                  
+      begin @t- !a- t@ r@ < until atdrop rdrop                                                     
+   then clr-line ;                                                                                 
+ del-line  row@ rows < if                                                                        
+      0 row@ cr->pos >t  t@ cols + >a  last-ch >r                                                  
+      begin @a+ !t+  a@ r@ > until atdrop rdrop                                                    
+   then row@  rows 1- row!  clr-line  row! ;                                                       
+ ed-prev-word rc->pos 1- >t  begin                                                             
+      t@ ed-block < if t> pos->rc exit then                                                        
+      @t- 33 < if t> 1+ pos->rc exit then                                                          
+  again  ;                                                                                       
+ ed-next-word rc->pos 1+ >t  begin                                                             
+      t@ last-ch > if t> pos->rc exit then                                                         
+      @t+ 33 < if t> 1- pos->rc exit then                                                          
+  again  ;                                                                                       
+ next-pg ed->block  blk @ 1+ last-block min blk ! block->ed show! clean ;                        
+ prev-pg ed->block  blk @ 1- 0 max blk ! block->ed show! clean ;                                 
+ do-cmd ->cmd '!' emit clr-eol pad accept                                                        
+   pad " rl" s-eqi if blk @ ed-goto then                                                           
+   pad " q" s-eqi if quit! then                                                                    
+   pad c@ '!' = if pad 1+ outer show! then                                                         
+   ->cmd clr-eol 0 pad ! ;                                                                         
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+ case   (ch--)   v, find drop v, ;    case-table entry - single word                         
+ case!  (ch--)   v, here v, compile state ! ;    case-table entry - memory                   
+                                                                                                   
+ Block #13 - case, case!, switch                                                                 
+                                                                                                   
+ switch: case-table process                                                                      
+ switch  (tbl--)  >t begin                                                                     
+      t@ @ if0 tdrop exit then                                                                     
+      t@+c @ a@ = if t> @ >r exit then                                                             
+      t@ cell+ t! again ;                                                                          
+                                                                                                   
+ VI-like commands                                                                                
+ vhere const ed-ctrl-cases                                                                        
+ key-left   case  mv-left                                                                         
+ key-right  case  mv-right                                                                        
+ key-up     case  mv-up                                                                           
+ key-down   case  mv-down                                                                         
+ key-home   case!  0 col! ;                                                                      
+ key-ins    case!  ins? if ->norm exit then ->ins ;                                              
+ key-del    case  del-ch                                                                          
+ key-pgup   case  prev-pg                                                                         
+ key-pgdn   case  next-pg                                                                         
+ key-chome  case!  0 dup row! col! ;                                                             
+ key-cend   case!  rows 1- row! 0 col! ;                                                         
+ key-f1     case!  define  replace-char! ;                                                       
+ key-f2     case!  compile replace-char! ;                                                       
+ key-f3     case!  interp  replace-char! ;                                                       
+ key-f4     case!  comment replace-char! ;                                                       
+  9         case!  0 8 mv ;                                                                      
+ 13         case!  mv-down 0 col! ;                                                              
+ 27         case  ->norm                                                                          
+ 0 v, 0 v,  end                                                                                 
+                                                                                                   
+                                                                                                   
+                                                                                                   
+ Block #14 - more editor                                                                         
+                                                                                                   
+ vhere const ed-cases                                                                             
+ 'j'  case  mv-down                                                                               
+ 'k'  case  mv-up                                                                                 
+ 'h'  case  mv-left                                                                               
+ 'l'  case  mv-right                                                                              
+ 32   case  mv-right                                                                              
+ 'q'  case!  0 8 mv ;                                                                            
+ 'Q'  case!  0 8 negate mv ;                                                                     
+ ':'  case!  define  replace-char! ;                                                             
+ ']'  case!  compile replace-char! ;                                                             
+ '['  case!  interp  replace-char! ;                                                             
+ '('  case!  comment replace-char! ;                                                             
+ 'b'  case  ins-bl                                                                                
+ 'x'  case  del-ch                                                                                
+ 'X'  case!  mv-left del-ch ;                                                                    
+ 'C'  case  clr-line                                                                              
+ 'r'  case!  red '?' emit key a! replace-char ;                                                  
+ 'R'  case  ->repl                                                                                
+ 'i'  case  ->ins                                                                                 
+ 'O'  case  ins-line                                                                              
+ 'o'  case!  mv-down ins-line ;                                                                  
+ 'D'  case  del-line                                                                              
+ 'w'  case  ed-next-word                                                                          
+ 'W'  case  ed-prev-word                                                                          
+ '+'  case  next-pg                                                                               
+ '-'  case  prev-pg                                                                               
+ '!'  case  do-cmd                                                                                
+ '_'  case!  0 col! ;                                                                            
+ 0 v, 0 v,  end                                                                                 
+                                                                                                   
+ Block #15 - more editor                                                                         
+                                                                                                   
+ process-key  (--), key is in a                                                                
+   a@ 32 < a@ 127 > or if ed-ctrl-cases switch exit then                                           
+   ins?  if insert-char exit then                                                                  
+   repl? if replace-char exit then                                                                 
+   ed-cases switch ;                                                                               
+ ed-loop begin show vkey >a process-key adrop quit? until ;                                      
+ ed-init cls 0 mode! 0 dup row! col! blk @ ed-goto ;                                             
+ ed  ed-init ed-loop ed->block ->cmd ;                                                           
+ edit  blk ! ed ;                                                                                
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+ Block #16 - other words                                                                         
+                                                                                                   
+ This dump is from Peter Jakacki                                                                 
+ a-emit  (b--)  dup $20 < over $7e > or if drop '.' then emit ;                                
+ .ascii  (--)  a@ $10 - $10 for dup c@ a-emit 1+ next drop ;                                   
+ dump  (f n--)  swap >a 0 >t                                                                   
+   for                                                                                             
+      t@ if0 cr a@ .hex ':' emit space then                                                        
+      @a+ .hex                                                                                     
+      t@+ $0f = if 4 spaces .ascii 0 t! then                                                       
+   next drop atdrop ;                                                                              
+                                                                                                   
+ fgl: forget the last word                                                                       
+ fgl last dup de-sz + (la) ! de>xt (ha) ! ;                                                      
+                                                                                                   
+ cell var t0                                                                                      
+ cell var t1                                                                                      
+ cell var t2                                                                                      
+ marker here t0 ! last t1 ! vhere t2 ! ;                                                         
+ forget t0 @ (ha) ! t1 @ (la) ! t2 @ (vha) ! ;                                                   
+                                                                                                   
+ #. '.' hold ;                                                                                   
+ .version  green ." cf v" version <# # # #. # # #. #s #> ztype white cr ;                        
+ marker cr .version ." hello" cr                                                                  
+                                                                                                   
+ fixed point                                                                                     
+ f. 100 /mod (.) '.' emit abs .2 ;                                                               
+ f* * 100 / ;                                                                                    
+ f/ swap 100 * swap / ;                                                                          
+ f+ + ;                                                                                          
+ f- - ;                                                                                          
+                                                                                                   
+ Block #17 - colorize this source                                                                
+                                                                                                   
+ 128 var wd                                                                                       
+ cell var to-in                                                                                   
+ x-emit  (c--)  emit col@ 1+ col! ;                                                            
+ m-emit  (c--)  dup mode! x-emit ;                                                             
+ xtype  (a--)  >t  t1 @t if0 tdrop exit then @t+ x-emit t1 ;                                 
+ to100  (--)   col@ 98 > if 10 x-emit 0 col! exit then 32 x-emit to100 ;                       
+ skip-whitespace  (a1--a2)  >a                                                                 
+    t1 @a 32 > @a 0= or if a> exit then                                                          
+   @a 13 > if 32 x-emit then                                                                       
+   @a+ 10 = if to100 then                                                                          
+   t1 ;                                                                                            
+ next-wd  (a1 wd--a2)  >t skip-whitespace >a                                                   
+    t1 @a 33 < if 0 !t tdrop a> exit then @a+ !t+ t1 ;                                           
+ get-word  (--)  to-in @ wd next-wd to-in ! ;                                                  
+ word->color  (--)                                                                             
+   wd " :"  s-eqi if get-word define m-emit wd xtype compile m-emit exit then                      
+   wd " ]"  s-eqi if compile m-emit exit then                                                      
+   wd " )"  s-eqi if compile m-emit exit then                                                      
+   wd " ["  s-eqi if interp  m-emit exit then                                                      
+   wd " ))" s-eqi if interp  m-emit exit then                                                      
+   wd " ("  s-eqi if comment m-emit exit then                                                      
+   wd " ((" s-eqi if comment m-emit exit then                                                      
+   wd xtype ;                                                                                      
+ src->color  (--)  source-loc to-in !                                                          
+    t1 get-word wd c@ if0 cr exit then word->color t1 ;                                          
+ src->disk  (--)                                                                               
+   0 col! " disk.cf" fopen-w >t t@ ->file src->color ->stdout t> fclose  ;                         
+                                                                                                   
+ src->disk disk-read                                                                              
+                                                                                                   
+ Block #18 - Words for work                                                                      
+                                                                                                   
+ go pad dup green ztype white cr system 0 pad c! ;                                               
+ t1 pad swap s-cat drop ;                                                                        
+ cd   " cd"   t1 ;                                                                               
+ &&   "  && " t1 ;                                                                               
+ cf   "  d:\code\mine\cf" t1 ;   cfw  "  d:\code\work\cf" t1 ;                                 
+ c4   "  d:\code\mine\c4" t1 ;   c4w  "  d:\code\work\c4" t1 ;                                 
+ bin  "  d:\bin" t1 ;                                                                            
+ sia  "  d:\code\SIA" t1 ;       db   "  d:\code\360DB" t1 ;                                   
+ bws  "  d:\code\BWServiceDefinitions" t1 ;                                                      
+ bwp  "  d:\code\BWPluginModules" t1 ;                                                           
+ ngc  "  d:\code\NgComponents" t1 ;                                                              
+ aed  sia " \SPA\AuditExpertDashboard" t1 ;                                                      
+ aew  sia " \SPA\AuditExpertWorkflow" t1 ;                                                       
+ pb   sia " \SPA\PrebillDashboard" t1 ;                                                          
+ explorer " explorer" t1 ;                                                                       
+ code     " code"     t1 ;                                                                       
+ pull     " git pull -p" t1 go ;                                                                 
+ lg       " lazygit" t1 go ;                                                                     
+ ls       " ls -l" t1 go ;                                                                       
+ pwd  " pwd" system ;                                                                            
+ dev  " ccc dev" system ;                                                                        
+ pull-all 0 pad c!                                                                               
+   cd sia && pull     cd db && pull   cd ngc && pull                                               
+   cd bwp && pull     cd bws && pull                                                               
+   cd cfw && pull     cd cf && pull ;                                                              
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+ Block #19 - sandbox                                                                             
+                                                                                                   
+ some benchmarks                                                                                 
+ mil 1000 dup * * ;                                                                              
+ elapsed timer swap - . ." usec" ;                                                               
+ bm timer swap for next elapsed ;                                                                
+ fib 1- dup 2 < if drop 1 exit then dup fib swap 1- fib + ;                                      
+ fib-bm timer swap fib . elapsed ;                                                               
+                                                                                                   
+ Sandbox                                                                                         
+                                                                                                   
+ ba 26 for cr ." block " i . ." - " i 32 * 1+ . next ;                                           
+                                                                                                   
+ ... compile then execute ...                                                                    
+ cell var there                                                                                   
+ [[ here there ! compile state ! ;                                                               
+ ]] (exit) c, there @ (ha) ! interp state ! here execute ;                                       
+ immediate                                                                                        
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+                                                                                                   
+ Block #20 - sandbox                                                                             
+                                                                                                  
+

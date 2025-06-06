@@ -227,8 +227,8 @@
 [ cell var blk
 : rows 32 ; [ inline
 : cols 100 ; [ inline
-[ rows cols * const block-sz
 : last-block  499 ; [ inline
+[ rows cols * const block-sz
 [ last-block 1+ block-sz * const disk-sz
 [ memory 2000000 + const disk
 : ->block ( n--a ) last-block min 0 max block-sz * disk + ;
