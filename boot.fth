@@ -27,7 +27,7 @@ vhere const -vha-
 : if (jmpz)   , here 0 , ; immediate
 : -if (njmpz) , here 0 , ; immediate
 : if0 (jmpnz) , here 0 , ; immediate
-: then here swap ! ; immediate
+: then here swap ->code ! ; immediate
 
 
 
@@ -526,15 +526,15 @@ vhere const -vha-
 (( fgl: forget the last word ))
 : fgl last dup de-sz + (la) ! de>xt (ha) ! ;  
 
-[ cell var t0
-[ cell var t1
-[ cell var t2
+cell var t0
+cell var t1
+cell var t2
 : marker here t0 ! last t1 ! vhere t2 ! ;
 : forget t0 @ (ha) ! t1 @ (la) ! t2 @ (vha) ! ;
 
 : #. '.' hold ;
 : .version  green ." cf v" version <# # # #. # # #. #s #> ztype white cr ;
-[ marker cr .version ." hello" cr
+marker cr .version ." hello" cr
 
 ( fixed point )
 : f. 100 /mod (.) '.' emit abs .2 ;
@@ -543,10 +543,10 @@ vhere const -vha-
 : f+ + ;
 : f- - ;
 
-( Block #17 - colorize this source )
+(( Block #17 - colorize this source ))
 
-[ 128 var wd
-[ cell var to-in
+128 var wd
+cell var to-in
 : x-emit ( (c--) ) emit col@ 1+ col! ;
 : m-emit ( (c--) ) dup mode! x-emit ;
 : xtype ( (a--) ) >t : t1 @t if0 tdrop exit then @t+ x-emit t1 ;

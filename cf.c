@@ -105,7 +105,7 @@ int lower(const char c) { return btwi(c, 'A', 'Z') ? c+32 : c; }
 int strLen(const char *s) { int l = 0; while (s[l]) { l++; } return l; }
 void storeWord(byte *a, cell v) { *(ushort*)(a) = (ushort)v; }
 ushort fetchWord(byte *a) { return *(ushort*)(a); }
-void storeCell(byte *a, cell v) { printf("storeCell: %lx, %ld\n", a, v); *(cell*)(a) = v; }
+void storeCell(byte *a, cell v) { *(cell*)(a) = v; }
 cell fetchCell(byte *a) { return *(cell*)(a); }
 void comma(cell n)    { code[here++] = n; }
 int changeState(int newState) { state = newState; return newState; }
@@ -129,7 +129,7 @@ int nextWord() {
 	return len;
 }
 
-int isTemp(const char* w) {
+int isTemp(const char *w) {
 	return ((w[0] == 't') && btwi(w[1], '0', '9') && (w[2] == 0)) ? 1 : 0;
 }
 
@@ -170,22 +170,22 @@ DE_T *findWord(const char *w) {
 void inner(cell pc) {
 	cell t, n, ir;
 next:
-	// printf("\n-pc:%lx,ir:%d-",(cell)pc,*pc);
+	// printf("\n-pc:%d,ir:%d-",pc,ir);
 	ir = code[pc++];
 	switch(ir) {
 		case  STOP:   return;
 		NCASE LIT:    push(code[pc++]);
 		NCASE JMP:    pc=code[pc];
-		NCASE JMPZ:   t=code[pc++]; if (pop()==0) { pc = t; } else { pc++; }
-		NCASE NJMPZ:  t=code[pc++]; if (TOS==0)   { pc = t; } else { pc++; }
-		NCASE JMPNZ:  t=code[pc++]; if (pop())    { pc = t; } else { pc++; }
-		NCASE NJMPNZ: t=code[pc++]; if (TOS)      { pc = t; } else { pc++; }
+		NCASE JMPZ:   t=code[pc++]; if (pop()==0) { pc = t; } // else { pc++; }
+		NCASE NJMPZ:  t=code[pc++]; if (TOS==0)   { pc = t; } // else { pc++; }
+		NCASE JMPNZ:  t=code[pc++]; if (pop())    { pc = t; } // else { pc++; }
+		NCASE NJMPNZ: t=code[pc++]; if (TOS)      { pc = t; } // else { pc++; }
 		PRIMS
 		default:
 			if ((ir & NUM_BITS) == NUM_BITS) { push(ir & NUM_MASK); goto next; }
 			if (code[pc] != EXIT) { rpush(pc); }
 			pc = ir;
-			return;
+			goto next;
 	}
 }
 
@@ -214,14 +214,13 @@ int compileNumber(cell n) {
 		return 1;
 }
 
-int executeWord(DE_T *dp) {
+void executeWord(DE_T *dp) {
 	code[17] = dp->xt;
 	code[18] = STOP;
 	inner(17);
-	return 1;
 }
 
-int compileWord(DE_T *dp) {
+void compileWord(DE_T *dp) {
 	if (dp->flags & 0x01) { executeWord(dp); }
 	else if ((dp->flags & 0x02)) {   // Inline
 		ucell x = dp->xt;
@@ -247,7 +246,7 @@ int outer(const char *src) {
 	toIn = (char*)src;
 	while (nextWord()) {
 		if (isStateChange()) { continue; }
-		printf("-wd:[%s],(%d)-\n",wd,state);
+		// printf("-wd:[%s],(%lld)-\n",wd,(int64_t)state);
 		if (state == COMMENT) { continue; }
 		if (state == DEFINE)  { if (addWord(wd)) { state = COMPILE; continue; } }
 		if (isNumber(wd)) {
@@ -271,10 +270,24 @@ int outer(const char *src) {
 }
 
 void defNum(char *name, cell val) {
-	addWord(name); compileNumber(val); comma(EXIT);
+	DE_T *dp = addWord(name);
+	compileNumber(val);
+	if (btwi(val, 0, NUM_MASK)) { dp->flags = 0x02; }
+	comma(EXIT);
 }
 
+#undef X
+#define X(op, name, imm, code) { op, name, imm },
+
 void baseSys() {
+	PRIM_T prims[] = { PRIMS {0, 0, 0} };
+	for (int i = 0; prims[i].name; i++) {
+		DE_T *dp = addWord((char*)prims[i].name);
+		dp->xt = prims[i].op;
+		dp->flags = prims[i].fl;
+	}
+	here = BYE + 1;
+
 	defNum("version",  VERSION);
 	defNum("(jmp)",    JMP);
 	defNum("(jmpz)",   JMPZ);
@@ -311,16 +324,6 @@ void baseSys() {
 	defNum("tstk-sz",  TSTK_SZ+1);
 	defNum("lstk-sz",  LSTK_SZ+1);
 	defNum("cell",     CELL_SZ);
-
-	#undef X
-	#define X(op, name, imm, code) { op, name, imm },
-	PRIM_T prims[] = { PRIMS {0, 0, 0} };
-
-	for (int i = 0; prims[i].name; i++) {
-		DE_T* dp = addWord((char*)prims[i].name);
-		dp->xt = prims[i].op;
-		dp->flags = prims[i].fl;
-	}
 }
 
 void Init() {
@@ -330,8 +333,6 @@ void Init() {
 	last    = (cell)&mem[MEM_SZ-1];
 	while (last & (CELL_SZ-1)) { --last; }
 	dictEnd = last;
-	vhere = 0;
-	here = BYE+1;
-	dsp = rsp = lsp = tsp = asp = state = 0;
+	vhere = dsp = rsp = lsp = tsp = asp = state = 0;
 	baseSys();
 }
