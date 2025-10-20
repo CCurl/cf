@@ -615,6 +615,7 @@ cell var to-in
 : bm timer swap for next elapsed ;
 : fib 1- dup 2 < if drop 1 exit then dup fib swap 1- fib + ;
 : fib-bm timer swap fib . elapsed ;
+: bb 1000 mil bm ;
 
 (( Sandbox ))
 
@@ -625,7 +626,6 @@ cell var to-in
 : [[ here there ! compile state ! ;
 : ]] (exit) , there @ (ha) ! interp state ! here execute ;
 [ immediate
-
 
 
 
