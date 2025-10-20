@@ -1,32 +1,33 @@
-( Block #0 - core )
+(( Block #0 - core ))
 
-[ memory 50000 + (vha) ! (ha) @ (la) @
+65536 cell * memory + (vha) ! (ha) @ (la) @
 : here  (ha)  @ ;
 : vhere (vha) @ ;
 : last  (la)  @ ;
-: c, here dup 1+     (ha) ! c! ;
-: w, here dup 2 +    (ha) ! w! ;
-: ,  here dup cell + (ha) ! ! ;
-: allot vhere + (vha) ! ;
-: const addword (lit4) c, , (exit) c, ;
-: var   vhere const allot ;
+: ->code ( n--a ) cell * memory + ;
+: , ( n-- ) here dup 1+ (ha) ! ->code ! ;
+: allot ( n-- ) vhere + (vha) ! ;
+: const ( n-- ) addword (lit) , , (exit) , ;
+: var ( n-- )  vhere const allot ;
 
-[ const -la- const -ha- vhere const -vha-
+const -la-
+const -ha-
+vhere const -vha-
 
-: immediate 1 last cell + c! ; [ immediate
-: inline    2 last cell + c! ; [ immediate
+: immediate 1 last cell + c! ; immediate
+: inline    2 last cell + c! ; immediate
 
-: begin here ; [ immediate
-: while  (jmpnz)  c, , ; [ immediate
-: -while (njmpnz) c, , ; [ immediate
-:  until (jmpz)   c, , ; [ immediate
-: -until (njmpz)  c, , ; [ immediate
-: again  (jmp)    c, , ; [ immediate
+: begin here ; immediate
+: while  (jmpnz)  , , ; immediate
+: -while (njmpnz) , , ; immediate
+:  until (jmpz)   , , ; immediate
+: -until (njmpz)  , , ; immediate
+: again  (jmp)    , , ; immediate
 
-: if (jmpz)   c, here 0 , ; [ immediate
-: -if (njmpz) c, here 0 , ; [ immediate
-: if0 (jmpnz) c, here 0 , ; [ immediate
-: then here swap ! ; [ immediate
+: if (jmpz)   , here 0 , ; immediate
+: -if (njmpz) , here 0 , ; immediate
+: if0 (jmpnz) , here 0 , ; immediate
+: then here swap ! ; immediate
 
 
 
@@ -34,32 +35,32 @@
 
 ( ***************************************************** )
 ( STATES/MODES )
-: define  1 ; [ inline
-: compile 2 ; [ inline
-: interp  3 ; [ inline
-: comment 4 ; [ inline
+: define  1 ; inline
+: compile 2 ; inline
+: interp  3 ; inline
+: comment 4 ; inline
 ( ***************************************************** )
 
-: a+  a@ 1+ a! ; [ inline
-: a-  a@ 1- a! ; [ inline
-: @a  a@  c@ ; [ inline
-: @a+ a@+ c@ ; [ inline
-: @a- a@- c@ ; [ inline
-: !a  a@  c! ; [ inline
-: !a+ a@+ c! ; [ inline
-: !a- a@- c! ; [ inline
-: t+  t@ 1+ t! ; [ inline
-: t-  t@ 1- t! ; [ inline
-: @t  t@  c@ ; [ inline
-: @t+ t@+ c@ ; [ inline
-: @t- t@- c@ ; [ inline
-: !t  t@  c! ; [ inline
-: !t+ t@+ c! ; [ inline
-: !t- t@- c! ; [ inline
-: t@+c t@ dup cell + t! ; [ inline
-: adrop  a> drop ; [ inline
-: tdrop  t> drop ; [ inline
-: atdrop a> drop t> drop ; [ inline
+: a+  a@+ drop ; inline
+: a-  a@- drop ; inline
+: @a  a@  c@ ; inline
+: @a+ a@+ c@ ; inline
+: @a- a@- c@ ; inline
+: !a  a@  c! ; inline
+: !a+ a@+ c! ; inline
+: !a- a@- c! ; inline
+: t+  t@+ drop ; inline
+: t-  t@- drop ; inline
+: @t  t@  c@ ; inline
+: @t+ t@+ c@ ; inline
+: @t- t@- c@ ; inline
+: !t  t@  c! ; inline
+: !t+ t@+ c! ; inline
+: !t- t@- c! ; inline
+: t@+c t@ dup cell + t! ; inline
+: adrop  a> drop ; inline
+: tdrop  t> drop ; inline
+: atdrop a> drop t> drop ; inline
 
 
 ( Block #2 - more core )
@@ -70,12 +71,12 @@
       @a '"' = if
          0 !t+  a> 1+ >in !
          comp? if0 tdrop exit then
-         t> (vha) ! (lit4) c, , exit
+         t> (vha) ! (lit) , , exit
       then @a+ !t+
    again ;
 
-: "  (quote) ; [ immediate
-: ." (quote) comp? if (ztype) c, exit then ztype ; [ immediate
+: "  (quote) ; immediate
+: ." (quote) comp? if (ztype) , exit then ztype ; immediate
 
 (( Files ))
 : fopen-r " rb"  fopen ;
@@ -96,11 +97,11 @@
 
 ( Block #3 - General )
 
-: bl 32 ; [ inline
-: tab 9 emit ; [ inline
-: cr 13 emit 10 emit ; [ inline
-: spaces for bl emit next ; [ inline
-: negate com 1+ ; [ inline
+: bl 32 ; inline
+: tab 9 emit ; inline
+: cr 13 emit 10 emit ; inline
+: spaces for bl emit next ; inline
+: negate com 1+ ; inline
 : abs dup 0 < if negate then ;
 
 : #neg 0 >a dup 0 < if negate a+ then ;
@@ -130,18 +131,18 @@
 
 : execute ( xt-- ) >r ;
 : :noname here compile state ! ;
-: cells cell * ; [ inline
-: cell+ cell + ; [ inline
-: 2+ 1+ 1+ ; [ inline
-: 2* dup + ; [ inline
-: 2/ 2 / ; [ inline
-: 2dup over over ; [ inline
-: 2drop drop drop ; [ inline
-: mod /mod drop ; [ inline
+: cells cell * ; inline
+: cell+ cell + ; inline
+: 2+ 1+ 1+ ; inline
+: 2* dup + ; inline
+: 2/ 2 / ; inline
+: 2dup over over ; inline
+: 2drop drop drop ; inline
+: mod /mod drop ; inline
 : ?dup -if dup then ;
 : ? @ . ;
-: nip  swap drop ; [ inline
-: tuck swap over ; [ inline
+: nip  swap drop ; inline
+: tuck swap over ; inline
 : +! ( n a-- ) tuck @ + swap ! ;
 : min ( a b--c ) 2dup > if swap then drop ;
 : max ( a b--c ) 2dup < if swap then drop ;
@@ -150,9 +151,9 @@
 
 : 0sp 0 (dsp) ! ;
 : depth (dsp) @ 1- ;
-: lpar '(' emit ; [ inline
-: rpar ')' emit ; [ inline
-: .comma ',' emit ; [ inline
+: lpar '(' emit ; inline
+: rpar ')' emit ; inline
+: .comma ',' emit ; inline
 : .s lpar space depth ?dup if
       for i 1+ cells dstk + @ . next
    then rpar ;
@@ -161,10 +162,10 @@
 ( Block #5 - words, memory, and strings )
 
 : dict-end memory mem-sz + 1- ;
-: de>xt    @ ; [ inline
-: de>flags cell + c@ ; [ inline
-: de>len   cell + 1+ c@ ; [ inline
-: de>name  cell + 2+ ; [ inline
+: de>xt    @ ; inline
+: de>flags cell + c@ ; inline
+: de>len   cell + 1+ c@ ; inline
+: de>name  cell + 2+ ; inline
 : .word de>name ztype ;
 : .de-word .word t@+ 10 > if 0 t! cr exit then tab ;
 
@@ -184,7 +185,7 @@
     r> ?dup if 1+ for @a- !t- next then
     atdrop ;
 
-: s-end  ( str--end )     dup s-len + ; [ inline
+: s-end  ( str--end )     dup s-len + ; inline
 : s-cat  ( dst src--dst ) over s-end swap s-cpy drop ;
 : s-catc ( dst ch--dst )  over s-end tuck c! 0 swap 1+ c! ;
 : s-catn ( dst num--dst ) <# #s #> over s-end swap s-cpy drop ;
@@ -205,7 +206,7 @@
 : color ( bg fg-- ) csi (.) ';' emit (.) 'm' emit ;
 : bg    ( color-- ) csi ." 48;5;" (.) 'm' emit ;
 : fg    ( color-- ) csi ." 38;5;" (.) 'm' emit ;
-: c-red 203 ; [ inline
+: c-red 203 ; inline
 : black   0 fg ;      : red    c-red fg ;
 : green  40 fg ;      : yellow 226 fg ;
 : blue   63 fg ;      : purple 201 fg ;
@@ -225,9 +226,9 @@
 (( Block #7 - blocks ))
 
 [ cell var blk
-: rows 32 ; [ inline
-: cols 100 ; [ inline
-: last-block  499 ; [ inline
+: rows 32 ; inline
+: cols 100 ; inline
+: last-block  499 ; inline
 [ rows cols * const block-sz
 [ last-block 1+ block-sz * const disk-sz
 [ memory 2000000 + const disk
@@ -289,7 +290,7 @@
 ( Block #9 - accept, start of editor )
 
 : printable? ( (c--f) ) dup 31 > swap 127 < and ;
-: bs 8 emit ; [ inline
+: bs 8 emit ; inline
 : accept ( dst-- ) dup >r >t 0 >a
   begin key a!
      a@   3 =  a@ 27 = or if 0 r> c! atdrop exit then
@@ -622,7 +623,7 @@
 (( ... compile then execute ... ))
 [ cell var there
 : [[ here there ! compile state ! ;
-: ]] (exit) c, there @ (ha) ! interp state ! here execute ;
+: ]] (exit) , there @ (ha) ! interp state ! here execute ;
 [ immediate
 
 

@@ -14,7 +14,7 @@
 
 #define VERSION     20250604
 
-#define MEM_SZ       4*(1024*1024)
+#define MEM_SZ       8*(1024*1024)
 #define NAME_MAX          25
 #define STK_SZ            63
 #define LSTK_SZ           60
@@ -22,17 +22,17 @@
 #define btwi(n,l,h)   ((l<=n) && (n<=h))
 
 #if INTPTR_MAX > INT32_MAX
-    #define CELL_T    int64_t
-    #define UCELL_T   uint64_t
-    #define CELL_SZ   8
-    #define FLT_T     double
-    #define addrFmt ": %s $%llx ;"
+    #define CELL_T         int64_t
+    #define UCELL_T        uint64_t
+    #define CELL_SZ        8
+    #define NUM_BITS       0xE000000000000000
+    #define NUM_MASK       0x1FFFFFFFFFFFFFFF
 #else
-    #define CELL_T    int32_t
-    #define UCELL_T   uint32_t
-    #define CELL_SZ   4
-    #define FLT_T     float
-    #define addrFmt ": %s $%lx ;"
+    #define CELL_T         int32_t
+    #define UCELL_T        uint32_t
+    #define CELL_SZ        4
+    #define NUM_BITS       0xE0000000
+    #define NUM_MASK       0x1FFFFFFF
 #endif
 
 enum { DEFINE=1, COMPILE, INTERP, COMMENT };
@@ -42,7 +42,7 @@ typedef UCELL_T ucell;
 typedef unsigned short ushort;
 typedef unsigned char byte;
 typedef struct { cell xt; byte flags, len; char name[NAME_MAX+1]; } DE_T;
-typedef struct { byte op; const char* name; byte fl; } PRIM_T;
+typedef struct { cell op; const char* name; byte fl; } PRIM_T;
 
 // These are defined by cf.c
 extern void inner(cell start);
