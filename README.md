@@ -8,20 +8,20 @@
 - cf has 4 states: DEFINE, INTERPRET, COMPILE, and COMMENT.
 - Like ColorForth, cf uses markers in the source to control its state.
 - cf supports using either a byte in the whitespace or a word to change the state.
-- cf builds on the VM from c5. See this for details: https://github.com/CCurl/c5
+- cf builds on the VM from c4. See this for details: https://github.com/CCurl/c4
 
 ## Whitespace characters and WORDS that change the state:
 
-| Byte  | Word(s)     | New State | Editor Key |
-| :--   | :--         | :--       | :-- |
-| $01   | ":"         | DEFINE    | F1 |
-| $02   | "]" or ")"  | COMPILE   | F2 |
-| $03   | "[" or "))" | INTERPRET | F3 |
-| $04   | "(" or "((" | COMMENT   | F4 |
+| Byte  | Word(s)     | New State |
+| :--   | :--         | :--       |
+| $01   | ":"         | DEFINE    |
+| $02   | "]" or ")"  | COMPILE   |
+| $03   | "[" or "))" | INTERPRET |
+| $04   | "(" or "((" | COMMENT   |
+|       | ";"         | INTERPRET |
 
 ## Notes:
 - DEFINE changes the state to COMPILE after adding the word to the dictionary
-- `;` does NOT change the state to INTERPRET
 - There is no difference between `(` and `((`, they make the code more readable
 - cf still supports IMMEDIATE words
 - Flow control words like IF/THEN are IMMEDIATE
@@ -30,7 +30,7 @@
 ```
 (( A comment in INTERPRET mode ))
 : hello ( A comment in COMPILE mode ) ." hi" ;
-[ hello
+hello
 ```
 
 ## Architecture
@@ -53,13 +53,11 @@ For Linux, OpenBSD, and FreeBSD, there is a makefile, which uses the system C co
 # default, 64 bit:
 make
 
-or
-
-# for 64 bit:
+# for 32 bit:
 ARCH=32 make
 ```
 
-Or you can easily build it from the command line:
+Or you can easily build cf from the command line:
 
 ```
 gcc -m64 -O3 -o cf *.c
@@ -74,4 +72,4 @@ clang -m64 -O3 -o cf *.c
 - They are implemented in the default source file.
 
 ## The Editor
-- A simple block editor is implemented in the default source file.
+- A block editor is implemented in the default source file.

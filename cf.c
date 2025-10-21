@@ -12,11 +12,9 @@
 #define DE_SZ         sizeof(DE_T)
 
 byte mem[MEM_SZ];
-cell dsp, dstk[STK_SZ+1];
-cell rsp, rstk[STK_SZ+1];
+cell dsp, dstk[STK_SZ+1],  rsp, rstk[STK_SZ+1];
+cell tsp, tstk[TSTK_SZ+1], asp, astk[TSTK_SZ+1];
 cell lsp, lstk[LSTK_SZ+1];
-cell tsp, tstk[TSTK_SZ+1];
-cell asp, astk[TSTK_SZ+1];
 cell base, state, dictEnd, outputFp;
 cell *code, here, vhere, last;
 char *toIn, wd[128];
@@ -49,7 +47,7 @@ DE_T tmpWords[10];
 	X(OR,      "or",        0, t=pop(); TOS |= t; ) \
 	X(XOR,     "xor",       0, t=pop(); TOS ^= t; ) \
 	X(COM,     "com",       0, TOS = ~TOS; ) \
-	X(FOR,     "for",       0, lsp+=3; L2=pc; L0=0; L1=pop(); ) \
+	X(FOR,     "for",       0, lsp+=3; L0=0; L1=pop(); L2=pc; ) \
 	X(NDX_I,   "i",         0, push(L0); ) \
 	X(NEXT,    "next",      0, if (++L0<L1) { pc=L2; } else { lsp=(2<lsp)?(lsp-3):0; } ) \
 	X(TOR,     ">r",        0, rpush(pop()); ) \
@@ -66,7 +64,7 @@ DE_T tmpWords[10];
 	X(TATD,    "t@-",       0, push(tstk[tsp]--); ) \
 	X(TFROM,   "t>",        0, push(0<tsp ? tstk[tsp--]: 0); ) \
 	X(ATO,     ">a",        0, if (asp < STK_SZ) { astk[++asp] = pop(); } ) \
-	X(ASET,    "a!",        0, astk[asp]=pop(); ) \
+	X(ASET,    "a!",        0, astk[asp] = pop(); ) \
 	X(AGET,    "a@",        0, push(astk[asp]); ) \
 	X(AGETI,   "a@+",       0, push(astk[asp]++); ) \
 	X(AGETD,   "a@-",       0, push(astk[asp]--); ) \
@@ -101,15 +99,15 @@ void push(cell x) { if (dsp < STK_SZ) { dstk[++dsp] = x; } }
 cell pop() { return (0<dsp) ? dstk[dsp--] : 0; }
 void rpush(cell x) { if (rsp < STK_SZ) { rstk[++rsp] = x; } }
 cell rpop() { return (0<rsp) ? rstk[rsp--] : 0; }
-int lower(const char c) { return btwi(c, 'A', 'Z') ? c+32 : c; }
-int strLen(const char *s) { int l = 0; while (s[l]) { l++; } return l; }
+int  lower(const char c) { return btwi(c, 'A', 'Z') ? c+32 : c; }
+int  strLen(const char *s) { int l = 0; while (s[l]) { l++; } return l; }
 void storeWord(byte *a, cell v) { *(ushort*)(a) = (ushort)v; }
 ushort fetchWord(byte *a) { return *(ushort*)(a); }
 void storeCell(byte *a, cell v) { *(cell*)(a) = v; }
 cell fetchCell(byte *a) { return *(cell*)(a); }
-void comma(cell n)    { code[here++] = n; }
-int changeState(int newState) { state = newState; return newState; }
-int checkWhitespace(char c) { return (btwi(c,DEFINE,COMMENT)) ? changeState(c) : 0; }
+void comma(cell n) { code[here++] = n; }
+int  changeState(int newState) { state = newState; return newState; }
+void checkWS(char c) { if (btwi(c,DEFINE,COMMENT)) { changeState(c); } }
 
 int strEqI(const char *s, const char *d) {
 	while (lower(*s) == lower(*d)) { if (*s == 0) { return 1; } s++; d++; }
@@ -123,7 +121,7 @@ void strCpy(char *d, const char *s) {
 
 int nextWord() {
 	int len = 0;
-	while (btwi(*toIn, 1, 32)) { checkWhitespace(*(toIn++)); }
+	while (btwi(*toIn, 1, 32)) { checkWS(*(toIn++)); }
 	while (btwi(*toIn, 33, 126)) { wd[len++] = *(toIn++); }
 	wd[len] = 0;
 	return len;
@@ -176,10 +174,10 @@ next:
 		case  STOP:   return;
 		NCASE LIT:    push(code[pc++]);
 		NCASE JMP:    pc=code[pc];
-		NCASE JMPZ:   t=code[pc++]; if (pop()==0) { pc = t; } // else { pc++; }
-		NCASE NJMPZ:  t=code[pc++]; if (TOS==0)   { pc = t; } // else { pc++; }
-		NCASE JMPNZ:  t=code[pc++]; if (pop())    { pc = t; } // else { pc++; }
-		NCASE NJMPNZ: t=code[pc++]; if (TOS)      { pc = t; } // else { pc++; }
+		NCASE JMPZ:   t=code[pc++]; if (pop()==0) { pc = t; }
+		NCASE JMPNZ:  t=code[pc++]; if (pop())    { pc = t; }
+		NCASE NJMPZ:  t=code[pc++]; if (TOS==0)   { pc = t; }
+		NCASE NJMPNZ: t=code[pc++]; if (TOS)      { pc = t; }
 		PRIMS
 		default:
 			if ((ir & NUM_BITS) == NUM_BITS) { push(ir & NUM_MASK); goto next; }
@@ -199,9 +197,9 @@ int isNumber(const char *w) {
 	if (w[0]==0) { return 0; }
 	char c = lower(*(w++));
 	while (c) {
-		if (btwi(c,'0','0'+b-1) && (c<='9')) { n = (n*b)+(c-'0'); }
-		else if ((b==16) && btwi(c,'a','f')) { n = (n*b)+(c-'a'+10); }
-		else { return 0; }
+		int x = btwi(c,'0','9') ? c-'0' : 99;
+		if (btwi(c,'a','f')) { x = (c-'a'+10); }
+		if (x < b) { n = (n*b)+x; } else { return 0; }
 		c = lower(*(w++));
 	}
 	push(isNeg ? -n : n);
@@ -221,8 +219,8 @@ void executeWord(DE_T *dp) {
 }
 
 void compileWord(DE_T *dp) {
-	if (dp->flags & 0x01) { executeWord(dp); }
-	else if ((dp->flags & 0x02)) {   // Inline
+	if (dp->flags & _IMMED) { executeWord(dp); }
+	else if ((dp->flags & _INLINE)) {
 		ucell x = dp->xt;
 		do { comma(code[x++]); } while ( code[x] != EXIT );
 	} else { comma(dp->xt); }
@@ -241,7 +239,7 @@ int isStateChange() {
 	return 0;
 }
 
-int outer(const char *src) {
+void outer(const char *src) {
 	char *svIn = toIn;
 	toIn = (char*)src;
 	while (nextWord()) {
@@ -266,64 +264,44 @@ int outer(const char *src) {
 		break;
 	}
 	toIn = svIn;
-	return 1;
 }
-
-void defNum(char *name, cell val) {
-	DE_T *dp = addWord(name);
-	compileNumber(val);
-	if (btwi(val, 0, NUM_MASK)) { dp->flags = 0x02; }
-	comma(EXIT);
-}
-
-#undef X
-#define X(op, name, imm, code) { op, name, imm },
 
 void baseSys() {
+	here = BYE + 1;
+    struct { char *nm; cell val; } nvp[] = {
+        { "version",  VERSION },           { "(jmp)",    JMP },
+        { "(jmpz)",   JMPZ },              { "(jmpnz)",  JMPNZ },
+        { "(njmpz)",  NJMPZ },             { "(njmpnz)", NJMPNZ },
+        { "(lit)",    LIT },               { "(exit)",   EXIT },
+        { "(ztype)",  ZTYPE },             { "(dsp)",    (cell)&dsp },
+        { "dstk",     (cell)&dstk[0] },    { "(rsp)",    (cell)&rsp },
+        { "rstk",     (cell)&rstk[0] },    { "(tsp)",    (cell)&tsp },
+        { "tstk",     (cell)&tstk[0] },    { "(asp)",    (cell)&asp },
+        { "astk",     (cell)&astk[0] },    { "(lsp)",    (cell)&lsp },
+        { "lstk",     (cell)&lstk[0] },    { "(ha)",     (cell)&here },
+        { "(vha)",    (cell)&vhere },      { "(la)",     (cell)&last },
+        { "base",     (cell)&base },       { "state",    (cell)&state },
+        { "memory",   (cell)&mem[0] },     { ">in",      (cell)&toIn },
+        { "(output-fp)",(cell)&outputFp }, { "mem-sz",   MEM_SZ },
+        { "de-sz",    sizeof(DE_T) },      { "stk-sz",   STK_SZ+1 },
+        { "tstk-sz",  TSTK_SZ+1 },         { "lstk-sz",  LSTK_SZ+1 },
+        { "cell",     CELL_SZ },           { 0 ,0 }
+    };
+	for (int i = 0; nvp[i].nm; i++) {
+		DE_T *dp = addWord(nvp[i].nm);
+		compileNumber(nvp[i].val);
+		if (btwi(nvp[i].val, 0, NUM_MASK)) { dp->flags = _INLINE; }
+		comma(EXIT);
+	}
+
+	#undef X
+	#define X(op, name, imm, code) { op, name, imm },
 	PRIM_T prims[] = { PRIMS {0, 0, 0} };
 	for (int i = 0; prims[i].name; i++) {
 		DE_T *dp = addWord((char*)prims[i].name);
 		dp->xt = prims[i].op;
 		dp->flags = prims[i].fl;
 	}
-	here = BYE + 1;
-
-	defNum("version",  VERSION);
-	defNum("(jmp)",    JMP);
-	defNum("(jmpz)",   JMPZ);
-	defNum("(jmpnz)",  JMPNZ);
-	defNum("(njmpz)",  NJMPZ);
-	defNum("(njmpnz)", NJMPNZ);
-	defNum("(lit)",    LIT);
-	defNum("(exit)",   EXIT);
-	defNum("(ztype)",  ZTYPE);
-
-	defNum("(dsp)",  (cell)&dsp);
-	defNum("dstk",   (cell)&dstk[0]);
-	defNum("(rsp)",  (cell)&rsp);
-	defNum("rstk",   (cell)&rstk[0]);
-	defNum("(tsp)",  (cell)&tsp);
-	defNum("tstk",   (cell)&tstk[0]);
-	defNum("(asp)",  (cell)&asp);
-	defNum("astk",   (cell)&astk[0]);
-	defNum("(lsp)",  (cell)&lsp);
-	defNum("lstk",   (cell)&lstk[0]);
-	defNum("(ha)",   (cell)&here);
-	defNum("(vha)",  (cell)&vhere);
-	defNum("(la)",   (cell)&last);
-	defNum("base",   (cell)&base);
-	defNum("state",  (cell)&state);
-
-	defNum("memory",      (cell)&mem[0]);
-	defNum(">in",         (cell)&toIn);
-	defNum("(output-fp)", (cell)&outputFp);
-
-	defNum("mem-sz",   MEM_SZ);
-	defNum("de-sz",    sizeof(DE_T));
-	defNum("stk-sz",   STK_SZ+1);
-	defNum("tstk-sz",  TSTK_SZ+1);
-	defNum("lstk-sz",  LSTK_SZ+1);
-	defNum("cell",     CELL_SZ);
 }
 
 void Init() {

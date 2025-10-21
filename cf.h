@@ -12,30 +12,31 @@
 #include <stdint.h>
 #include <time.h>
 
-#define VERSION     20250604
+#define VERSION         20251020
 
-#define MEM_SZ       8*(1024*1024)
-#define NAME_MAX          25
-#define STK_SZ            63
-#define LSTK_SZ           60
-#define TSTK_SZ           63
+#define MEM_SZ          16*(1024*1024)
+#define NAME_MAX        25
+#define STK_SZ          63
+#define LSTK_SZ         60
+#define TSTK_SZ         63
 #define btwi(n,l,h)   ((l<=n) && (n<=h))
 
 #if INTPTR_MAX > INT32_MAX
-    #define CELL_T         int64_t
-    #define UCELL_T        uint64_t
-    #define CELL_SZ        8
-    #define NUM_BITS       0xE000000000000000
-    #define NUM_MASK       0x1FFFFFFFFFFFFFFF
+    #define CELL_T      int64_t
+    #define UCELL_T     uint64_t
+    #define CELL_SZ     8
+    #define NUM_BITS    0xE000000000000000
+    #define NUM_MASK    0x1FFFFFFFFFFFFFFF
 #else
-    #define CELL_T         int32_t
-    #define UCELL_T        uint32_t
-    #define CELL_SZ        4
-    #define NUM_BITS       0xE0000000
-    #define NUM_MASK       0x1FFFFFFF
+    #define CELL_T      int32_t
+    #define UCELL_T     uint32_t
+    #define CELL_SZ     4
+    #define NUM_BITS    0xE0000000
+    #define NUM_MASK    0x1FFFFFFF
 #endif
 
 enum { DEFINE=1, COMPILE, INTERP, COMMENT };
+enum { _IMMED=1, _INLINE=2 };
 
 typedef CELL_T cell;
 typedef UCELL_T ucell;
@@ -46,7 +47,7 @@ typedef struct { cell op; const char* name; byte fl; } PRIM_T;
 
 // These are defined by cf.c
 extern void inner(cell start);
-extern int  outer(const char *src);
+extern void outer(const char *src);
 extern void Init();
 
 // cf.c needs these to be defined
