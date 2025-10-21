@@ -90,10 +90,7 @@ DE_T tmpWords[10];
 	X(BYE,     "bye",       0, ttyMode(0); exit(0); )
 
 #define X(op, name, imm, cod) op,
-
-enum _PRIM  {
-	STOP, LIT, JMP, JMPZ, NJMPZ, JMPNZ, NJMPNZ, PRIMS
-};
+enum _PRIM  { STOP, LIT, JMP, JMPZ, NJMPZ, JMPNZ, NJMPNZ, PRIMS };
 
 void push(cell x) { if (dsp < STK_SZ) { dstk[++dsp] = x; } }
 cell pop() { return (0<dsp) ? dstk[dsp--] : 0; }
@@ -305,10 +302,10 @@ void baseSys() {
 }
 
 void Init() {
-	code	= (ucell*)&mem[0];
-	base    = 10;
-	state   = INTERP;
-	last    = (cell)&mem[MEM_SZ-1];
+	code  = (ucell*)&mem[0];
+	base  = 10;
+	state = INTERP;
+	last   = (cell)&mem[MEM_SZ-1];
 	while (last & (CELL_SZ-1)) { --last; }
 	dictEnd = last;
 	vhere = dsp = rsp = lsp = tsp = asp = state = 0;
