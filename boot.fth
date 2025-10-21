@@ -270,11 +270,11 @@ last-block 1+ block-sz * const disk-sz
   again ;
 
 vhere const ed-colors
-219   vc, ( 0: default - purple )
-c-red vc, ( 1: define  - red )
- 76   vc, ( 2: compile - green )
-226   vc, ( 3: interp  - yellow )
-255   vc, ( 4: comment - white )
+219   vc, (( 0: default - purple ))
+c-red vc, (( 1: define  - red ))
+ 76   vc, (( 2: compile - green ))
+226   vc, (( 3: interp  - yellow ))
+255   vc, (( 4: comment - white ))
 
 : ed-color@ ( (n--) ) ed-colors + c@ ;
 : ed-color! ( (fg n--) ) ed-colors + c! ;
@@ -396,10 +396,10 @@ vhere const ed-cases
 'q'  case!  0 8 mv ;
 'Q'  case!  0 8 negate mv ;
 '1'  case!  define  replace-char! ;
+'2'  case!  compile replace-char! ;
+'3'  case!  interp  replace-char! ;
+'4'  case!  comment replace-char! ;
 ':'  case!  do-cmd ;
-']'  case!  compile replace-char! ;
-'['  case!  interp  replace-char! ;
-'('  case!  comment replace-char! ;
 'b'  case   ins-bl
 'x'  case   del-ch
 'X'  case!  mv-left del-ch ;
