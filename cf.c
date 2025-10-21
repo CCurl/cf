@@ -9,7 +9,6 @@
 #define L0            lstk[lsp]
 #define L1            lstk[lsp-1]
 #define L2            lstk[lsp-2]
-#define DE_SZ         sizeof(DE_T)
 
 byte mem[MEM_SZ];
 cell dsp, dstk[STK_SZ+1],  rsp, rstk[STK_SZ+1];
@@ -25,12 +24,13 @@ DE_T tmpWords[10];
 	X(SWAP,    "swap",      0, t=TOS; TOS=NOS; NOS=t; ) \
 	X(DROP,    "drop",      0, pop(); ) \
 	X(OVER,    "over",      0, t=NOS; push(t); ) \
-	X(FET,     "@",         0, TOS = fetchCell((byte*)TOS); ) \
-	X(STO,     "!",         0, t=pop(); n=pop(); storeCell((byte*)t, n); ) \
+	X(FET,     "@",         0, TOS = fetchCell(TOS); ) \
+	X(STO,     "!",         0, t=pop(); n=pop(); storeCell(t, n); ) \
 	X(WFET,    "w@",        0, TOS = fetchWord((byte*)TOS); ) \
 	X(WSTO,    "w!",        0, t=pop(); n=pop(); storeWord((byte*)t, n); ) \
 	X(CFET,    "c@",        0, TOS = *(byte *)TOS; ) \
 	X(CSTO,    "c!",        0, t=pop(); n=pop(); *(byte*)t=(byte)n; ) \
+	X(PLSTO,   "+!",        0, t=pop(); n=pop(); storeCell(t, fetchCell(t)+n); ) \
 	X(ADD,     "+",         0, t=pop(); TOS += t; ) \
 	X(SUB,     "-",         0, t=pop(); TOS -= t; ) \
 	X(MUL,     "*",         0, t=pop(); TOS *= t; ) \
@@ -103,8 +103,8 @@ int  lower(const char c) { return btwi(c, 'A', 'Z') ? c+32 : c; }
 int  strLen(const char *s) { int l = 0; while (s[l]) { l++; } return l; }
 void storeWord(byte *a, cell v) { *(ushort*)(a) = (ushort)v; }
 ushort fetchWord(byte *a) { return *(ushort*)(a); }
-void storeCell(byte *a, cell v) { *(cell*)(a) = v; }
-cell fetchCell(byte *a) { return *(cell*)(a); }
+void storeCell(cell a, cell v) { *(cell*)(a) = v; }
+cell fetchCell(cell a) { return *(cell*)(a); }
 void comma(cell n) { code[here++] = n; }
 int  changeState(int newState) { state = newState; return newState; }
 void checkWS(char c) { if (btwi(c,DEFINE,COMMENT)) { changeState(c); } }
@@ -139,7 +139,7 @@ DE_T *addWord(char *w) {
 	}
 	int ln = strLen(w);
 	if (ln > NAME_MAX) { ln=NAME_MAX; w[ln]=0; }
-	last -= DE_SZ;
+	last -= sizeof(DE_T);
 	DE_T *dp = (DE_T*)last;
 	dp->xt = (cell)here;
 	dp->flags = 0;
@@ -157,7 +157,7 @@ DE_T *findWord(const char *w) {
 	while (cw < dictEnd) {
 		DE_T *dp = (DE_T*)cw;
 		if ((len == dp->len) && strEqI(dp->name, w)) { return dp; }
-		cw += DE_SZ;
+		cw += sizeof(DE_T);
 	}
 	return (DE_T*)0;
 }

@@ -1,4 +1,4 @@
-# cf - a ColorForth inspired system
+# CF - a ColorForth and Tachyon inspired system
 
 <img src="/images/editing.jpg" width="400" height="300" />
 
@@ -8,7 +8,6 @@
 - cf has 4 states: DEFINE, INTERPRET, COMPILE, and COMMENT.
 - Like ColorForth, cf uses markers in the source to control its state.
 - cf supports using either a byte in the whitespace or a word to change the state.
-- cf builds on the VM from c4. See this for details: https://github.com/CCurl/c4
 
 ## Whitespace characters and WORDS that change the state:
 
@@ -21,33 +20,50 @@
 |       | ";"         | INTERPRET |
 
 ## Notes:
-- DEFINE changes the state to COMPILE after adding the word to the dictionary
-- There is no difference between `(` and `((`, they make the code more readable
-- cf still supports IMMEDIATE words
-- Flow control words like IF/THEN are IMMEDIATE
+- DEFINE changes the state to COMPILE after adding the word to the dictionary.
+- ";" compiles EXIT and changes the state to INTERPRET.
+- There is no difference between `(` and `((`, they make the code more readable.
+- CF still supports IMMEDIATE words.
+- Flow control words like IF/THEN would be marked as IMMEDIATE.
 - They are defined in the source file.
 
 ```
 (( A comment in INTERPRET mode ))
-: hello ( A comment in COMPILE mode ) ." hi" ;
+: hello ( A comment in COMPILE mode ) ." Hello World!" ;
 hello
 ```
 
+## Tachyon's influence on cf
+In cf, a program is a sequence of OPCODEs.<br/>
+An OPCODE is a CELL-sized unsigned number (32 or 64 bits).<br/>
+Primitives are assigned numbers sequentially from 0 to BYE.<br/>
+If an OPCODE is less than or equal to `BYE`, it is a primitive.<br/>
+If the top 3 bits are set, it is an unsigned literal with the top 3 bits masked off.<br/>
+Else, it is the CODE slot of a word to execute.<br/>
+CODE slots 0-24 are used by cf.<br/>
+CODE slots 25-BYE are free CELL-sized slots that can be used for any purpose.<br/>
+HERE starts at `BYE+1`.<br/>
+
 ## Architecture
-CF is really just the barebones of a Forth core, upon which any Forth system can be created.
-
-To that end, cf provides a set of primitives and the inner/outer interpreters.
-
-The rest of the system is defined by the source Forth code file, provided as an argument when cf is executed.
-
-If cf is executed without arguments, the default source file is 'boot.cf'.
+CF is really just a Forth VM, upon which any Forth system can be built.<br/>
+To that end, cf provides a set of primitives and the inner/outer interpreters.<br/>
+See `cf.c` for the list of primitives.
+The rest of the system is defined by the source Forth code file.<br/>
+CF takes a source file as its only argument.<br/>
+If cf is executed without arguments, the default source file is 'boot.fth'.<br/>
+CF provides a single chunk of memory (see cf.h, MEM_SZ) for data and code.<br/>
+The CODE area starts at the beginning of the memory.<br/>
 
 ## Building cf
 Building cf is simple and fast since there are only 2 small source files.
 
-For Windows, there is a `cf.sln` file for Visual Studio.
+Windows
+- There is a `cf.sln` file for Visual Studio. 32-bit or 64-bit builds are supported.
 
-For Linux, OpenBSD, and FreeBSD, there is a makefile, which uses the system C compiler (specified by the CC variable). Example:
+Linux, OpenBSD, and FreeBSD
+- There is a makefile, which uses the system C compiler (specified by the CC variable).
+- Or you can easily build cf from the command line:
+- Example:
 
 ```
 # default, 64 bit:
@@ -55,16 +71,11 @@ make
 
 # for 32 bit:
 ARCH=32 make
-```
 
-Or you can easily build cf from the command line:
+# or manually:
 
-```
-gcc -m64 -O3 -o cf *.c
-
-or
-
-clang -m64 -O3 -o cf *.c
+$CC -m32 -O3 -o cf *.c
+$CC -m64 -O3 -o cf *.c
 ```
 
 ## Blocks

@@ -5,8 +5,8 @@
 : vhere (vha) @ ;
 : last  (la)  @ ;
 : ->code ( n--a ) cell * memory + ;
-: , ( n-- ) here dup 1+ (ha) ! ->code ! ;
-: allot ( n-- ) vhere + (vha) ! ;
+: , ( n-- ) here ->code ! 1 (ha) +! ;
+: allot ( n-- ) (vha) +! ;
 : const ( n-- ) addword (lit) , , (exit) , ;
 : var ( n-- )  vhere const allot ;
 
@@ -132,7 +132,6 @@ vhere const -vha-
 : ? @ . ;
 : nip  swap drop ; inline
 : tuck swap over ; inline
-: +! ( n a-- ) tuck @ + swap ! ;
 : min ( a b--c ) 2dup > if swap then drop ;
 : max ( a b--c ) 2dup < if swap then drop ;
 : vc, vhere c! 1 allot ;
