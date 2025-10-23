@@ -266,24 +266,23 @@ void outer(const char *src) {
 void baseSys() {
 	here = BYE + 1;
     struct { char *nm; cell val; } nvp[] = {
-        { "version",  VERSION },           { "(jmp)",    JMP },
-        { "(jmpz)",   JMPZ },              { "(jmpnz)",  JMPNZ },
-        { "(njmpz)",  NJMPZ },             { "(njmpnz)", NJMPNZ },
-        { "(lit)",    LIT },               { "(exit)",   EXIT },
-        { "(ztype)",  ZTYPE },             { "(dsp)",    (cell)&dsp },
-        { "dstk",     (cell)&dstk[0] },    { "(rsp)",    (cell)&rsp },
-        { "rstk",     (cell)&rstk[0] },    { "(tsp)",    (cell)&tsp },
-        { "tstk",     (cell)&tstk[0] },    { "(asp)",    (cell)&asp },
-        { "astk",     (cell)&astk[0] },    { "(lsp)",    (cell)&lsp },
-        { "lstk",     (cell)&lstk[0] },    { "(ha)",     (cell)&here },
-        { "(vha)",    (cell)&vhere },      { "(la)",     (cell)&last },
-        { "base",     (cell)&base },       { "state",    (cell)&state },
-        { "memory",   (cell)&mem[0] },     { ">in",      (cell)&toIn },
-        { "(output-fp)",(cell)&outputFp }, { "mem-sz",   MEM_SZ },
-        { "de-sz",    sizeof(DE_T) },      { "stk-sz",   STK_SZ+1 },
-        { "tstk-sz",  TSTK_SZ+1 },         { "lstk-sz",  LSTK_SZ+1 },
-        { "cell",     CELL_SZ },           { 0 ,0 }
-    };
+		{ "version", VERSION },  { "(jmp)",   JMP },    { "(jmpz)",   JMPZ }, 
+		{ "(jmpnz)", JMPNZ },    { "(njmpz)", NJMPZ },  { "(njmpnz)", NJMPNZ },
+		{ "(lit)",   LIT },      { "(exit)",  EXIT },   { "(bye)",    BYE },
+		{ "(ztype)", ZTYPE },              { "(dsp)",    (cell)&dsp },
+		{ "dstk",     (cell)&dstk[0] },    { "(rsp)",    (cell)&rsp },
+		{ "rstk",     (cell)&rstk[0] },    { "(tsp)",    (cell)&tsp },
+		{ "tstk",     (cell)&tstk[0] },    { "(asp)",    (cell)&asp },
+		{ "astk",     (cell)&astk[0] },    { "(lsp)",    (cell)&lsp },
+		{ "lstk",     (cell)&lstk[0] },    { "(ha)",     (cell)&here },
+		{ "(vha)",    (cell)&vhere },      { "(la)",     (cell)&last },
+		{ "base",     (cell)&base },       { "state",    (cell)&state },
+		{ "memory",   (cell)&mem[0] },     { ">in",      (cell)&toIn },
+		{ "mem-sz",   MEM_SZ },            { "(output-fp)",(cell)&outputFp }, 
+		{ "de-sz",    sizeof(DE_T) },      { "stk-sz",   STK_SZ+1 },
+		{ "tstk-sz",  TSTK_SZ+1 },         { "lstk-sz",  LSTK_SZ+1 },
+		{ "cell",     CELL_SZ },           { 0 ,0 }
+	};
 	for (int i = 0; nvp[i].nm; i++) {
 		DE_T *dp = addWord(nvp[i].nm);
 		compileNumber(nvp[i].val);

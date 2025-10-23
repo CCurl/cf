@@ -24,9 +24,9 @@ vhere const -vha-
 : -until (njmpz)  , , ; immediate
 : again  (jmp)    , , ; immediate
 
-: if (jmpz)   , here 0 , ; immediate
-: -if (njmpz) , here 0 , ; immediate
-: if0 (jmpnz) , here 0 , ; immediate
+: if (jmpz)   , here 0 ,  ; immediate
+: -if (njmpz) , here 0 ,  ; immediate
+: if0 (jmpnz) , here 0 ,  ; immediate
 : then here swap ->code ! ; immediate
 
 ( ***************************************************** )
@@ -53,13 +53,14 @@ vhere const -vha-
 : !t  t@  c! ; inline
 : !t+ t@+ c! ; inline
 : !t- t@- c! ; inline
-: t@+c t@ dup cell + t! ; inline
+: t@+c t@ dup cell + t! ;
 : adrop  a> drop ; inline
 : tdrop  t> drop ; inline
-: atdrop a> drop t> drop ; inline
+: atdrop adrop tdrop ;
 
 : comp? state @ compile = ;
-: (quote)  vhere dup >t  >in @ 1+ >a
+( quote subroutine )
+: t4  vhere dup >t  >in @ 1+ >a
    begin
       @a '"' = if
          0 !t+  a> 1+ >in !
@@ -68,23 +69,22 @@ vhere const -vha-
       then @a+ !t+
    again ;
 
-: "  (quote) ; immediate
-: ." (quote) comp? if (ztype) , exit then ztype ; immediate
+: z"  t4 ; immediate
+: ." t4 comp? if (ztype) , exit then ztype ; immediate
 
 (( Files ))
-: fopen-r " rb"  fopen ;
-: fopen-w " wb"  fopen ;
+: fopen-r z" rb"  fopen ;
+: fopen-w z" wb"  fopen ;
 : ->file ( fh-- ) (output-fp) ! ;
 : ->stdout 0 ->file ;
 
-: disk-fname " disk.cf" ;
 : source-loc memory 100000 + ;
-: rb ( (reboot) )
+: rb ( reboot )
    -vha- (vha) !  -la- (la) !  -ha- (ha) !
-   " boot.cf" fopen-r -if dup then if >a
-      source-loc >t
-      t@ 25000 for 0 over c! 1+ next drop
-      t@ 25000 a@ fread drop a> fclose
+   z" boot.fth" fopen-r -if dup then if >a
+      source-loc dup >t >r
+      50000 for 0 r@+ c! next rdrop
+      t@ 50000 a@ fread drop a> fclose
       t> >in !
    then ;
 
@@ -207,6 +207,7 @@ memory 2000000 + const disk
 : last-block  499 ; inline
 last-block 1+ block-sz * const disk-sz
 : ->block ( n--a ) last-block min 0 max block-sz * disk + ;
+: disk-fname z" disk.cf" ;
 : disk-read disk-fname fopen-r ?dup
    if >a disk disk-sz a@ fread drop a> fclose then ;
 : disk-flush disk-fname fopen-w ?dup
@@ -333,7 +334,7 @@ cell var (c)  : col! (c) ! ;       : col@ (c) @ ;
 : del-ch  dirty!  row@ row-last >a  rc->pos >t
    begin t@ 1+ c@ !t+ t@ a@ < while 32 t> c! adrop ;
 : clr-line 0 row@ cr->pos >a cols for 32 !a+ next adrop dirty! ;
-: ed-goto ( (blk--) ) blk ! block->ed show! ;
+: ed-goto ( blk-- ) blk ! block->ed show! ;
 : ins-line  row@ rows < if 
       last-ch >a  a@ cols - >t  0 row@ cr->pos >r
       begin @t- !a- t@ r@ < until atdrop rdrop
@@ -342,26 +343,27 @@ cell var (c)  : col! (c) ! ;       : col@ (c) @ ;
       0 row@ cr->pos >t  t@ cols + >a  last-ch >r
       begin @a+ !t+  a@ r@ > until atdrop rdrop
    then row@  rows 1- row!  clr-line  row! ;
-: ed-prev-word rc->pos 1- >t [ begin ]
+: ed-prev-word rc->pos 1- >t begin
       t@ ed-block < if t> pos->rc exit then
       @t- 33 < if t> 1+ pos->rc exit then
- [ again ] ;
-: ed-next-word rc->pos 1+ >t [ begin ]
+ again ;
+: ed-next-word rc->pos 1+ >t begin
       t@ last-ch > if t> pos->rc exit then
       @t+ 33 < if t> 1- pos->rc exit then
- [ again ] ;
+ again ;
 : next-pg ed->block  blk @ 1+ last-block min blk ! block->ed show! clean ;
 : prev-pg ed->block  blk @ 1- 0 max blk ! block->ed show! clean ;
+: rl blk @ ed-goto ;
+: q quit! ;
+: wq ed->block quit! ;
 : do-cmd ->cmd ':' emit clr-eol pad accept
-   pad " rl" s-eqi if blk @ ed-goto then
-   pad " q" s-eqi if quit! then
-   pad c@ '!' = if pad 1+ outer show! then
+   pad outer show!
    ->cmd clr-eol 0 pad ! ;
 
 (( switch: case-table process ))
-: case  ( (ch--) )  v, find drop v, ;   ( case-table entry - single word )
-: case! ( (ch--) )  v, here v, compile state ! ;   ( case-table entry - memory )
-: switch ( (tbl--) ) >t begin
+: case   ( ch-- )  v, find drop v, ;   ( case-table entry - single word )
+: case!  ( ch-- )  v, here v, compile state ! ;   ( case-table entry - code )
+: switch ( tbl-- ) >t begin
       t@ @ if0 tdrop exit then
       t@+c @ a@ = if t> @ >r exit then
       t@ cell+ t! again ;
@@ -416,7 +418,7 @@ vhere const ed-cases
 'D'  case   del-line
 'w'  case   ed-next-word
 'W'  case   ed-prev-word
-'g'  case!  rows  0 row! 0 col! ;
+'g'  case!  rows 0  row! 0 col! ;
 'G'  case!  rows 1- row! 0 col! ;
 '+'  case   next-pg
 '-'  case   prev-pg
@@ -432,14 +434,10 @@ vhere const ed-cases
 : ed  ed-init ed-loop ed->block ->cmd interp state ! ;
 : edit  blk ! ed ;
 
-
-(( Other words ))
-
 (( This dump is from Peter Jakacki ))
-: a-emit ( (b--) ) dup $20 < over $7e > or if drop '.' then emit ;
-: .ascii ( (--) ) a@ $10 - $10 for dup c@ a-emit 1+ next drop ;
-: dump ( (f n--) ) swap >a 0 >t
-   for
+: a-emit ( b-- ) dup $20 < over $7e > or if drop '.' then emit ;
+: .ascii ( -- ) a@ $10 - $10 for dup c@ a-emit 1+ next drop ;
+: dump ( f n-- ) swap >a 0 >t for
       t@ if0 cr a@ .hex ':' emit space then
       @a+ .hex
       t@+ $0f = if 4 spaces .ascii 0 t! then
@@ -465,8 +463,6 @@ marker cr .version ." hello" cr
 : f+ + ;
 : f- - ;
 
-(( Sandbox ))
-
 (( some benchmarks ))
 : mil 1000 dup * * ;
 : elapsed timer swap - . ." usec" ;
@@ -482,5 +478,5 @@ cell var there
 immediate
 
 (( Move the source to the disk area ))
-
-source-loc disk 20000 cmove
+: vi z" vi boot.fth" system ;
+source-loc disk 25000 cmove
