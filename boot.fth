@@ -212,15 +212,15 @@ last-block 1+ block-sz * const disk-sz
    if >a disk disk-sz a@ fread drop a> fclose then ;
 : disk-flush disk-fname fopen-w ?dup
    if >a disk disk-sz a@ fwrite drop a> fclose then ;
-: blk-cp  ( (src dst--) ) >t ->block t> ->block block-sz cmove ;
-: blk-clr ( (blk--) ) ->block block-sz 0 fill ;
-: blk-mv  ( (src dst--) ) over >t blk-cp t> blk-clr ;
-: blk-cp-n ( (src dst n--) ) >r >t >a r> for a@+ t@+ blk-cp next atdrop ;
-: blk-mv-n ( (src dst n--) ) >r >t >a r> for a@+ t@+ blk-mv next atdrop ;
-: blk-ins ( (blk start--) ) >a >t
+: blk-cp  ( src dst-- ) >t ->block t> ->block block-sz cmove ;
+: blk-clr ( blk-- ) ->block block-sz 0 fill ;
+: blk-mv  ( src dst-- ) over >t blk-cp t> blk-clr ;
+: blk-cp-n ( src dst n-- ) >r >t >a r> for a@+ t@+ blk-cp next atdrop ;
+: blk-mv-n ( src dst n-- ) >r >t >a r> for a@+ t@+ blk-mv next atdrop ;
+: blk-ins ( blk start-- ) >a >t
    begin a@- a@ swap blk-cp a@ t@ > while
    atdrop ;
-: blk-del ( (blk stop--) ) >a >t
+: blk-del ( blk stop-- ) >a >t
    begin t@+ t@ swap blk-cp t@ a@ < while
    a> blk-clr tdrop ;
 
@@ -228,24 +228,24 @@ last-block 1+ block-sz * const disk-sz
 #256  #60 + const key-f2
 #256  #61 + const key-f3
 #256  #62 + const key-f4
-#256  #71 + const key-home   (( (VT: 27 91 72) ))
-#256  #72 + const key-up     (( (VT: 27 91 65) ))
-#256  #73 + const key-pgup   (( (VT: 27 91 53 126) ))
-#256  #75 + const key-left   (( (VT: 27 91 68) ))
-#256  #77 + const key-right  (( (VT: 27 91 67) ))
-#256  #79 + const key-end    (( (VT: 27 91 70) ))
-#256  #80 + const key-down   (( (VT: 27 91 66) ))
-#256  #81 + const key-pgdn   (( (VT: 27 91 54 126) ))
-#256  #82 + const key-ins    (( (VT: 27 91 50 126) ))
-#256  #83 + const key-del    (( (VT: 27 91 51 126) ))
-#256 #119 + const key-chome  (( (VT: 27 91 ?? ???) ))
-#256 #117 + const key-cend   (( (VT: 27 91 ?? ???) ))
-: vk2 ( (--k) ) key 126 = if0 27 exit then
+#256  #71 + const key-home   (( VT: 27 91 72 ))
+#256  #72 + const key-up     (( VT: 27 91 65 ))
+#256  #73 + const key-pgup   (( VT: 27 91 53 126 ))
+#256  #75 + const key-left   (( VT: 27 91 68 ))
+#256  #77 + const key-right  (( VT: 27 91 67 ))
+#256  #79 + const key-end    (( VT: 27 91 70 ))
+#256  #80 + const key-down   (( VT: 27 91 66 ))
+#256  #81 + const key-pgdn   (( VT: 27 91 54 126 ))
+#256  #82 + const key-ins    (( VT: 27 91 50 126 ))
+#256  #83 + const key-del    (( VT: 27 91 51 126 ))
+#256 #119 + const key-chome  (( VT: 27 91 ?? ??? ))
+#256 #117 + const key-cend   (( VT: 27 91 ?? ??? ))
+: vk2 ( --k ) key 126 = if0 27 exit then
     a@ 50 = if key-ins   exit then
     a@ 51 = if key-del   exit then
     a@ 53 = if key-pgup  exit then
     a@ 54 = if key-pgdn  exit then    27 ;
-: vk1 ( (--k) ) key a!
+: vk1 ( --k ) key a!
     a@ 68 = if key-left  exit then
     a@ 67 = if key-right exit then
     a@ 65 = if key-up    exit then
@@ -253,12 +253,12 @@ last-block 1+ block-sz * const disk-sz
     a@ 72 = if key-home  exit then
     a@ 70 = if key-end   exit then
     a@ 49 > a@ 55 < and if vk2 exit then   27 ;
-: vt-key ( (--k) )  key 91 = if vk1 exit then 27 ;
-: vkey ( (--k) ) key dup if0 drop #256 key + exit then ( Windows FK )
+: vt-key ( --k )  key 91 = if vk1 exit then 27 ;
+: vkey ( --k ) key dup if0 drop #256 key + exit then ( Windows FK )
     dup 224 = if drop #256 key + exit then ( Windows )
     dup  27 = if drop vt-key exit then ; ( VT )
 
-: printable? ( (c--f) ) dup 31 > swap 127 < and ;
+: printable? ( c--f ) dup 31 > swap 127 < and ;
 : bs 8 emit ; inline
 : accept ( dst-- ) dup >r >t 0 >a
   begin key a!
@@ -276,8 +276,8 @@ c-red vc, (( 1: define  - red ))
 226   vc, (( 3: interp  - yellow ))
 255   vc, (( 4: comment - white ))
 
-: ed-color@ ( (n--) ) ed-colors + c@ ;
-: ed-color! ( (fg n--) ) ed-colors + c! ;
+: ed-color@ ( n-- ) ed-colors + c@ ;
+: ed-color! ( fg n-- ) ed-colors + c! ;
 
 block-sz var ed-block
 ed-block block-sz + 2 - const last-ch
@@ -471,7 +471,7 @@ marker cr .version ." hello" cr
 : fib-bm timer swap fib . elapsed ;
 : bb 1000 mil bm ;
 
-(( ... compile then execute ... ))
+(( compile then execute ))
 cell var there
 : [[ here there ! compile state ! ;
 : ]] (exit) , there @ (ha) ! interp state ! here execute ;
