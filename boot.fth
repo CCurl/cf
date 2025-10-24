@@ -37,24 +37,27 @@ vhere const -vha-
 : comment 4 ; inline
 ( ***************************************************** )
 
-: a+  a@+ drop ; inline
-: a-  a@- drop ; inline
-: @a  a@  c@ ; inline
-: @a+ a@+ c@ ; inline
-: @a- a@- c@ ; inline
-: !a  a@  c! ; inline
-: !a+ a@+ c! ; inline
-: !a- a@- c! ; inline
-: t+  t@+ drop ; inline
-: t-  t@- drop ; inline
-: @t  t@  c@ ; inline
-: @t+ t@+ c@ ; inline
-: @t- t@- c@ ; inline
-: !t  t@  c! ; inline
-: !t+ t@+ c! ; inline
-: !t- t@- c! ; inline
-: t@+c t@ dup cell + t! ;
+: a+  a@+ drop   ; inline
+: a-  a@- drop   ; inline
+: @a  a@  c@     ; inline
+: @a+ a@+ c@     ; inline
+: @a- a@- c@     ; inline
+: !a  a@  c!     ; inline
+: !a+ a@+ c!     ; inline
+: !a- a@- c!     ; inline
 : adrop  a> drop ; inline
+: b+   b@+ drop  ; inline
+: c!b+ b@+ c!    ; inline
+: bdrop  b> drop ; inline
+: t+  t@+ drop   ; inline
+: t-  t@- drop   ; inline
+: @t  t@  c@     ; inline
+: @t+ t@+ c@     ; inline
+: @t- t@- c@     ; inline
+: !t  t@  c!     ; inline
+: !t+ t@+ c!     ; inline
+: !t- t@- c!     ; inline
+: t@+c t@ dup cell + t! ;
 : tdrop  t> drop ; inline
 : atdrop adrop tdrop ;
 
@@ -82,8 +85,8 @@ vhere const -vha-
 : rb ( reboot )
    -vha- (vha) !  -la- (la) !  -ha- (ha) !
    z" boot.fth" fopen-r -if dup then if >a
-      source-loc dup >t >r
-      50000 for 0 r@+ c! next rdrop
+      source-loc dup >t >b
+      50000 for 0 c!b+ next bdrop
       t@ 50000 a@ fread drop a> fclose
       t> >in !
    then ;
@@ -154,12 +157,12 @@ vhere const -vha-
 : .word de>name ztype ;
 : .de-word .word t@+ 10 > if 0 t! cr exit then tab ;
 
-: words last >a 1 >t 0 >r begin
+: words last >a 1 >t 0 >b begin
     a@ de>len  7 > if t+ then
     a@ de>len 12 > if t+ then
-    a@ .de-word a@ de-sz + a! r@ 1+ r!
+    a@ .de-word a@ de-sz + a! b+
     a@ dict-end < while
-    lpar r> . ." words)" adrop ;
+    lpar b> . ." words)" adrop ;
 : words-n last >t for i 8 mod if0 cr then t@ .word tab t@ de-sz + t! next tdrop ;
 
 : fill ( addr num ch-- ) >t >r >a  r> for t@ !a+ next atdrop ;

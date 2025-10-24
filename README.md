@@ -2,11 +2,12 @@
 
 <img src="/images/editing.jpg" width="400" height="300" />
 
-## What is cf?
+## ColorForth influences on CF
 - NOTE: **cf is a work in progress. Please collaborate with me on it!**
 - cf is inspired by ColorForth, but it is NOT ColorForth.
 - cf has 4 states: DEFINE, INTERPRET, COMPILE, and COMMENT.
-- Like ColorForth, cf uses markers in the source to control its state.
+- cf uses markers in the source to control its state.
+- cf has `a` and `b` registers like ColorForth. It also has a `t` register.
 - cf supports using either a byte in the whitespace or a word to change the state.
 
 ## Whitespace characters and WORDS that change the state:
