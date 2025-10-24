@@ -37,26 +37,26 @@ vhere const -vha-
 : comment 4 ; inline
 ( ***************************************************** )
 
-: a+  a@+ drop   ; inline
-: a-  a@- drop   ; inline
-: @a  a@  c@     ; inline
-: @a+ a@+ c@     ; inline
-: @a- a@- c@     ; inline
-: !a  a@  c!     ; inline
-: !a+ a@+ c!     ; inline
-: !a- a@- c!     ; inline
+: a+   a@+ drop  ; inline
+: a-   a@- drop  ; inline
+: c@a  a@  c@    ; inline
+: c@a+ a@+ c@    ; inline
+: c@a- a@- c@    ; inline
+: c!a  a@  c!    ; inline
+: c!a+ a@+ c!    ; inline
+: c!a- a@- c!    ; inline
 : adrop  a> drop ; inline
 : b+   b@+ drop  ; inline
 : c!b+ b@+ c!    ; inline
 : bdrop  b> drop ; inline
-: t+  t@+ drop   ; inline
-: t-  t@- drop   ; inline
-: @t  t@  c@     ; inline
-: @t+ t@+ c@     ; inline
-: @t- t@- c@     ; inline
-: !t  t@  c!     ; inline
-: !t+ t@+ c!     ; inline
-: !t- t@- c!     ; inline
+: t+   t@+ drop  ; inline
+: t-   t@- drop  ; inline
+: c@t  t@  c@    ; inline
+: c@t+ t@+ c@    ; inline
+: c@t- t@- c@    ; inline
+: c!t  t@  c!    ; inline
+: c!t+ t@+ c!    ; inline
+: c!t- t@- c!    ; inline
 : t@+c t@ dup cell + t! ;
 : tdrop  t> drop ; inline
 : atdrop adrop tdrop ;
@@ -65,11 +65,11 @@ vhere const -vha-
 ( quote subroutine )
 : t4  vhere dup >t  >in @ 1+ >a
    begin
-      @a '"' = if
-         0 !t+  a> 1+ >in !
+      c@a '"' = if
+         0 c!t+  a> 1+ >in !
          comp? if0 tdrop exit then
          t> (vha) ! (lit) , , exit
-      then @a+ !t+
+      then c@a+ c!t+
    again ;
 
 : z"  t4 ; immediate
@@ -88,7 +88,7 @@ vhere const -vha-
       source-loc dup >t >b
       50000 for 0 c!b+ next bdrop
       t@ 50000 a@ fread drop a> fclose
-      t> >in !
+      t> >in
    then ;
 
 : bl 32 ; inline
@@ -165,12 +165,12 @@ vhere const -vha-
     lpar b> . ." words)" adrop ;
 : words-n last >t for i 8 mod if0 cr then t@ .word tab t@ de-sz + t! next tdrop ;
 
-: fill ( addr num ch-- ) >t >r >a  r> for t@ !a+ next atdrop ;
+: fill ( addr num ch-- ) >t >r >a  r> for t@ c!a+ next atdrop ;
 : cmove ( src dst num-- ) >r >t >a
-    r> ?dup if for @a+ !t+ next then
+    r> ?dup if for c@a+ c!t+ next then
     atdrop ;
 : cmove> ( src dst num-- ) >r  r@ + >t  r@ + >a
-    r> ?dup if 1+ for @a- !t- next then
+    r> ?dup if 1+ for c@a- c!t- next then
     atdrop ;
 
 : s-end  ( str--end )     dup s-len + ; inline
@@ -266,10 +266,10 @@ last-block 1+ block-sz * const disk-sz
 : accept ( dst-- ) dup >r >t 0 >a
   begin key a!
      a@   3 =  a@ 27 = or if 0 r> c! atdrop exit then
-     a@  13 = if 0 !t atdrop rdrop exit then
+     a@  13 = if 0 c!t atdrop rdrop exit then
      a@   8 = if 127 a! then ( Windows: 8=backspace )
      a@ 127 = if r@ t@ < if t- bs space bs then then
-     a@ printable? if a@ dup !t+ emit then
+     a@ printable? if a@ dup c!t+ emit then
   again ;
 
 vhere const ed-colors
@@ -311,7 +311,7 @@ cell var (c)  : col! (c) ! ;       : col@ (c) @ ;
    drop 32 emit ;
 
 : .scr 1 dup ->rc white ed-block >a rows for
-      cols for @a+ ed-emit next cr
+      cols for c@a+ ed-emit next cr
    next adrop ;
 : ->cur  col@ 1+ row@ 1+ ->cr ;
 : ->foot 1 rows 1 + ->cr ;
@@ -328,31 +328,31 @@ cell var (c)  : col! (c) ! ;       : col@ (c) @ ;
 : mv-left 0 dup 1-      mv ;   : mv-right 0 1 mv ;
 : mv-up   0 dup 1- swap mv ;   : mv-down  1 0 mv ;
 : ins-bl ( -- ) dirty! row@ row-last >a  rc->pos >t
-   begin a@ 1- c@ !a- a@ t@ > while bl a> c! tdrop ;
+   begin a@ 1- c@ c!a- a@ t@ > while bl a> c! tdrop ;
 : ins-bl2 ( -- ) dirty! rc->pos >r last-ch dup >a 1- >t
-   begin @t- !a- a@ r@ > while bl a> c! tdrop rdrop ;
+   begin c@t- c!a- a@ r@ > while bl a> c! tdrop rdrop ;
 : replace-char! ( ch-- ) rc->pos c! mv-right dirty! ;
 : replace-char  a@ printable? if a@ replace-char! then ;
 : insert-char   a@ printable? if ins-bl a@ replace-char! then ;
 : del-ch  dirty!  row@ row-last >a  rc->pos >t
-   begin t@ 1+ c@ !t+ t@ a@ < while 32 t> c! adrop ;
-: clr-line 0 row@ cr->pos >a cols for 32 !a+ next adrop dirty! ;
+   begin t@ 1+ c@ c!t+ t@ a@ < while 32 t> c! adrop ;
+: clr-line 0 row@ cr->pos >a cols for 32 c!a+ next adrop dirty! ;
 : ed-goto ( blk-- ) blk ! block->ed show! ;
 : ins-line  row@ rows < if 
       last-ch >a  a@ cols - >t  0 row@ cr->pos >r
-      begin @t- !a- t@ r@ < until atdrop rdrop
+      begin c@t- c!a- t@ r@ < until atdrop rdrop
    then clr-line ;
 : del-line  row@ rows < if
       0 row@ cr->pos >t  t@ cols + >a  last-ch >r
-      begin @a+ !t+  a@ r@ > until atdrop rdrop
+      begin c@a+ c!t+  a@ r@ > until atdrop rdrop
    then row@  rows 1- row!  clr-line  row! ;
 : ed-prev-word rc->pos 1- >t begin
       t@ ed-block < if t> pos->rc exit then
-      @t- 33 < if t> 1+ pos->rc exit then
+      c@t- 33 < if t> 1+ pos->rc exit then
  again ;
 : ed-next-word rc->pos 1+ >t begin
       t@ last-ch > if t> pos->rc exit then
-      @t+ 33 < if t> 1- pos->rc exit then
+      c@t+ 33 < if t> 1- pos->rc exit then
  again ;
 : next-pg ed->block  blk @ 1+ last-block min blk ! block->ed show! clean ;
 : prev-pg ed->block  blk @ 1- 0 max blk ! block->ed show! clean ;
@@ -442,7 +442,7 @@ vhere const ed-cases
 : .ascii ( -- ) a@ $10 - $10 for dup c@ a-emit 1+ next drop ;
 : dump ( f n-- ) swap >a 0 >t for
       t@ if0 cr a@ .hex ':' emit space then
-      @a+ .hex
+      c@a+ .hex
       t@+ $0f = if 4 spaces .ascii 0 t! then
    next drop atdrop ;
 
