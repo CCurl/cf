@@ -9,6 +9,7 @@
 #define L0            lstk[lsp]
 #define L1            lstk[lsp-1]
 #define L2            lstk[lsp-2]
+#define isTemp(w)     ((w[0]=='t') && btwi(w[1],'0','9') && (w[2]==0))
 
 byte mem[MEM_SZ];
 cell dsp, dstk[STK_SZ+1],  rsp, rstk[STK_SZ+1];
@@ -72,13 +73,13 @@ DE_T tmpWords[10];
 	X(EMIT,    "emit",      0, emit((char)pop()); ) \
 	X(KEY,     "key",       0, push(key()); ) \
 	X(QKEY,    "?key",      0, push(qKey()); ) \
-	X(OUTER,   "outer",     0, t=pop(); n=(cell)toIn; outer((char*)t); toIn=(char*)n; ) \
+	X(OUTER,   "outer",     0, t=pop(); n=(cell)toIn; cfOuter((char*)t); toIn=(char*)n; ) \
 	X(ADDWORD, "addword",   0, addWord(0); ) \
 	X(FIND,    "find",      0, { DE_T *dp=findWord(0); push(dp?dp->xt:0); push((cell)dp); } ) \
 	X(CLK,     "timer",     0, push(timer()); ) \
 	X(MS,      "ms",        0, ms(pop()); ) \
 	X(ZTYPE,   "ztype",     0, zType((const char *)pop()); ) \
-	X(FOPEN,   "fopen",     0, t=pop(); TOS=fOpen((char*)TOS, t); ) \
+	X(FOPEN,   "fopen",     0, t=pop(); TOS=fOpen(TOS, t); ) \
 	X(FCLOSE,  "fclose",    0, t=pop(); fClose(t); ) \
 	X(FREAD,   "fread",     0, t=pop(); n=pop(); TOS=fRead(TOS, n, t); ) \
 	X(FWRITE,  "fwrite",    0, t=pop(); n=pop(); TOS=fWrite(TOS, n, t); ) \
@@ -124,10 +125,6 @@ int nextWord() {
 	return len;
 }
 
-int isTemp(const char *w) {
-	return ((w[0] == 't') && btwi(w[1], '0', '9') && (w[2] == 0)) ? 1 : 0;
-}
-
 DE_T *addWord(char *w) {
 	if (!w) { nextWord(); w = wd; }
 	if (isTemp(w)) {
@@ -142,7 +139,6 @@ DE_T *addWord(char *w) {
 	dp->flags = 0;
 	dp->len = ln;
 	strCpy(dp->name, w);
-	// printf("\n-add:%lx,[%s],%d (%ld)-", last, dp->name, dp->len, dp->xt);
 	return dp;
 }
 
@@ -162,10 +158,9 @@ DE_T *findWord(const char *w) {
 #undef X
 #define X(op, name, imm, code) NCASE op: code
 
-void inner(cell pc) {
+void cfInner(cell pc) {
 	cell t, n, ir;
 next:
-	// printf("\n-pc:%d,ir:%d-",pc,ir);
 	ir = code[pc++];
 	switch(ir) {
 		case  STOP:   return;
@@ -192,12 +187,11 @@ int isNumber(const char *w) {
 	if (w[0]=='%') { b=2; w++; }
 	if (w[0]=='-') { isNeg=1; w++; }
 	if (w[0]==0) { return 0; }
-	char c = lower(*(w++));
-	while (c) {
+	while (*w) {
+		int c = lower(*(w++));
 		int x = btwi(c,'0','9') ? c-'0' : 99;
 		if (btwi(c,'a','f')) { x = (c-'a'+10); }
-		if (x < b) { n = (n*b)+x; } else { return 0; }
-		c = lower(*(w++));
+		if (btwi(x, 0, b-1)) { n = (n*b)+x; } else { return 0; }
 	}
 	push(isNeg ? -n : n);
 	return 1;
@@ -212,7 +206,7 @@ int compileNumber(cell n) {
 void executeWord(DE_T *dp) {
 	code[17] = dp->xt;
 	code[18] = STOP;
-	inner(17);
+	cfInner(17);
 }
 
 void compileWord(DE_T *dp) {
@@ -236,12 +230,11 @@ int isStateChange() {
 	return 0;
 }
 
-void outer(const char *src) {
+void cfOuter(const char *src) {
 	char *svIn = toIn;
 	toIn = (char*)src;
 	while (nextWord()) {
 		if (isStateChange()) { continue; }
-		// printf("-wd:[%s],(%lld)-\n",wd,(int64_t)state);
 		if (state == COMMENT) { continue; }
 		if (state == DEFINE)  { if (addWord(wd)) { state = COMPILE; continue; } }
 		if (isNumber(wd)) {
@@ -263,8 +256,15 @@ void outer(const char *src) {
 	toIn = svIn;
 }
 
-void baseSys() {
-	here = BYE + 1;
+void cfInit() {
+	code  = (ucell*)&mem[0];
+	base  = 10;
+	state = INTERP;
+	last   = (cell)&mem[MEM_SZ-1];
+	while (last & (CELL_SZ-1)) { --last; }
+	dictEnd = last;
+	vhere = dsp = rsp = lsp = tsp = asp = state = 0;
+	here = BYE+1;
     struct { char *nm; cell val; } nvp[] = {
 		{ "version", VERSION },  { "(jmp)",   JMP },    { "(jmpz)",   JMPZ }, 
 		{ "(jmpnz)", JMPNZ },    { "(njmpz)", NJMPZ },  { "(njmpnz)", NJMPNZ },
@@ -298,15 +298,4 @@ void baseSys() {
 		dp->xt = prims[i].op;
 		dp->flags = prims[i].fl;
 	}
-}
-
-void Init() {
-	code  = (ucell*)&mem[0];
-	base  = 10;
-	state = INTERP;
-	last   = (cell)&mem[MEM_SZ-1];
-	while (last & (CELL_SZ-1)) { --last; }
-	dictEnd = last;
-	vhere = dsp = rsp = lsp = tsp = asp = state = 0;
-	baseSys();
 }

@@ -36,26 +36,32 @@ hello
 ## Tachyon's influence on cf
 In cf, a program is a sequence of OPCODEs.<br/>
 An OPCODE is a CELL-sized unsigned number (32 or 64 bits).<br/>
-Primitives are assigned numbers sequentially from 0 to BYE.<br/>
-If an OPCODE is less than or equal to `BYE`, it is a primitive.<br/>
+Primitives are assigned numbers sequentially from 0 to `(bye)`.<br/>
+If an OPCODE is less than or equal to `(bye)`, it is a primitive.<br/>
 If the top 3 bits are set, it is an unsigned literal with the top 3 bits masked off.<br/>
 Else, it is the CODE slot of a word to execute.<br/>
 CODE slots 0-24 are used by cf.<br/>
-CODE slots 25-BYE are free CELL-sized slots that can be used for any purpose.<br/>
-HERE starts at `BYE+1`.<br/>
+CODE slots 25-`(bye)` are free CELL-sized slots that can be used for any purpose.<br/>
+HERE starts at `(bye)+1`.<br/>
 
 ## Architecture
 CF is really just a Forth VM, upon which any Forth system can be built.<br/>
 To that end, cf provides a set of primitives and the inner/outer interpreters.<br/>
 See `cf.c` for the list of primitives.
-The rest of the system is defined by the source Forth code file.<br/>
+The rest of the system is defined by the source code file.<br/>
 CF takes a source file as its only argument.<br/>
 If cf is executed without arguments, the default source file is 'boot.fth'.<br/>
 CF provides a single chunk of memory (see cf.h, MEM_SZ) for data and code.<br/>
 The CODE area starts at the beginning of the memory.<br/>
 
+## Embedding cf into a C program
+CF can easily be embedded into a C program.<br/>
+The cf VM is implemented in `cf.c`.<br/>
+CF's configuration and API are defined in 'cf.h'.<br/>
+That is what `system.c` does, it creates a C program around the cf VM.<br/>
+
 ## Building cf
-Building cf is simple and fast since there are only 2 small source files.
+Building cf is simple and fast since there are only 3 small source files.<br/>
 
 Windows
 - There is a `cf.sln` file for Visual Studio. 32-bit or 64-bit builds are supported.
