@@ -58,7 +58,7 @@ The CODE area starts at the beginning of the memory.<br/>
 ## Embedding cf into a C program
 CF can easily be embedded into a C program.<br/>
 The cf VM is implemented in `cf.c`.<br/>
-CF's configuration and API are defined in 'cf.h'.<br/>
+The configuration and API for cf are located in `cf.h`.<br/>
 That is what `system.c` does, it creates a C program around the cf VM.<br/>
 
 ## Building cf

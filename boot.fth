@@ -75,7 +75,7 @@ vhere const -vha-
 : z"  t4 ; immediate
 : ." t4 comp? if (ztype) , exit then ztype ; immediate
 
-(( Files ))
+( Files )
 : fopen-r z" rb"  fopen ;
 : fopen-w z" wb"  fopen ;
 : ->file ( fh-- ) (output-fp) ! ;
@@ -200,15 +200,14 @@ vhere const -vha-
 : white 255 fg ;
 : colors 31 >a 7 for a@ fg ." color #" a@+ . cr next white adrop ;
 
-(( Blocks ))
-
-cell var blk
-2048 const block-sz
-memory 2000000 + const disk
+( Blocks )
+: block-sz 2048 ; inline
 : rows 23 ; inline
 : cols 89 ; inline
 : last-block  499 ; inline
+cell var blk
 last-block 1+ block-sz * const disk-sz
+memory 2000000 + const disk
 : ->block ( n--a ) last-block min 0 max block-sz * disk + ;
 : disk-fname z" disk.cf" ;
 : disk-read disk-fname fopen-r ?dup
@@ -363,7 +362,7 @@ cell var (c)  : col! (c) ! ;       : col@ (c) @ ;
    pad outer show!
    ->cmd clr-eol 0 pad ! ;
 
-(( switch: case-table process ))
+( switch: case-table process )
 : case   ( ch-- )  v, find drop v, ;   ( case-table entry - single word )
 : case!  ( ch-- )  v, here v, compile state ! ;   ( case-table entry - code )
 : switch ( tbl-- ) >t begin
@@ -437,16 +436,16 @@ vhere const ed-cases
 : ed  ed-init ed-loop ed->block ->cmd interp state ! ;
 : edit  blk ! ed ;
 
-(( This dump is from Peter Jakacki ))
+( This dump is from Peter Jakacki )
 : a-emit ( b-- ) dup $20 < over $7e > or if drop '.' then emit ;
 : .ascii ( -- ) a@ $10 - $10 for dup c@ a-emit 1+ next drop ;
 : dump ( f n-- ) swap >a 0 >t for
       t@ if0 cr a@ .hex ':' emit space then
       c@a+ .hex
       t@+ $0f = if 4 spaces .ascii 0 t! then
-   next drop atdrop ;
-
-(( fgl: forget the last word ))
+   next atdrop ;
+   
+( fgl: forget the last word )
 : fgl last dup de-sz + (la) ! de>xt (ha) ! ;  
 
 cell var t0
@@ -459,14 +458,14 @@ cell var t2
 : .version  green ." cf v" version <# # # #. # # #. #s #> ztype white cr ;
 marker cr .version ." hello" cr
 
-(( fixed point ))
+( fixed point )
 : f. 100 /mod (.) '.' emit abs .2 ;
 : f* * 100 / ;
 : f/ swap 100 * swap / ;
 : f+ + ;
 : f- - ;
 
-(( some benchmarks ))
+( some benchmarks )
 : mil 1000 dup * * ;
 : elapsed timer swap - . ." usec" ;
 : bm timer swap for next elapsed ;
@@ -480,6 +479,6 @@ cell var there
 : ]] (exit) , there @ (ha) ! interp state ! here execute ;
 immediate
 
-(( Move the source to the disk area ))
+( Move the source to the disk area )
 : vi z" vi boot.fth" system ;
 source-loc disk 25000 cmove
