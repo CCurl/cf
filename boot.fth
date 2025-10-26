@@ -85,10 +85,10 @@ vhere const -vha-
 : rb ( reboot )
    -vha- (vha) !  -la- (la) !  -ha- (ha) !
    z" boot.fth" fopen-r -if dup then if >a
-      source-loc dup >t >b
+      source-loc >b
       50000 for 0 c!b+ next bdrop
-      t@ 50000 a@ fread drop a> fclose
-      t> >in
+      source-loc 50000 a@ fread drop a> fclose
+      source-loc >in !
    then ;
 
 : bl 32 ; inline
@@ -97,20 +97,24 @@ vhere const -vha-
 : spaces for bl emit next ; inline
 : negate com 1+ ; inline
 : abs dup 0 < if negate then ;
+: ?dup -if dup then ;
 
 : #neg 0 >a dup 0 < if negate a+ then ;
 : <# #neg last 32 - >t 0 t@ c! ;
 : hold t@ 1- dup t! c! ;
 : #n '0' + dup '9' > if 7 + then hold ;
+: #. '.' hold ;
 : # base @ /mod swap #n ;
 : #s begin # -while drop ;
 : #> a@ if '-' hold then t> adrop ;
 
 : (.)  ( n-- ) <# #s #> ztype ;
 : .  ( n-- ) (.) : space bl emit ;
-: .2 ( n-- ) <# # #s #> ztype space ;
-: .3 ( n-- ) <# # # #s #> ztype space ;
-: .4 ( n-- ) <# # # # #s #> ztype space ;
+: .nw >r <# r> ?dup if 1- for # next then #s #> ztype ;
+: .nwb base @ >b base ! .nw b> base ! ;
+: .2 ( n-- ) 2 .nw ;
+: .3 ( n-- ) 3 .nw ;
+: .4 ( n-- ) 4 .nw ;
 : hex     $10 base ! ;
 : decimal #10 base ! ;
 : binary  %10 base ! ;
@@ -131,7 +135,6 @@ vhere const -vha-
 : 2dup over over ; inline
 : 2drop drop drop ; inline
 : mod /mod drop ; inline
-: ?dup -if dup then ;
 : ? @ . ;
 : nip  swap drop ; inline
 : tuck swap over ; inline
@@ -149,7 +152,7 @@ vhere const -vha-
       for i 1+ cells dstk + @ . next
    then rpar ;
 
-: dict-end memory mem-sz + 1- ;
+: dict-end memory mem-sz + 1- 7 com and ;
 : de>xt    @ ; inline
 : de>flags cell + c@ ; inline
 : de>len   cell + 1+ c@ ; inline
@@ -201,11 +204,11 @@ vhere const -vha-
 : colors 31 >a 7 for a@ fg ." color #" a@+ . cr next white adrop ;
 
 ( Blocks )
-: block-sz 2048 ; inline
-: rows 23 ; inline
-: cols 89 ; inline
+: rows 24 ; inline
+: cols 85 ; inline
 : last-block  499 ; inline
 cell var blk
+rows cols * const block-sz
 last-block 1+ block-sz * const disk-sz
 memory 2000000 + const disk
 : ->block ( n--a ) last-block min 0 max block-sz * disk + ;
@@ -282,7 +285,7 @@ c-red vc, (( 1: define  - red ))
 : ed-color! ( fg n-- ) ed-colors + c! ;
 
 block-sz var ed-block
-ed-block block-sz + 2 - const last-ch
+ed-block block-sz + 1- const last-ch
 cell var (r)  : row! (r) ! ;       : row@ (r) @ ;
 cell var (c)  : col! (c) ! ;       : col@ (c) @ ;
 1 var (mode)  : mode! (mode) c! ;  : mode@ (mode) c@ ;
@@ -441,8 +444,8 @@ vhere const ed-cases
 : .ascii ( -- ) a@ $10 - $10 for dup c@ a-emit 1+ next drop ;
 : dump ( f n-- ) swap >a 0 >t for
       t@ if0 cr a@ .hex ':' emit space then
-      c@a+ .hex
-      t@+ $0f = if 4 spaces .ascii 0 t! then
+      c@a+ .hex space
+      t@+ $0f = if 3 spaces .ascii 0 t! then
    next atdrop ;
    
 ( fgl: forget the last word )
@@ -454,14 +457,19 @@ cell var t2
 : marker here t0 ! last t1 ! vhere t2 ! ;
 : forget t0 @ (ha) ! t1 @ (la) ! t2 @ (vha) ! ;
 
-: #. '.' hold ;
-: .version  green ." cf v" version <# # # #. # # #. #s #> ztype white cr ;
-marker cr .version ." hello" cr
+: .version ." cf v" version <# # # #. # # #. #s #> ztype ;
 
-( fixed point )
-: f. 100 /mod (.) '.' emit abs .2 ;
-: f* * 100 / ;
-: f/ swap 100 * swap / ;
+(( fixed point ))
+cell var t0
+: fbase! t0 ! ;
+: fbase t0 @ ;
+cell var t0
+: fprec t0 @ ;
+: fprec! t0 ! 1 fprec for 10 * next fbase! ;
+2 fprec!
+: f. fbase /mod (.) '.' emit abs fprec .nw ;
+: f* * fbase / ;
+: f/ >a fbase * a> / ;
 : f+ + ;
 : f- - ;
 
@@ -481,4 +489,13 @@ immediate
 
 ( Move the source to the disk area )
 : vi z" vi boot.fth" system ;
+: lg z" lazygit" system ;
+: ll z" ls -l" system ;
 source-loc disk 25000 cmove
+
+marker
+green .version white ."  - Chris Curl " cr
+yellow ."  Memory: " white mem-sz . ." bytes" cr
+yellow ."    Disk: " white disk-sz . ." bytes" cr
+yellow ."    Code: " white here . ." opcodes used" cr
+yellow ."    Dict: " white dict-end last - de-sz / . ." words defined" cr
