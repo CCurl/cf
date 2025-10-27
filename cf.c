@@ -53,12 +53,6 @@ DE_T tmpWords[10];
 	X(RAT,     "r@",      0, push(rstk[rsp]); ) \
 	X(RFROM,   "r>",      0, push(rpop()); ) \
 	X(RDROP,   "rdrop",   0, rpop(); ) \
-	X(TOT,     ">t",      0, if (tsp < STK_SZ) { tstk[++tsp] = pop(); } ) \
-	X(TSTO,    "t!",      0, tstk[tsp] = pop(); ) \
-	X(TAT,     "t@",      0, push(tstk[tsp]); ) \
-	X(TATI,    "t@+",     0, push(tstk[tsp]++); ) \
-	X(TATD,    "t@-",     0, push(tstk[tsp]--); ) \
-	X(TFROM,   "t>",      0, push(0<tsp ? tstk[tsp--]: 0); ) \
 	X(ATO,     ">a",      0, if (asp < STK_SZ) { astk[++asp] = pop(); } ) \
 	X(ASET,    "a!",      0, astk[asp] = pop(); ) \
 	X(AGET,    "a@",      0, push(astk[asp]); ) \
@@ -71,6 +65,12 @@ DE_T tmpWords[10];
 	X(BGETI,   "b@+",     0, push(bstk[bsp]++); ) \
 	X(BGETD,   "b@-",     0, push(bstk[bsp]--); ) \
 	X(BFROM,   "b>",      0, push(0<bsp ? bstk[bsp--]: 0); ) \
+	X(TTO,     ">t",      0, if (tsp < STK_SZ) { tstk[++tsp] = pop(); } ) \
+	X(TSET,    "t!",      0, tstk[tsp] = pop(); ) \
+	X(TGET,    "t@",      0, push(tstk[tsp]); ) \
+	X(TGETI,   "t@+",     0, push(tstk[tsp]++); ) \
+	X(TGETD,   "t@-",     0, push(tstk[tsp]--); ) \
+	X(TFROM,   "t>",      0, push(0<tsp ? tstk[tsp--]: 0); ) \
 	X(EMIT,    "emit",    0, emit((char)pop()); ) \
 	X(KEY,     "key",     0, push(key()); ) \
 	X(QKEY,    "?key",    0, push(qKey()); ) \
@@ -119,15 +119,15 @@ static void strCpy(char *d, const char *s) {
 	*(d) = 0;
 }
 
-static void cmove(cell src, cell dst, cell cnt) {
-	if (src == dst) { return; }
+static void cmove(cell src, cell dst, cell sz) {
+	if ((src == dst) || (sz < 1)) { return; }
 	byte *s = (byte*)src, *d = (byte*)dst;
 	if (s < d) {
-		d += cnt - 1;
-		s += cnt - 1;
-		while (0 < cnt--) { *(d--) = *(s--); }
+		d += sz-1;
+		s += sz-1;
+		while (sz--) { *(d--) = *(s--); }
 	} else {
-		while (0 < cnt--) { *(d++) = *(s++); }
+		while (sz--) { *(d++) = *(s++); }
 	}
 }
 

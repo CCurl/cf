@@ -170,12 +170,6 @@ vhere const -vha-
 : words-n last >t for i 8 mod if0 cr then t@ .word tab t@ de-sz + t! next tdrop ;
 
 : fill ( addr num ch-- ) >t >r >a  r> for t@ c!a+ next atdrop ;
-: cmove ( src dst num-- ) >r >t >a
-    r> ?dup if for c@a+ c!t+ next then
-    atdrop ;
-: cmove> ( src dst num-- ) >r  r@ + >t  r@ + >a
-    r> ?dup if 1+ for c@a- c!t- next then
-    atdrop ;
 
 : s-end  ( str--end )     dup s-len + ; inline
 : s-cat  ( dst src--dst ) over s-end swap s-cpy drop ;
@@ -206,22 +200,24 @@ vhere const -vha-
 : colors 31 >a 7 for a@ fg ." color #" a@+ . cr next white adrop ;
 
 ( Blocks )
-: rows 24 ; inline
-: cols 85 ; inline
+: rows 25 ; inline
+: cols 80 ; inline
+: blk-max 499 ; inline
 rows cols * const blk-sz
-blk-sz var blk-data
+blk-sz blk-max * var blks
 cell   var t0
 : blk@ ( --n ) t0 @ ;
 : blk! ( n-- ) t0 ! ;
+: blk-data ( --a ) blk@ blk-sz * blks + ;
 : blk-clr ( -- ) blk-data blk-sz 0 fill ;
 16 var t1
-: blk-fn ( n--a ) <# # # #s #> t1 z" block-" s-cpy s-scat z" .fth" s-cat ;
-: blk-rd ( -- ) blk-clr  blk@ blk-fn fopen-r >a
-   a@ if blk-data blk-sz a@ fread drop a@ fclose then adrop ;
-: blk-wr ( -- ) blk@ blk-fn fopen-w >a
-   a@ if blk-data blk-sz a@ fwrite drop a@ fclose then adrop ;
+: blk-fn ( --a ) t1 z" block-" s-cpy blk@ <# # # #s #> s-cat z" .fth" s-cat ;
+: blk-rd ( -- ) blk-clr  blk-fn fopen-r ?dup
+   if >a blk-data blk-sz a@ fread drop a> fclose then ;
+: blk-wr ( -- ) blk-fn fopen-w ?dup
+   if >a blk-data blk-sz a@ fwrite drop a> fclose then ;
 
-(( Editor ))
+(( Keys ))
 #256  #59 + const key-f1
 #256  #60 + const key-f2
 #256  #61 + const key-f3
@@ -256,6 +252,7 @@ cell   var t0
     dup 224 = if drop #256 key + exit then ( Windows )
     dup  27 = if drop vt-key exit then ; ( VT )
 
+( Accept )
 : printable? ( c--f ) dup 31 > swap 127 < and ;
 : bs 8 emit ; inline
 : accept ( dst-- ) dup >r >t 0 >a
@@ -267,6 +264,7 @@ cell   var t0
      a@ printable? if a@ dup c!t+ emit then
   again ;
 
+(( Editor ))
 vhere const ed-colors
 219   vc, (( 0: default - purple ))
 c-red vc, (( 1: define  - red ))
@@ -298,7 +296,7 @@ cell var (c)  : col! (c) ! ;       : col@ (c) @ ;
    rows for i row! t4 next adrop ;
 : ed-load ( -- ) blk-rd blk->ed clean show! ;
 : t4 rows for 0 i cr->pos ztype 10 emit next ;
-: ed-save ( -- ) blk@ blk-fn fopen-w ?dup
+: ed-save ( -- ) blk-fn fopen-w ?dup
    if >a a@ ->file t4 ->stdout a> fclose then ;
 : row-last ( r--a ) cols 1- swap cr->pos ;
 : pos->rc ( pos-- ) norm-pos ed-blk - cols /mod row! col! ;
@@ -329,11 +327,10 @@ cell var (c)  : col! (c) ! ;       : col@ (c) @ ;
 : show show? if cur-off .scr cur-on shown then .foot ->cur  ;
 : mv-left 0 dup 1-      mv ;   : mv-right 0 1 mv ;
 : mv-up   0 dup 1- swap mv ;   : mv-down  1 0 mv ;
-: ins-bl ( -- ) dirty! row@ row-last >a  rc->pos >t
-   begin a@ 1- c@ c!a- a@ t@ > while bl a> c! tdrop ;
-: ins-bl2 ( -- ) dirty! rc->pos >r last-ch dup >a 1- >t
-   begin c@t- c!a- a@ r@ > while bl a> c! tdrop rdrop ;
-: replace-char! ( ch-- ) rc->pos c! mv-right dirty! ;
+: ed-ch!  rc->pos c! dirty! ;
+: ins-bl  rc->pos dup 1+ cols col@ - 1- cmove 32 ed-ch! ;
+: ins-bl2 rc->pos dup 1+ dup last-ch swap - 1+ cmove 32 ed-ch! ;
+: replace-char! ( ch-- ) ed-ch! mv-right ;
 : replace-char  a@ printable? if a@ replace-char! then ;
 : insert-char   a@ printable? if ins-bl a@ replace-char! then ;
 : del-ch  dirty!  row@ row-last >a  rc->pos >t

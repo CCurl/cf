@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#define VERSION         20251024
+#define VERSION         20251027
 
 #define MEM_SZ          16*(1024*1024)
 #define STK_SZ          63

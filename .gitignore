@@ -11,3 +11,4 @@ cf64
 test.txt
 /disk.bin
 /disk.cf
+/block-*.fth
