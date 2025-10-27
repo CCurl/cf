@@ -221,6 +221,7 @@ cell   var t0
 : blk-wr ( -- ) blk@ blk-fn fopen-w >a
    a@ if blk-data blk-sz a@ fwrite drop a@ fclose then adrop ;
 
+(( Editor ))
 #256  #59 + const key-f1
 #256  #60 + const key-f2
 #256  #61 + const key-f3

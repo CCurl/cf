@@ -89,6 +89,7 @@ DE_T tmpWords[10];
 	X(SCOPY,   "s-cpy",   0, t=pop(); strCpy((char*)TOS, (char*)t); ) \
 	X(SEQI,    "s-eqi",   0, t=pop(); n=pop(); push(strEqI((char*)n, (char*)t)); ) \
 	X(SLEN,    "s-len",   0, TOS=strLen((char*)TOS); ) \
+	X(CMOVE,   "cmove",   0, t=pop(); n=pop(); cmove(pop(), n, t); ) \
 	X(BYE,     "bye",     0, ttyMode(0); exit(0); )
 
 #define X(op, name, imm, cod) op,
@@ -116,6 +117,18 @@ static int strEqI(const char *s, const char *d) {
 static void strCpy(char *d, const char *s) {
 	while (*s) { *(d++) = *(s++); }
 	*(d) = 0;
+}
+
+static void cmove(cell src, cell dst, cell cnt) {
+	if (src == dst) { return; }
+	byte *s = (byte*)src, *d = (byte*)dst;
+	if (s < d) {
+		d += cnt - 1;
+		s += cnt - 1;
+		while (0 < cnt--) { *(d--) = *(s--); }
+	} else {
+		while (0 < cnt--) { *(d++) = *(s++); }
+	}
 }
 
 static int nextWord() {
