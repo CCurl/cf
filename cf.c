@@ -271,7 +271,7 @@ void cfOuter(const char *src) {
 }
 
 void cfInit() {
-	code  = (ucell*)&mem[0];
+	code  = (cell*)&mem[0];
 	base  = 10;
 	state = INTERP;
 	last   = (cell)&mem[MEM_SZ-1];
