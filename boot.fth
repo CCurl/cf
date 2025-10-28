@@ -301,11 +301,11 @@ cell var (c)  : col! (c) ! ;       : col@ (c) @ ;
 : blk->ed ( -- ) ed-clr blk-data >a rows for i row! t4 next adrop ;
 : ed-load ( -- ) blk-rd blk->ed clean show! ed-blk pos->rc ;
 : t4 ( -- ) rows for 0 i cr->pos ztype 10 emit next ;
-: ed-save blk-fn fopen-w ?dup if >a a@ ->file t4 ->stdout a> fclose then ;
+: ed-save blk-fn fopen-w ?dup if >a a@ ->file t4 ->stdout a> fclose then clean ;
 : ->norm  0 mode! ;    : norm?  mode@  0 = ;
 : ->repl  1 mode! ;    : repl?  mode@  1 = ;
 : ->ins   2 mode! ;    : ins?   mode@  2 = ;
-: quit!  99 mode! ;    : quit?  mode@ 99 = ;  
+: q!     99 mode! ;    : quit?  mode@ 99 = ;  
 : ed-emit ( ch-- )
    dup 31 > if emit exit then ( regular char )
    dup  5 < over 0 > and if dup ed-color@ fg then ( change color )
@@ -327,19 +327,27 @@ cell var (c)  : col! (c) ! ;       : col@ (c) @ ;
 : show show? if cur-off .scr cur-on shown then .foot ->cur  ;
 : mv-left 0 dup 1-      mv ;   : mv-right 0 1 mv ;
 : mv-up   0 dup 1- swap mv ;   : mv-down  1 0 mv ;
+: mv-end  cols 1- col! begin
+      col@ 0= ed-ch@ 32 > or if exit then
+      col@ 1- col!
+   again ;
 : ins-bl  rc->pos dup 1+ cols col@ - 1- cmove 32 ed-ch! ;
 : ins-bl2 rc->pos dup 1+ dup last-ch swap - 1+ cmove 32 ed-ch! ;
 : replace-char! ( ch-- ) ed-ch! mv-right ;
 : replace-char  a@ printable? if a@ replace-char! then ;
 : insert-char   a@ printable? if ins-bl a@ replace-char! then ;
 : del-ch rc->pos dup 1+ swap cols col@ - cmove 0 row@ row-last c! dirty! ;
-: clr-line rc->pos col@ - cols 0 fill dirty! ;
+: clr-line  rc->pos col@ - cols 0 fill dirty! ;
+: clr-toend rc->pos cols col@ - 0 fill dirty! ;
 : ed-goto ( blk-- ) blk! ed-load show! ;
-: ins-line  row@ rows < if 
+: insert-line  row@ rows < if 
       last-ch >a  a@ cols - >t  0 row@ cr->pos >r
       begin c@t- c!a- t@ r@ < until atdrop rdrop
    then clr-line ;
-: del-line  row@ rows < if
+cols var yanked
+: yank-line  0 row@ cr->pos yanked cols cmove ;
+: put-line   yanked 0 row@ cr->pos cols cmove ;
+: del-line yank-line row@ rows < if
       0 row@ cr->pos >t  t@ cols + >a  last-ch >r
       begin c@a+ c!t+  a@ r@ > until atdrop rdrop
    then row@  rows 1- row!  clr-line  row! ;
@@ -354,11 +362,11 @@ cell var (c)  : col! (c) ! ;       : col@ (c) @ ;
 : next-pg ed-save  blk@ 1+ ed-goto ;
 : prev-pg ed-save  blk@ 1- 0 max ed-goto ;
 : rl blk@ ed-goto ;
-: q quit! ;
-: wq ed-save quit! ;
+: q dirty? if0 q! exit then ." use 'wq' or 'q!'" ;
+: w  ed-save ;
+: wq ed-save q! ;
 : do-cmd ->cmd ':' emit clr-eol pad accept
-   pad outer show!
-   ->cmd clr-eol 0 pad ! ;
+   space pad outer show! ;
 
 ( switch: case-table process )
 : case   ( ch-- )  v, find drop v, ;   ( case-table entry - single word )
@@ -397,27 +405,34 @@ vhere const ed-cases
 'h'  case   mv-left
 'l'  case   mv-right
 32   case   mv-right
-'q'  case!  0 8 mv ;
-'Q'  case!  0 8 negate mv ;
 '1'  case!  define  replace-char! ;
 '2'  case!  compile replace-char! ;
 '3'  case!  interp  replace-char! ;
 '4'  case!  comment replace-char! ;
 '_'  case!  0 col! ;
+'$'  case   mv-end
 ':'  case!  do-cmd ;
+'a'  case!  mv-right ->ins ;
+'A'  case!  mv-end mv-right ->ins ;
 'b'  case   ins-bl
 'B'  case   ins-bl2
+'C'  case!  clr-toend ->ins ;
+'D'  case   del-line
+'i'  case   ->ins
+'I'  case!  0 col! ->ins ;
 'x'  case   del-ch
 'X'  case!  mv-left del-ch ;
-'C'  case   clr-line
+'p'  case!  mv-down insert-line put-line ;
+'P'  case!  insert-line put-line ;
+'q'  case!  0 8 mv ;
+'Q'  case!  0 8 negate mv ;
 'r'  case!  red '?' emit key a! replace-char ;
 'R'  case   ->repl
-'i'  case   ->ins
-'O'  case   ins-line 
-'o'  case!  mv-down ins-line ;
-'D'  case   del-line
+'O'  case   insert-line 
+'o'  case!  mv-down insert-line ;
 'w'  case   ed-next-word
 'W'  case   ed-prev-word
+'Y'  case   yank-line
 'g'  case!  rows 0  row! 0 col! ;
 'G'  case!  rows 1- row! 0 col! ;
 '+'  case   next-pg
