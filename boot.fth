@@ -8,7 +8,9 @@
 : , ( n-- ) here ->code ! 1 (ha) +! ;
 : allot ( n-- ) (vha) +! ;
 : const ( n-- ) addword (lit) , , (exit) , ;
-: var ( n-- )  vhere const allot ;
+: var   ( n-- ) vhere const allot ;
+: val   ( -- )  addword (lit) , 111 , (exit) , ;
+: (val) ( -- )  here 2 - ->code const ;
 
 const -la-
 const -ha-
@@ -108,10 +110,10 @@ vhere const -vha-
 : #s   ( n-- )   begin # -while drop ;
 : #>   ( --a )   a> if '-' hold then t> ;
 
-: (.)  ( n-- ) <# #s #> ztype ;
-: .  ( n-- ) (.) : space bl emit ;
-: .nw >r <# r> ?dup if 1- for # next then #s #> ztype ;
-: .nwb base @ >b base ! .nw b> base ! ;
+: (.) ( n-- ) <# #s #> ztype ;
+: .   ( n-- ) (.) : space bl emit ;
+: .nw  ( n w-- ) >r <# r> ?dup if 1- for # next then #s #> ztype ;
+: .nwb ( n w b-- ) base @ >b base ! .nw b> base ! ;
 : .2 ( n-- ) 2 .nw ;
 : .3 ( n-- ) 3 .nw ;
 : .4 ( n-- ) 4 .nw ;
@@ -176,7 +178,13 @@ vhere const -vha-
 : s-catc ( dst ch--dst )  over s-end tuck c! 0 swap 1+ c! ;
 : s-catn ( dst num--dst ) <# #s #> over s-end swap s-cpy drop ;
 : s-scat ( src dst--dst ) swap s-cat ;
-: pad ( --a ) vhere 100 + ;
+: s-rtrim ( str--str ) dup >b b@ s-end 1- >a begin
+      a@ b@ < if 0 b> c! adrop exit then
+      c@a- 32 > if 0 a> 2+ c! bdrop exit then
+   again ;
+: pad  ( --a ) vhere $100 + ;
+: pad2 ( --a ) vhere $200 + ;
+: pad3 ( --a ) vhere $300 + ;
 
 : csi          27 emit '[' emit ;
 : ->cr      ( c r-- ) csi (.) ';' emit (.) 'H' emit ;
@@ -277,14 +285,13 @@ c-red vc, (( 1: define  - red ))
 
 blk-sz var ed-blk
 ed-blk blk-sz + 1- const last-ch
-cell var (r)  : row! (r) ! ;       : row@ (r) @ ;
-cell var (c)  : col! (c) ! ;       : col@ (c) @ ;
-1 var t1      : mode! t1 c! ;  : mode@ t1 c@ ;
-1 var t1      : show? t1 c@ ;
-1 var (dirty) : dirty? (dirty) c@ ;
+cell var (r)  : row! (r) ! ;    : row@ (r) @ ;
+cell var (c)  : col! (c) ! ;    : col@ (c) @ ;
+1 var t1      : mode! t1 c! ;   : mode@ t1 c@ ;
+1 var t1      : show? t1 c@ ;   : show! 1 t1 c! ;
+1 var (dirty) : dirty! 1 (dirty) c! show! ;
+: dirty? ( --f ) (dirty) c@ ;
 : shown 0 t1 c! ;
-: show! 1 t1 c! ;
-: dirty! 1 (dirty) c! show! ;
 : clean 0 (dirty) c! ;
 : norm-pos ( pos--new ) ed-blk max last-ch min ;
 : cr->pos ( col row--pos ) cols * + ed-blk + ;
@@ -294,13 +301,14 @@ cell var (c)  : col! (c) ! ;       : col@ (c) @ ;
 : row-last ( r--a ) cols 1- swap cr->pos ;
 : ed-ch! ( c-- ) rc->pos c! dirty! ;
 : ed-ch@ ( --c ) rc->pos c@ ;
-: ed-clr ( -- ) ed-blk blk-sz 0 fill ;
+: ed-clr ( -- ) ed-blk blk-sz 32 fill ;
 : t4 ( -- ) cols for i col! c@a+ >b
    b@ 10 = b@ 0= or if bdrop unloop exit then
    b> rc->pos c! next ;
 : blk->ed ( -- ) ed-clr blk-data >a rows for i row! t4 next adrop ;
 : ed-load ( -- ) blk-rd blk->ed clean show! ed-blk pos->rc ;
-: t4 ( -- ) rows for 0 i cr->pos ztype 10 emit next ;
+: t3 ( a--a' ) pad3 cols cmove 0 pad3 cols + 1- c! pad3 s-rtrim ;
+: t4 ( -- )  rows for 0 i cr->pos t3 ztype 10 emit next ;
 : ed-save blk-fn fopen-w ?dup if >a a@ ->file t4 ->stdout a> fclose then clean ;
 : ->norm  0 mode! ;    : norm?  mode@  0 = ;
 : ->repl  1 mode! ;    : repl?  mode@  1 = ;
@@ -316,14 +324,13 @@ cell var (c)  : col! (c) ! ;       : col@ (c) @ ;
 : ->cur  col@ 1+ row@ 1+ ->cr ;
 : ->foot 1 rows 1 + ->cr ;
 : ->cmd ->foot cr ;
-: ./ '/' emit ;
 : .foot ->foot cyan ." Block #" blk@ .
    bl dirty? if drop '*' then emit space
    lpar row@ 1+ (.) .comma col@ 1+ (.) rpar
    norm? if green  ."  -norm-"    then
    repl? if yellow ."  -replace-" then
    ins?  if purple ."  -insert-"  then white 
-   rc->pos c@ dup space lpar .#dec ./ .$hex rpar clr-eol ;
+   rc->pos c@ dup space lpar .#dec '/' emit .$hex rpar clr-eol ;
 : show show? if cur-off .scr cur-on shown then .foot ->cur  ;
 : mv-left 0 dup 1-      mv ;   : mv-right 0 1 mv ;
 : mv-up   0 dup 1- swap mv ;   : mv-down  1 0 mv ;
@@ -332,19 +339,18 @@ cell var (c)  : col! (c) ! ;       : col@ (c) @ ;
       col@ 1- col!
    again ;
 : ins-bl  rc->pos dup 1+ cols col@ - 1- cmove 32 ed-ch! ;
-: ins-bl2 rc->pos dup 1+ dup last-ch swap - 1+ cmove 32 ed-ch! ;
-: replace-char! ( ch-- ) ed-ch! mv-right ;
-: replace-char  a@ printable? if a@ replace-char! then ;
-: insert-char   a@ printable? if ins-bl a@ replace-char! then ;
+: ins-bl2 rc->pos dup 1+ last-ch over - 1+ cmove 32 ed-ch! ;
+: replace-char a@ printable? if a@ ed-ch! mv-right then ;
+: insert-char  a@ printable? if ins-bl a@ ed-ch! mv-right then ;
 : del-ch rc->pos dup 1+ swap cols col@ - cmove 0 row@ row-last c! dirty! ;
-: clr-line  rc->pos col@ - cols 0 fill dirty! ;
-: clr-toend rc->pos cols col@ - 0 fill dirty! ;
-: ed-goto ( blk-- ) blk! ed-load show! ;
+: clr-line  rc->pos col@ - cols 32 fill dirty! ;
+: clr-toend rc->pos cols col@ - 32 fill dirty! ;
+: ed-goto ( blk-- ) blk! ed-load ;
 : insert-line  row@ rows < if 
       last-ch >a  a@ cols - >t  0 row@ cr->pos >r
       begin c@t- c!a- t@ r@ < until atdrop rdrop
    then clr-line ;
-cols var yanked
+: yanked pad2 ;
 : yank-line  0 row@ cr->pos yanked cols cmove ;
 : put-line   yanked 0 row@ cr->pos cols cmove ;
 : del-line yank-line row@ rows < if
@@ -389,10 +395,10 @@ key-pgup    case   prev-pg
 key-pgdn    case   next-pg
 key-chome   case!  0 dup row! col! ;
 key-cend    case!  rows 1- row! 0 col! ;
-key-f1      case!  define  replace-char! ;
-key-f2      case!  compile replace-char! ;
-key-f3      case!  interp  replace-char! ;
-key-f4      case!  comment replace-char! ;
+key-f1      case!  define  ed-ch! ;
+key-f2      case!  compile ed-ch! ;
+key-f3      case!  interp  ed-ch! ;
+key-f4      case!  comment ed-ch! ;
  3          case   ->norm
  9          case!  0 8 mv ;
 13          case!  mv-down 0 col! ;
@@ -405,10 +411,10 @@ vhere const ed-cases
 'h'  case   mv-left
 'l'  case   mv-right
 32   case   mv-right
-'1'  case!  define  replace-char! ;
-'2'  case!  compile replace-char! ;
-'3'  case!  interp  replace-char! ;
-'4'  case!  comment replace-char! ;
+'1'  case!  define  ed-ch! ;
+'2'  case!  compile ed-ch! ;
+'3'  case!  interp  ed-ch! ;
+'4'  case!  comment ed-ch! ;
 '_'  case!  0 col! ;
 '$'  case   mv-end
 ':'  case!  do-cmd ;
