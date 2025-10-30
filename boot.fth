@@ -368,7 +368,7 @@ cell var (c)  : col! (c) ! ;    : col@ (c) @ ;
 : next-pg ed-save  blk@ 1+ ed-goto ;
 : prev-pg ed-save  blk@ 1- 0 max ed-goto ;
 : rl blk@ ed-goto ;
-: q dirty? if0 q! exit then ." use 'wq' or 'q!'" ;
+: q  dirty? if0 q! exit then ." use 'wq' or 'q!'" ;
 : w  ed-save ;
 : wq ed-save q! ;
 : do-cmd ->cmd ':' emit clr-eol pad accept
@@ -381,6 +381,13 @@ cell var (c)  : col! (c) ! ;    : col@ (c) @ ;
       t@ @ if0 tdrop exit then
       t@+c @ a@ = if t> @ >r exit then
       t@ cell+ t! again ;
+
+(( delete commands ))
+vhere const ed-del-cases
+'.'    case   del-ch
+'d'    case   del-line
+'$'    case   clr-toend
+0 v, 0 v, (( end ))
 
 (( VI-like commands ))
 vhere const ed-ctrl-cases
@@ -418,22 +425,23 @@ vhere const ed-cases
 '_'  case!  0 col! ;
 '$'  case   mv-end
 ':'  case!  do-cmd ;
+'r'  case!  red '?' emit key a! replace-char ;
+'R'  case   ->repl
+'x'  case   del-ch
+'X'  case!  mv-left del-ch ;
 'a'  case!  mv-right ->ins ;
 'A'  case!  mv-end mv-right ->ins ;
 'b'  case   ins-bl
 'B'  case   ins-bl2
 'C'  case!  clr-toend ->ins ;
-'D'  case   del-line
+'d'  case!  show! red '?' emit key a! ed-del-cases switch ;
+'D'  case   clr-toend
 'i'  case   ->ins
 'I'  case!  0 col! ->ins ;
-'x'  case   del-ch
-'X'  case!  mv-left del-ch ;
 'p'  case!  mv-down insert-line put-line ;
 'P'  case!  insert-line put-line ;
 'q'  case!  0 8 mv ;
 'Q'  case!  0 8 negate mv ;
-'r'  case!  red '?' emit key a! replace-char ;
-'R'  case   ->repl
 'O'  case   insert-line 
 'o'  case!  mv-down insert-line ;
 'w'  case   ed-next-word
@@ -467,27 +475,22 @@ vhere const ed-cases
 ( fgl: forget the last word )
 : fgl last dup de-sz + (la) ! de>xt (ha) ! ;  
 
-cell var t0
-cell var t1
-cell var t2
+cell var t0    cell var t1    cell var t2
 : marker here t0 ! last t1 ! vhere t2 ! ;
 : forget t0 @ (ha) ! t1 @ (la) ! t2 @ (vha) ! ;
 
 : .version ." cf v" version <# # # #. # # #. #s #> ztype ;
 
 (( fixed point ))
-cell var t0
-: fbase! t0 ! ;
-: fbase t0 @ ;
-cell var t0
-: fprec t0 @ ;
-: fprec! t0 ! 1 fprec for 10 * next fbase! ;
-2 fprec!
+cell var t0       cell var t1
+: fbase t0 @ ;    : fbase! t0 ! ;
+: fprec t1 @ ;    : fprec! t1 ! 1 fprec for 10 * next fbase! ;
 : f. fbase /mod (.) '.' emit abs fprec .nw ;
 : f* * fbase / ;
 : f/ >a fbase * a> / ;
 : f+ + ;
 : f- - ;
+2 fprec!
 
 ( some benchmarks )
 : mil 1000 dup * * ;
