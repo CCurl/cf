@@ -71,7 +71,7 @@ cell timer() { return (cell)clock(); }
 void zType(const char* str) { fputs(str, outputFp ? (FILE*)outputFp : stdout); }
 void emit(const char ch) { fputc(ch, outputFp ? (FILE*)outputFp : stdout); }
 
-cell fOpen(const char *name, cell mode) { return (cell)fopen(name, (char*)mode); }
+cell fOpen(cell name, cell mode) { return (cell)fopen((char*)name, (char*)mode); }
 void fClose(cell fh) { fclose((FILE*)fh); }
 cell fRead(cell buf, cell sz, cell fh) { return (cell)fread((char*)buf, 1, sz, (FILE*)fh); }
 cell fWrite(cell buf, cell sz, cell fh) { return (cell)fwrite((char*)buf, 1, sz, (FILE*)fh); }
@@ -83,16 +83,16 @@ void repl() {
 	if (state == COMMENT) { state = INTERP; }
 	zType((state == COMPILE) ? " ... "  : " ok\n");
 	if (fgets(tib, 256, stdin) != tib) { exit(0); }
-	outer(tib);
+	cfOuter(tib);
 }
 
 void boot(const char *fn) {
 	if (!fn) { fn = "boot.fth"; }
-	cell fp = fOpen(fn, (cell)"rb");
+	cell fp = fOpen((cell)fn, (cell)"rb");
 	if (fp) {
 		fRead((cell)&mem[100000], 99999, fp);
 		fClose(fp);
-		outer((char*)&mem[100000]);
+		cfOuter((char*)&mem[100000]);
 	} else {
 		zType("WARNING: unable to open source file!\n");
 		zType("If no filename is provided, the default is 'boot.fth'\n");
@@ -100,7 +100,7 @@ void boot(const char *fn) {
 }
 
 int main(int argc, char *argv[]) {
-	Init();
+	cfInit();
 	boot((1<argc) ? argv[1] : 0);
 	while (1) { repl(); }
 	return 0;

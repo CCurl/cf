@@ -147,7 +147,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
-    <None Include="boot.cf" />
+    <None Include="boot.fth" />
     <None Include="LICENSE" />
     <None Include="makefile" />
     <None Include="README.md" />

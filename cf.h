@@ -12,46 +12,48 @@
 #include <stdint.h>
 #include <time.h>
 
-#define VERSION     20250604
+#define VERSION         20251027
 
-#define MEM_SZ       4*(1024*1024)
-#define NAME_MAX          25
-#define STK_SZ            63
-#define LSTK_SZ           60
-#define TSTK_SZ           63
+#define MEM_SZ          16*(1024*1024)
+#define STK_SZ          63
+#define LSTK_SZ         60
+#define TSTK_SZ         63
 #define btwi(n,l,h)   ((l<=n) && (n<=h))
 
 #if INTPTR_MAX > INT32_MAX
-    #define CELL_T    int64_t
-    #define UCELL_T   uint64_t
-    #define CELL_SZ   8
-    #define FLT_T     double
-    #define addrFmt ": %s $%llx ;"
+    #define CELL_T      int64_t
+    #define UCELL_T     uint64_t
+    #define CELL_SZ     8
+    #define NUM_BITS    0xE000000000000000
+    #define NUM_MASK    0x1FFFFFFFFFFFFFFF
+    #define NAME_MAX    21
 #else
-    #define CELL_T    int32_t
-    #define UCELL_T   uint32_t
-    #define CELL_SZ   4
-    #define FLT_T     float
-    #define addrFmt ": %s $%lx ;"
+    #define CELL_T      int32_t
+    #define UCELL_T     uint32_t
+    #define CELL_SZ     4
+    #define NUM_BITS    0xE0000000
+    #define NUM_MASK    0x1FFFFFFF
+    #define NAME_MAX    25
 #endif
 
 enum { DEFINE=1, COMPILE, INTERP, COMMENT };
+enum { _IMMED=1, _INLINE=2 };
 
 typedef CELL_T cell;
 typedef UCELL_T ucell;
 typedef unsigned short ushort;
 typedef unsigned char byte;
 typedef struct { cell xt; byte flags, len; char name[NAME_MAX+1]; } DE_T;
-typedef struct { byte op; const char* name; byte fl; } PRIM_T;
+typedef struct { cell op; const char* name; byte fl; } PRIM_T;
 
 // These are defined by cf.c
-extern void inner(cell start);
-extern int  outer(const char *src);
-extern void Init();
-
-// cf.c needs these to be defined
+extern void cfInner(cell start);
+extern void cfOuter(const char *src);
+extern void cfInit();
 extern cell state, outputFp;
 extern byte mem[];
+
+// cf.c needs these to be defined
 extern void zType(const char *str);
 extern void emit(const char ch);
 extern void ttyMode(int isRaw);
@@ -59,7 +61,7 @@ extern int  key();
 extern int  qKey();
 extern cell timer();
 extern void ms(cell sleepForMS);
-extern cell fOpen(const char *name, cell mode);
+extern cell fOpen(cell name, cell mode);
 extern void fClose(cell fh);
 extern cell fRead(cell buf, cell sz, cell fh);
 extern cell fWrite(cell buf, cell sz, cell fh);
