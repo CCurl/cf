@@ -325,7 +325,7 @@ ed-blk blk-sz + 1- const ed-eob
    repl? if yellow ."  -replace-" then
    ins?  if purple ."  -insert-"  then white 
    rc->pos c@ dup space lpar .#dec '/' emit .$hex rpar clr-eol ;
-: show show? if cur-off .scr cur-on shown then .foot ->cur  ;
+: show cur-off show? if .scr shown then .foot ->cur cur-on ;
 : mv-left 0 dup 1-      mv ;   : mv-right 0 1 mv ;
 : mv-up   0 dup 1- swap mv ;   : mv-down  1 0 mv ;
 : mv-end  cols 1- col! begin
