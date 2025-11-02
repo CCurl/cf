@@ -142,6 +142,10 @@ const -la-    const -ha-    vhere const -vha-
 : tuck swap over ; inline
 : min ( a b--c ) 2dup > if swap then drop ;
 : max ( a b--c ) 2dup < if swap then drop ;
+: <= ( a b--f ) > 0= ;
+: >= ( a b--f ) < 0= ;
+: btw  ( n l h--f ) >a over <  swap a> <  and ;
+: btwi ( n l h--f ) >a over <= swap a> <= and ;
 : vc, vhere c! 1 allot ;
 : v, vhere ! cell allot ;
 
@@ -307,20 +311,18 @@ ed-blk blk-sz + 1- const ed-eob
 : ed-c! ( ch col row-- ) cr->pos c! dirty! ;
 : ed-ch! ( c-- ) col@ row@ ed-c! ;
 : ed-ch@ ( --c ) rc->pos c@ ;
-: ed-bl ed-blk >a blk-sz for c@a if0 bl c!a then a+ next adrop ;
-: ed-clr ( -- ) ed-blk blk-sz bl fill ;
+: ed-bl ( -- ) ed-blk >a blk-sz for c@a if0 bl c!a then a+ next adrop ;
 : blk->ed ( -- ) blk-data ed-blk blk-sz cmove ed-bl ;
-: ed-load blk-rd blk->ed clean show! ed-blk pos->rc ;
-: t4 ( h-- ) >a ed-blk blk-sz a@ fwrite drop a> fclose ;
-: w! ( -- ) blk-fn fopen-w ?dup if t4 then clean ;
+: ed-load ( -- ) blk-rd blk->ed clean show! 0 0 row! col! ;
+: w! ( -- ) ed-blk blk-data blk-sz cmove blk-wr ;
 : ->norm  0 mode! ;    : norm?  mode@  0 = ;
 : ->repl  1 mode! ;    : repl?  mode@  1 = ;
 : ->ins   2 mode! ;    : ins?   mode@  2 = ;
 : q!     99 mode! ;    : quit?  mode@ 99 = ;  
 : ed-emit ( ch-- )
    dup 31 > if emit exit then ( regular char )
-   dup  5 < over 0 > and if dup ed-color@ fg then ( change color )
-   drop bl emit ;
+   dup  0 5 btw if dup ed-color@ fg then ( change color )
+   drop space ;
 : .scr 1 dup ->rc white ed-blk >a rows for
       cols for c@a+ ed-emit next cr
    next adrop ;
