@@ -1,5 +1,6 @@
 (( Core ))
 
+(( code: 65536 cells, then vars ))
 65536 cell * memory + (vha) ! (ha) @ (la) @
 : here  (ha)  @ ;
 : vhere (vha) @ ;
@@ -12,7 +13,9 @@
 : val   ( -- )  addword (lit) , 111 , (exit) , ;
 : (val) ( -- )  here 2 - ->code const ;
 
-const -la-   const -ha-   vhere const -vha-
+(( these are used by "rb" ))
+const -la-    const -ha-    vhere const -vha-
+
 : immediate 1 last cell + c! ; immediate
 : inline    2 last cell + c! ; immediate
 
@@ -36,33 +39,33 @@ const -la-   const -ha-   vhere const -vha-
 : comment 4 ; inline
 ( ***************************************************** )
 
-: a+   a@+ drop  ; inline
-: a-   a@- drop  ; inline
-: c@a  a@  c@    ; inline
-: c@a+ a@+ c@    ; inline
-: c@a- a@- c@    ; inline
-: c!a  a@  c!    ; inline
-: c!a+ a@+ c!    ; inline
-: c!a- a@- c!    ; inline
-: adrop  a> drop ; inline
-: b+   b@+ drop  ; inline
-: c!b+ b@+ c!    ; inline
-: bdrop  b> drop ; inline
-: t+   t@+ drop  ; inline
-: t-   t@- drop  ; inline
-: c@t  t@  c@    ; inline
-: c@t+ t@+ c@    ; inline
-: c@t- t@- c@    ; inline
-: c!t  t@  c!    ; inline
-: c!t+ t@+ c!    ; inline
-: c!t- t@- c!    ; inline
-: t@+c t@ dup cell + t! ;
-: tdrop  t> drop ; inline
+: a+    a@+ drop  ; inline
+: a-    a@- drop  ; inline
+: c@a   a@  c@    ; inline
+: c@a+  a@+ c@    ; inline
+: c@a-  a@- c@    ; inline
+: c!a   a@  c!    ; inline
+: c!a+  a@+ c!    ; inline
+: c!a-  a@- c!    ; inline
+: adrop a> drop   ; inline
+: b+    b@+ drop  ; inline
+: c!b+  b@+ c!    ; inline
+: bdrop b> drop   ; inline
+: t+    t@+ drop  ; inline
+: t-    t@- drop  ; inline
+: c@t   t@  c@    ; inline
+: c@t+  t@+ c@    ; inline
+: c@t-  t@- c@    ; inline
+: c!t   t@  c!    ; inline
+: c!t+  t@+ c!    ; inline
+: c!t-  t@- c!    ; inline
+: t@+c  t@ dup cell + t! ;
+: tdrop t> drop   ; inline
 : atdrop adrop tdrop ;
 
 : comp? state @ compile = ;
 ( quote subroutine )
-: t4  vhere dup >t  >in @ 1+ >a
+: t4 ( --a ) vhere dup >t  >in @ 1+ >a
    begin
       c@a '"' = if
          0 c!t+  a> 1+ >in !
@@ -214,6 +217,7 @@ cell   var t0
 : blk@ ( --n ) t0 @ ;
 : blk! ( n-- ) t0 ! ;
 : blk-data ( --a ) blk@ blk-sz * blks + ;
+: blk-end  ( --a ) blk-data blk-sz + 1- ;
 : blk-clr ( -- ) blk-data blk-sz 0 fill ;
 16 var t1
 : blk-fn ( --a ) t1 z" block-" s-cpy blk@ <# # # #s #> s-cat z" .fth" s-cat ;
@@ -222,23 +226,28 @@ cell   var t0
 : blk-wr ( -- ) blk-fn fopen-w ?dup
    if >a blk-data blk-sz a@ fwrite drop a> fclose then ;
 
+( load )
+: t1  0 blk-end c! ;
+: load ( n-- )  blk! blk-rd blk-data t1 outer ;
+: load-next  blk@ 1+ blk! blk-rd blk-data t1 >in ! ;
+
 (( Keys ))
-#256  #59 + const key-f1
-#256  #60 + const key-f2
-#256  #61 + const key-f3
-#256  #62 + const key-f4
-#256  #71 + const key-home   (( VT: 27 91 72 ))
-#256  #72 + const key-up     (( VT: 27 91 65 ))
-#256  #73 + const key-pgup   (( VT: 27 91 53 126 ))
-#256  #75 + const key-left   (( VT: 27 91 68 ))
-#256  #77 + const key-right  (( VT: 27 91 67 ))
-#256  #79 + const key-end    (( VT: 27 91 70 ))
-#256  #80 + const key-down   (( VT: 27 91 66 ))
-#256  #81 + const key-pgdn   (( VT: 27 91 54 126 ))
-#256  #82 + const key-ins    (( VT: 27 91 50 126 ))
-#256  #83 + const key-del    (( VT: 27 91 51 126 ))
-#256 #119 + const key-chome  (( VT: 27 91 ?? ??? ))
-#256 #117 + const key-cend   (( VT: 27 91 ?? ??? ))
+256  59 + const key-f1
+256  60 + const key-f2
+256  61 + const key-f3
+256  62 + const key-f4
+256  71 + const key-home   (( VT: 27 91 72 ))
+256  72 + const key-up     (( VT: 27 91 65 ))
+256  73 + const key-pgup   (( VT: 27 91 53 126 ))
+256  75 + const key-left   (( VT: 27 91 68 ))
+256  77 + const key-right  (( VT: 27 91 67 ))
+256  79 + const key-end    (( VT: 27 91 70 ))
+256  80 + const key-down   (( VT: 27 91 66 ))
+256  81 + const key-pgdn   (( VT: 27 91 54 126 ))
+256  82 + const key-ins    (( VT: 27 91 50 126 ))
+256  83 + const key-del    (( VT: 27 91 51 126 ))
+256 119 + const key-chome  (( VT: 27 91 ?? ??? ))
+256 117 + const key-cend   (( VT: 27 91 ?? ??? ))
 : vk2 ( --k ) key 126 = if0 27 exit then
     a@ 50 = if key-ins   exit then
     a@ 51 = if key-del   exit then
@@ -387,6 +396,12 @@ vhere const ed-del-cases
 
 (( VI-like commands ))
 vhere const ed-ctrl-cases
+  3         case   ->norm
+  8         case!  mv-left ins? if del-c then ;
+  9         case!  0 8 mv ;
+ 13         case!  mv-down 0 col! ;
+ 27         case   ->norm
+127         case!  mv-left ins? if del-c then ;
 key-left    case   mv-left
 key-right   case   mv-right
 key-up      case   mv-up
@@ -402,10 +417,6 @@ key-f1      case!  define  ed-ch! ;
 key-f2      case!  compile ed-ch! ;
 key-f3      case!  interp  ed-ch! ;
 key-f4      case!  comment ed-ch! ;
- 3          case   ->norm
- 9          case!  0 8 mv ;
-13          case!  mv-down 0 col! ;
-27          case   ->norm
 0 v, 0 v, (( end ))
 
 vhere const ed-cases
@@ -451,7 +462,7 @@ bl   case   mv-right
 0 v, 0 v, (( end ))
 
 : process-key ( --, key is in a )
-   a@ bl < a@ 127 > or if ed-ctrl-cases switch exit then
+   a@ bl < a@ 126 > or if ed-ctrl-cases switch exit then
    ins?  if insert-char exit then
    repl? if replace-char exit then
    ed-cases switch ;
@@ -503,7 +514,7 @@ cell var there
 : ]] (exit) , there @ (ha) ! interp state ! here execute ;
 immediate
 
-( Move the source to the disk area )
+( some util words )
 : vi z" vi boot.fth" system ;
 : lg z" lazygit" system ;
 : ll z" ls -l" system ;
