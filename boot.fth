@@ -168,11 +168,11 @@ const -la-    const -ha-    vhere const -vha-
 : .de-word .word t@+ 10 > if 0 t! cr exit then tab ;
 
 : words last >a 1 >t 0 >b begin
-    a@ de>len  7 > if t+ then
-    a@ de>len 12 > if t+ then
-    a@ .de-word a@ de-sz + a! b+
-    a@ dict-end < while
-    lpar b> . ." words)" adrop ;
+   a@ de>len  7 > if t+ then
+   a@ de>len 12 > if t+ then
+   a@ .de-word a@ de-sz + a! b+
+   a@ dict-end < while
+   lpar b> . ." words)" adrop ;
 : words-n last >t for i 8 mod if0 cr then t@ .word tab t@ de-sz + t! next tdrop ;
 
 : fill ( addr num ch-- ) >t >r >a  r> for t@ c!a+ next atdrop ;
@@ -216,7 +216,7 @@ const -la-    const -ha-    vhere const -vha-
 : cols 64 ; inline
 : blk-max 1023 ; inline
 rows cols * const blk-sz
-blk-sz blk-max * var blks
+blk-sz blk-max 1+ * var blks
 cell   var t0
 : blk@ ( --n ) t0 @ ;
 : blk! ( n-- ) t0 ! ;
@@ -253,33 +253,33 @@ cell   var t0
 256 119 + const key-chome  (( VT: 27 91 ?? ??? ))
 256 117 + const key-cend   (( VT: 27 91 ?? ??? ))
 : vk2 ( --k ) key 126 = if0 27 exit then
-    a@ 50 = if key-ins   exit then
-    a@ 51 = if key-del   exit then
-    a@ 53 = if key-pgup  exit then
-    a@ 54 = if key-pgdn  exit then    27 ;
+   a@ 50 = if key-ins   exit then
+   a@ 51 = if key-del   exit then
+   a@ 53 = if key-pgup  exit then
+   a@ 54 = if key-pgdn  exit then    27 ;
 : vk1 ( --k ) key a!
-    a@ 68 = if key-left  exit then
-    a@ 67 = if key-right exit then
-    a@ 65 = if key-up    exit then
-    a@ 66 = if key-down  exit then
-    a@ 72 = if key-home  exit then
-    a@ 70 = if key-end   exit then
-    a@ 49 > a@ 55 < and if vk2 exit then   27 ;
+   a@ 68 = if key-left  exit then
+   a@ 67 = if key-right exit then
+   a@ 65 = if key-up    exit then
+   a@ 66 = if key-down  exit then
+   a@ 72 = if key-home  exit then
+   a@ 70 = if key-end   exit then
+   a@ 49 > a@ 55 < and if vk2 exit then   27 ;
 : vt-key ( --k )  key 91 = if vk1 exit then 27 ;
 : vkey ( --k ) key dup if0 drop #256 key + exit then ( Windows FK )
-    dup 224 = if drop #256 key + exit then ( Windows )
-    dup  27 = if drop vt-key exit then ; ( VT )
+   dup 224 = if drop #256 key + exit then ( Windows )
+   dup  27 = if drop vt-key exit then ; ( VT )
 
 ( Accept )
-: printable? ( c--f ) dup 31 > swap 127 < and ;
+: printable? ( c--f ) 31 127 btw ;
 : bs 8 emit ; inline
 : accept ( dst-- ) dup >r >t 0 >a
   begin key a!
-     a@   3 =  a@ 27 = or if 0 r> c! atdrop exit then
-     a@  13 = if 0 c!t atdrop rdrop exit then
-     a@   8 = if 127 a! then ( Windows: 8=backspace )
-     a@ 127 = if r@ t@ < if t- bs space bs then then
-     a@ printable? if a@ dup c!t+ emit then
+      a@   3 =  a@ 27 = or if 0 r> c! atdrop exit then
+      a@  13 = if 0 c!t atdrop rdrop exit then
+      a@   8 = if 127 a! then ( Windows: 8=backspace )
+      a@ 127 = if r@ t@ < if t- bs space bs then then
+      a@ printable? if a@ dup c!t+ emit then
   again ;
 
 (( Editor ))
@@ -327,7 +327,7 @@ ed-blk blk-sz + 1- const ed-eob
       cols for c@a+ ed-emit next cr
    next adrop ;
 : ->cur  col@ 1+ row@ 1+ ->cr ;
-: ->foot 1 rows 1 + ->cr ;
+: ->foot 1 rows 1+ ->cr ;
 : ->cmd ->foot cr ;
 : .foot ->foot cyan ." Block #" blk@ .
    bl dirty? if drop '*' then emit space
@@ -366,11 +366,11 @@ ed-blk blk-sz + 1- const ed-eob
 : ed-prev-word rc->pos 1- >t begin
       t@ ed-blk < if t> pos->rc exit then
       c@t- 33 < if t> 1+ pos->rc exit then
- again ;
+   again ;
 : ed-next-word rc->pos 1+ >t begin
       t@ ed-eob > if t> pos->rc exit then
       c@t+ 33 < if t> 1- pos->rc exit then
- again ;
+   again ;
 : rl blk@ ed-goto ;
 : q  dirty? if0 q! exit then ." use 'wq' or 'q!'" ;
 : w  dirty? if w! then ;
@@ -384,9 +384,9 @@ ed-blk blk-sz + 1- const ed-eob
 : case   ( ch-- )  v, find drop v, ;   ( case-table entry - single word )
 : case!  ( ch-- )  v, here v, compile state ! ;   ( case-table entry - code )
 : switch ( tbl-- ) >t begin
-      t@ @ if0 tdrop exit then
-      t@+c @ a@ = if t> @ >r exit then
-      t@ cell+ t! again ;
+   t@ @ if0 tdrop exit then
+   t@+c @ a@ = if t> @ >r exit then
+   t@ cell+ t! again ;
 
 (( delete commands ))
 vhere const ed-del-cases
