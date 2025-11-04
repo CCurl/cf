@@ -3,8 +3,8 @@
 #ifndef __CF_H__
 
 #ifdef _MSC_VER
-#define _CRT_SECURE_NO_WARNINGS
-#define IS_WINDOWS 1
+    #define _CRT_SECURE_NO_WARNINGS
+    #define IS_WINDOWS 1
 #endif
 
 #include <stdio.h>
@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#define VERSION         20251027
+#define VERSION         20251103
 
 #define MEM_SZ          16*(1024*1024)
 #define STK_SZ          63
