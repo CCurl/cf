@@ -4,11 +4,8 @@
 /Debug
 /Release
 cf
-cf32
-cf64
 /cf.vcxproj.user
 /enc_temp_folder
 test.txt
 /disk.bin
 /disk.cf
-/block-*.fth

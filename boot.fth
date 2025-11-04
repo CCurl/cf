@@ -305,7 +305,7 @@ ed-blk blk-sz + 1- const ed-eob
 1 var t1           : mode! t1 c! ;   : mode@ t1 c@ ;
 1 var t1           : show? t1 c@ ;   : show!  1 t1 c! ;
 1 var t2           : dirty? t2 c@ ;  : dirty! 1 t2 c! show! ;
-: shown 0 t1 c! ;  : clean 0 t2 c! ;
+: shown 0 t1 c! ;  : clean! 0 t2 c! ;
 : mv ( r c-- )  (c) +! (r) +!  rc->pos  pos->rc ;
 : row-last ( r--a ) cols 1- swap cr->pos ;
 : ed-c! ( ch col row-- ) cr->pos c! dirty! ;
@@ -313,8 +313,8 @@ ed-blk blk-sz + 1- const ed-eob
 : ed-ch@ ( --c ) rc->pos c@ ;
 : ed-bl ( -- ) ed-blk >a blk-sz for c@a if0 bl c!a then a+ next adrop ;
 : blk->ed ( -- ) blk-data ed-blk blk-sz cmove ed-bl ;
-: ed-load ( -- ) blk-rd blk->ed clean show! 0 0 row! col! ;
-: w! ( -- ) ed-blk blk-data blk-sz cmove blk-wr ;
+: ed-load ( -- ) blk-rd blk->ed clean! show! 0 0 row! col! ;
+: w! ( -- ) ed-blk blk-data blk-sz cmove blk-wr clean! ;
 : ->norm  0 mode! ;    : norm?  mode@  0 = ;
 : ->repl  1 mode! ;    : repl?  mode@  1 = ;
 : ->ins   2 mode! ;    : ins?   mode@  2 = ;
@@ -473,15 +473,6 @@ bl   case   mv-right
 : ed  ( -- ) ed-init ed-loop ->cmd interp state ! ;
 : edit ( n-- )  blk! ed ;
 
-( This dump is from Peter Jakacki )
-: a-emit ( b-- ) dup $20 < over $7e > or if drop '.' then emit ;
-: .ascii ( -- ) a@ $10 - $10 for dup c@ a-emit 1+ next drop ;
-: dump ( f n-- ) swap >a 0 >t for
-      t@ if0 cr a@ .hex ':' emit space then
-      c@a+ .hex space
-      t@+ $0f = if 3 spaces .ascii 0 t! then
-   next atdrop ;
-   
 ( fgl: forget the last word )
 : fgl last dup de-sz + (la) ! de>xt (ha) ! ;  
 
@@ -490,36 +481,6 @@ cell var t0    cell var t1    cell var t2
 : forget t0 @ (ha) ! t1 @ (la) ! t2 @ (vha) ! ;
 
 : .version ." cf v" version <# # # #. # # #. #s #> ztype ;
-
-(( fixed point ))
-cell var t0       cell var t1
-: fbase t0 @ ;    : fbase! t0 ! ;
-: fprec t1 @ ;    : fprec! t1 ! 1 fprec for 10 * next fbase! ;
-: f. fbase /mod (.) '.' emit abs fprec .nw ;
-: f* * fbase / ;
-: f/ >a fbase * a> / ;
-: f+ + ;
-: f- - ;
-2 fprec!
-
-( some benchmarks )
-: mil 1000 dup * * ;
-: elapsed timer swap - . ." usec" ;
-: bm timer swap for next elapsed ;
-: fib 1- dup 2 < if drop 1 exit then dup fib swap 1- fib + ;
-: fib-bm timer swap fib . elapsed ;
-: bb 1000 mil bm ;
-
-(( compile then execute ))
-cell var there
-: [[ here there ! compile state ! ;
-: ]] (exit) , there @ (ha) ! interp state ! here execute ;
-immediate
-
-( some util words )
-: vi z" vi boot.fth" system ;
-: lg z" lazygit" system ;
-: ll z" ls -l" system ;
 
 marker
 green .version white ."  - Chris Curl " cr
