@@ -409,6 +409,7 @@ key-right   case   mv-right
 key-up      case   mv-up
 key-down    case   mv-down
 key-home    case!  0 col! ;
+key-end     case   mv-end
 key-ins     case!  ins? if ->norm exit then ->ins ;
 key-del     case   del-c
 key-pgup    case   prev-pg
