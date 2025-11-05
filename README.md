@@ -6,9 +6,10 @@
 - NOTE: **cf is a work in progress. Please collaborate with me on it!**
 - cf is inspired by ColorForth, but it is NOT ColorForth.
 - cf has 4 states: DEFINE, INTERPRET, COMPILE, and COMMENT.
-- cf uses markers in the source to control its state.
+- cf uses markers in the source whitespace to control its state.
+- cf also supports using the standard words to change the state.
 - cf has `a` and `b` registers like ColorForth. It also has a `t` register.
-- cf supports using either a byte in the whitespace or a word to change the state.
+- Unlike ColorForth, they are actually stacks. See below for more information.
 
 ## Whitespace characters and WORDS that change the state:
 
@@ -44,6 +45,12 @@ Else, it is the CODE slot of a word to execute.<br/>
 CODE slots 0-24 are used by cf.<br/>
 CODE slots 25-`(bye)` are free CELL-sized slots that can be used for any purpose.<br/>
 HERE starts at `(bye)+1`.<br/>
+
+## The A, B and T register stacks
+In ColorForth, 'a', 'b' and 't' are registers. In CF, they are stacks.<br/>
+They have operations similar to those for the return stack (>r, r@, r>). <br/>
+The operations for the 'a' stack are: >a, a@, a>, a!, a@+, and a@-.<br/>
+The operations for the 'b' and 't' stacks are the same.<br/>
 
 ## Architecture
 CF is really just a Forth VM, upon which any Forth system can be built.<br/>
