@@ -215,14 +215,13 @@ const -la-    const -ha-    vhere const -vha-
 : rows 16 ; inline
 : cols 64 ; inline
 : blk-max 1023 ; inline
-rows cols * const blk-sz
+: blk-sz  1024 ; inline
 blk-sz blk-max 1+ * var blks
-cell   var t0
-: blk@ ( --n ) t0 @ ;
-: blk! ( n-- ) t0 ! ;
+cell var t0
+: blk@ ( --n ) t0 @ ;  : blk! ( n-- ) t0 ! ;
 : blk-data ( --a ) blk@ blk-sz * blks + ;
 : blk-end  ( --a ) blk-data blk-sz + 1- ;
-: blk-clr ( -- ) blk-data blk-sz 0 fill ;
+: blk-clr  ( -- )  blk-data blk-sz 0 fill ;
 16 var t1
 : blk-fn ( --a ) t1 z" block-" s-cpy blk@ <# # # #s #> s-cat z" .fth" s-cat ;
 : blk-rd ( -- ) blk-clr  blk-fn fopen-r ?dup
@@ -265,7 +264,8 @@ cell   var t0
    a@ 72 = if key-home  exit then
    a@ 70 = if key-end   exit then
    a@ 49 > a@ 55 < and if vk2 exit then   27 ;
-: vt-key ( --k )  key 91 = if vk1 exit then 27 ;
+: vt-key ( --k )  key dup 91 = if drop vk1 exit then
+   79 = if key 80 - key-f1 + exit then 27 ;
 : vkey ( --k ) key dup if0 drop #256 key + exit then ( Windows FK )
    dup 224 = if drop #256 key + exit then ( Windows )
    dup  27 = if drop vt-key exit then ; ( VT )
@@ -302,10 +302,9 @@ ed-blk blk-sz + 1- const ed-eob
 : cr->pos ( col row--pos ) cols * + ed-blk + ed-eob min ;
 : rc->pos ( --pos ) col@ row@ cr->pos ;
 : ed-eol  ( --pos ) cols 1- row@ cr->pos ;
-1 var t1           : mode! t1 c! ;   : mode@ t1 c@ ;
-1 var t1           : show? t1 c@ ;   : show!  1 t1 c! ;
-1 var t2           : dirty? t2 c@ ;  : dirty! 1 t2 c! show! ;
-: shown 0 t1 c! ;  : clean! 0 t2 c! ;
+1 var t1  : mode!  t1 c! ;  : mode@  t1 c@ ;
+1 var t1  : show?  t1 c@ ;  : shown  0 t1 c! ;  : show!  1 t1 c! ;
+1 var t2  : dirty? t2 c@ ;  : clean! 0 t2 c! ;  : dirty! 1 t2 c! show! ;
 : mv ( r c-- )  (c) +! (r) +!  rc->pos  pos->rc ;
 : row-last ( r--a ) cols 1- swap cr->pos ;
 : ed-c! ( ch col row-- ) cr->pos c! dirty! ;
@@ -314,7 +313,6 @@ ed-blk blk-sz + 1- const ed-eob
 : ed-bl ( -- ) ed-blk >a blk-sz for c@a if0 bl c!a then a+ next adrop ;
 : blk->ed ( -- ) blk-data ed-blk blk-sz cmove ed-bl ;
 : ed-load ( -- ) blk-rd blk->ed clean! show! 0 0 row! col! ;
-: w! ( -- ) ed-blk blk-data blk-sz cmove blk-wr clean! ;
 : ->norm  0 mode! ;    : norm?  mode@  0 = ;
 : ->repl  1 mode! ;    : repl?  mode@  1 = ;
 : ->ins   2 mode! ;    : ins?   mode@  2 = ;
@@ -372,8 +370,9 @@ ed-blk blk-sz + 1- const ed-eob
       c@t+ 33 < if t> 1- pos->rc exit then
    again ;
 : rl blk@ ed-goto ;
-: q  dirty? if0 q! exit then ." use 'wq' or 'q!'" ;
+: w! ed-blk blk-data blk-sz cmove blk-wr clean! ;
 : w  dirty? if w! then ;
+: q  dirty? if0 q! exit then ." use 'wq' or 'q!'" ;
 : wq w q ;
 : do-cmd ->cmd ':' emit clr-eol pad accept
    space pad outer show! ;
@@ -401,7 +400,11 @@ vhere const ed-ctrl-cases
   3         case   ->norm
   8         case!  mv-left ins? if del-c then ;
   9         case!  0 8 mv ;
+ 10         case   mv-down
+ 12         case   mv-right
+ 11         case   mv-up
  13         case!  mv-down 0 col! ;
+ 24         case   del-c
  27         case   ->norm
 127         case!  mv-left ins? if del-c then ;
 key-left    case   mv-left
