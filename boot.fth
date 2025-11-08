@@ -50,6 +50,7 @@ const -la-    const -ha-    vhere const -vha-
 : adrop a> drop   ; inline
 : b+    b@+ drop  ; inline
 : c!b+  b@+ c!    ; inline
+: c@b+  b@+ c@    ; inline
 : bdrop b> drop   ; inline
 : t+    t@+ drop  ; inline
 : t-    t@- drop  ; inline
@@ -154,7 +155,6 @@ const -la-    const -ha-    vhere const -vha-
 : depth (dsp) @ 1- ;
 : lpar '(' emit ; inline
 : rpar ')' emit ; inline
-: .comma ',' emit ; inline
 : .s lpar space depth ?dup if
       for i 1+ cells dstk + @ . next
    then rpar ;
@@ -212,8 +212,8 @@ const -la-    const -ha-    vhere const -vha-
 : colors 31 >a 7 for a@ fg ." color #" a@+ . cr next white adrop ;
 
 ( Blocks )
-: rows 16 ; inline
-: cols 64 ; inline
+: rows 16 ; inline       : cols 64 ; inline
+: last-row 15 ; inline   : last-col 63 ; inline
 : blk-max 1023 ; inline
 : blk-sz  1024 ; inline
 blk-sz blk-max 1+ * var blks
@@ -301,12 +301,11 @@ ed-blk blk-sz + 1- const ed-eob
 : pos->rc ( pos-- ) norm-pos ed-blk - cols /mod row! col! ;
 : cr->pos ( col row--pos ) cols * + ed-blk + ed-eob min ;
 : rc->pos ( --pos ) col@ row@ cr->pos ;
-: ed-eol  ( --pos ) cols 1- row@ cr->pos ;
+: ed-eol  ( --pos ) last-col row@ cr->pos ;
 1 var t1  : mode!  t1 c! ;  : mode@  t1 c@ ;
 1 var t1  : show?  t1 c@ ;  : shown  0 t1 c! ;  : show!  1 t1 c! ;
 1 var t2  : dirty? t2 c@ ;  : clean! 0 t2 c! ;  : dirty! 1 t2 c! show! ;
 : mv ( r c-- )  (c) +! (r) +!  rc->pos  pos->rc ;
-: row-last ( r--a ) cols 1- swap cr->pos ;
 : ed-c! ( ch col row-- ) cr->pos c! dirty! ;
 : ed-ch! ( c-- ) col@ row@ ed-c! ;
 : ed-ch@ ( --c ) rc->pos c@ ;
@@ -329,19 +328,21 @@ ed-blk blk-sz + 1- const ed-eob
 : ->cmd ->foot cr ;
 : .foot ->foot cyan ." Block #" blk@ .
    bl dirty? if drop '*' then emit space
-   lpar row@ 1+ (.) .comma col@ 1+ (.) rpar
-   norm? if green  ."  -norm-"    then
-   repl? if yellow ."  -replace-" then
-   ins?  if purple ."  -insert-"  then white 
-   rc->pos c@ dup space lpar .#dec '/' emit .$hex rpar clr-eol ;
+   norm? if green  ."  -norm- "    then
+   repl? if yellow ."  -replace- " then
+   ins?  if purple ."  -insert- "  then white
+   lpar row@ 1+ (.) ',' emit col@ 1+ . '-' emit space
+   rc->pos c@ dup .#dec '/' emit .$hex rpar clr-eol ;
 : show cur-off show? if .scr shown then .foot ->cur cur-on ;
-: mv-left 0 dup 1-      mv ;   : mv-right 0 1 mv ;
-: mv-up   0 dup 1- swap mv ;   : mv-down  1 0 mv ;
-: mv-end  cols 1- col! begin
+: mv-left  col@ 1- 0 max col! ;
+: mv-right col@ 1+ last-col min col! ;
+: mv-up    row@ 1- 0 max row! ;
+: mv-down  row@ 1+ last-row min row! ;
+: mv-end   last-col col! begin
       col@ 0= ed-ch@ bl > or if exit then
-      col@ 1- col!
+      mv-left
    again ;
-: ins-bl  rc->pos dup 1+ cols col@ - 1- cmove bl ed-ch! ;
+: ins-bl  rc->pos dup 1+ last-col col@ - cmove bl ed-ch! ;
 : ins-bl2 rc->pos dup 1+ ed-eob over - 1+ cmove bl ed-ch! ;
 : replace-char a@ printable? if a@ ed-ch! mv-right then ;
 : insert-char  a@ printable? if ins-bl a@ ed-ch! mv-right then ;
@@ -350,10 +351,14 @@ ed-blk blk-sz + 1- const ed-eob
 : clr-line  rc->pos col@ - cols bl fill dirty! ;
 : clr-toend rc->pos cols col@ - bl fill dirty! ;
 : ed-goto ( blk-- ) blk! ed-load ;
-: insert-line  row@ rows < if 
+: insert-line  row@ last-row < if
       ed-eob >a  a@ cols - >t  0 row@ cr->pos >r
       begin c@t- c!a- t@ r@ < until atdrop rdrop
    then clr-line ;
+: ?insert-line ins? if0 mv-down 0 col! exit then
+   mv-down insert-line mv-up
+   rc->pos pad3 cols cmove clr-toend
+   mv-down 0 col! pad3 rc->pos cols cmove ;
 : yanked pad2 ;
 : yank-line  0 row@ cr->pos yanked cols cmove ;
 : put-line   yanked 0 row@ cr->pos cols cmove ;
@@ -361,6 +366,12 @@ ed-blk blk-sz + 1- const ed-eob
       0 row@ cr->pos >t  t@ cols + >a  ed-eob >r
       begin c@a+ c!t+  a@ r@ > until atdrop rdrop
    then row@  rows 1- row!  clr-line  row! ;
+: join-lines row@ last-row < if
+      col@ >t mv-down del-line mv-up
+      yanked >b mv-end begin
+         mv-right c@b+ ed-ch! col@ last-col <
+      while bdrop t> col!
+   then ;
 : ed-prev-word rc->pos 1- >t begin
       t@ ed-blk < if t> pos->rc exit then
       c@t- 33 < if t> 1+ pos->rc exit then
@@ -403,7 +414,7 @@ vhere const ed-ctrl-cases
  10         case   mv-down
  12         case   mv-right
  11         case   mv-up
- 13         case!  mv-down 0 col! ;
+ 13         case   ?insert-line
  24         case   del-c
  27         case   ->norm
 127         case!  mv-left ins? if del-c then ;
@@ -451,12 +462,13 @@ bl   case   mv-right
 'D'  case   clr-toend
 'i'  case   ->ins
 'I'  case!  0 col! ->ins ;
+'J'  case   join-lines
 'p'  case!  mv-down insert-line put-line ;
 'P'  case!  insert-line put-line ;
 'q'  case!  0 8 mv ;
 'Q'  case!  0 8 negate mv ;
-'O'  case   insert-line 
-'o'  case!  mv-down insert-line ;
+'O'  case!  insert-line ->ins ;
+'o'  case!  mv-down insert-line ->ins ;
 'w'  case   ed-next-word
 'W'  case   ed-prev-word
 'Y'  case   yank-line
