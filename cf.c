@@ -123,8 +123,7 @@ static void cmove(cell src, cell dst, cell sz) {
 	if ((src == dst) || (sz < 1)) { return; }
 	byte *s = (byte*)src, *d = (byte*)dst;
 	if (s < d) {
-		d += sz-1;
-		s += sz-1;
+		d += sz-1; s += sz-1;
 		while (sz--) { *(d--) = *(s--); }
 	} else {
 		while (sz--) { *(d++) = *(s++); }
@@ -280,10 +279,9 @@ void cfInit() {
 	vhere = dsp = rsp = lsp = tsp = asp = state = 0;
 	here = BYE+1;
     struct { char *nm; cell val; } nvp[] = {
-		{ "version", VERSION },  { "(jmp)",   JMP },    { "(jmpz)",   JMPZ }, 
+		{ "(ztype)", ZTYPE },    { "(jmp)",   JMP },    { "(jmpz)",   JMPZ },
 		{ "(jmpnz)", JMPNZ },    { "(njmpz)", NJMPZ },  { "(njmpnz)", NJMPNZ },
 		{ "(lit)",   LIT },      { "(exit)",  EXIT },   { "(bye)",    BYE },
-		{ "(ztype)", ZTYPE },
 		{ "(dsp)",   (cell)&dsp },     { "dstk",  (cell)&dstk[0] },
 		{ "(rsp)",   (cell)&rsp },     { "rstk",  (cell)&rstk[0] },
 		{ "(tsp)",   (cell)&tsp },     { "tstk",  (cell)&tstk[0] },
@@ -296,8 +294,8 @@ void cfInit() {
 		{ "tstk-sz", TSTK_SZ+1 },      { "lstk-sz",  LSTK_SZ+1 },
 		{ "memory",  (cell)&mem[0] },  { ">in",   (cell)&toIn },
 		{ "mem-sz",  MEM_SZ },         { "base",  (cell)&base },
-		{ "state",   (cell)&state },   { "cell",  CELL_SZ },
-		{ 0 ,0 }
+		{ "version", VERSION },        { "state",   (cell)&state },
+		{ "cell",  CELL_SZ },          { 0 ,0 }
 	};
 	for (int i = 0; nvp[i].nm; i++) {
 		DE_T *dp = addWord(nvp[i].nm);

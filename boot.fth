@@ -165,7 +165,7 @@ const -la-    const -ha-    vhere const -vha-
 : de>len   cell + 1+ c@ ; inline
 : de>name  cell + 2+ ; inline
 : .word de>name ztype ;
-: .de-word .word t@+ 10 > if 0 t! cr exit then tab ;
+: .de-word .word t@+ 9 > if 0 t! cr exit then tab ;
 
 : words last >a 1 >t 0 >b begin
    a@ de>len  7 > if t+ then
@@ -339,8 +339,7 @@ ed-blk blk-sz + 1- const ed-eob
 : mv-up    row@ 1- 0 max row! ;
 : mv-down  row@ 1+ last-row min row! ;
 : mv-end   last-col col! begin
-      col@ 0= ed-ch@ bl > or if exit then
-      mv-left
+      col@ 0= ed-ch@ bl > or if exit then mv-left
    again ;
 : ins-bl  rc->pos dup 1+ last-col col@ - cmove bl ed-ch! ;
 : ins-bl2 rc->pos dup 1+ ed-eob over - 1+ cmove bl ed-ch! ;
