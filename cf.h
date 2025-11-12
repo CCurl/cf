@@ -12,13 +12,16 @@
 #include <stdint.h>
 #include <time.h>
 
-#define VERSION         20251111
+#define VERSION         20251112
 
 #define MEM_SZ          16*(1024*1024)
 #define STK_SZ          63
 #define LSTK_SZ         60
 #define TSTK_SZ         63
-#define btwi(n,l,h)   ((l<=n) && (n<=h))
+
+#define btwi(n,l,h)     ((l<=n) && (n<=h))
+#define NCASE           goto next; case
+#define BCASE           break; case
 
 #if INTPTR_MAX > INT32_MAX
     #define CELL_T      int64_t

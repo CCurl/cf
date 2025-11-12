@@ -2,8 +2,6 @@
 
 #include "cf.h"
 
-#define NCASE         goto next; case
-#define BCASE         break; case
 #define TOS           dstk[dsp]
 #define NOS           dstk[dsp-1]
 #define L0            lstk[lsp]
@@ -13,14 +11,14 @@
 
 byte mem[MEM_SZ];
 cell dsp, dstk[STK_SZ+1],  rsp, rstk[STK_SZ+1];
-cell tsp, tstk[TSTK_SZ+1], asp, astk[TSTK_SZ+1], bsp, bstk[TSTK_SZ+1];
-cell lsp, lstk[LSTK_SZ+1];
+cell asp, astk[TSTK_SZ+1], bsp, bstk[TSTK_SZ+1];
+cell tsp, tstk[TSTK_SZ+1], lsp, lstk[LSTK_SZ+1];
 cell base, state, dictEnd, outputFp;
 cell *code, here, vhere, last;
 char *toIn, wd[128];
 DE_T tmpWords[10];
 
-#define PRIMS \
+#define PRIMS(X) \
 	X(DUP,     "dup",     0, t=TOS; push(t); ) \
 	X(SWAP,    "swap",    0, t=TOS; TOS=NOS; NOS=t; ) \
 	X(DROP,    "drop",    0, pop(); ) \
@@ -92,8 +90,8 @@ DE_T tmpWords[10];
 	X(CMOVE,   "cmove",   0, t=pop(); n=pop(); cmove(pop(), n, t); ) \
 	X(BYE,     "bye",     0, ttyMode(0); exit(0); )
 
-#define X(op, name, imm, cod) op,
-enum _PRIM  { STOP, LIT, JMP, JMPZ, NJMPZ, JMPNZ, NJMPNZ, PRIMS };
+#define E1(op, name, imm, code) op,
+enum _PRIM  { STOP, LIT, JMP, JMPZ, NJMPZ, JMPNZ, NJMPNZ, PRIMS(E1) };
 
 static void push(cell x) { if (dsp < STK_SZ) { dstk[++dsp] = x; } }
 static cell pop() { return (0<dsp) ? dstk[dsp--] : 0; }
@@ -168,12 +166,11 @@ static DE_T *findWord(const char *w) {
 	return (DE_T*)0;
 }
 
-#undef X
-#define X(op, name, imm, code) NCASE op: code
+#define C1(op, name, imm, code) NCASE op: code
 
 void cfInner(cell pc) {
 	cell t, n, ir;
-next:
+	next:
 	ir = code[pc++];
 	switch(ir) {
 		case  STOP:   return;
@@ -183,7 +180,7 @@ next:
 		NCASE JMPNZ:  t=code[pc++]; if (pop())    { pc = t; }
 		NCASE NJMPZ:  t=code[pc++]; if (TOS==0)   { pc = t; }
 		NCASE NJMPNZ: t=code[pc++]; if (TOS)      { pc = t; }
-		PRIMS
+		PRIMS(C1)
 		default:
 			if ((ir & NUM_BITS) == NUM_BITS) { push(ir & NUM_MASK); goto next; }
 			if (code[pc] != EXIT) { rpush(pc); }
@@ -304,9 +301,8 @@ void cfInit() {
 		comma(EXIT);
 	}
 
-	#undef X
-	#define X(op, name, imm, code) { op, name, imm },
-	PRIM_T prims[] = { PRIMS {0, 0, 0} };
+	#define D1(op, name, imm, code) { op, name, imm },
+	PRIM_T prims[] = { PRIMS(D1) {0, 0, 0} };
 	for (int i = 0; prims[i].name; i++) {
 		DE_T *dp = addWord((char*)prims[i].name);
 		dp->xt = prims[i].op;
