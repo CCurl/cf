@@ -8,6 +8,9 @@
 #define L1            lstk[lsp-1]
 #define L2            lstk[lsp-2]
 #define isTemp(w)     ((w[0]=='t') && btwi(w[1],'0','9') && (w[2]==0))
+#define X1(op, name, imm, code) op,
+#define X2(op, name, imm, code) NCASE op: code
+#define X3(op, name, imm, code) { op, name, imm },
 
 byte mem[MEM_SZ];
 cell dsp, dstk[STK_SZ+1],  rsp, rstk[STK_SZ+1];
@@ -23,11 +26,11 @@ DE_T tmpWords[10];
 	X(SWAP,    "swap",    0, t=TOS; TOS=NOS; NOS=t; ) \
 	X(DROP,    "drop",    0, pop(); ) \
 	X(OVER,    "over",    0, t=NOS; push(t); ) \
-	X(FET,     "@",       0, TOS = fetchCell(TOS); ) \
-	X(STO,     "!",       0, t=pop(); n=pop(); storeCell(t, n); ) \
-	X(CFET,    "c@",      0, TOS = *(byte *)TOS; ) \
-	X(CSTO,    "c!",      0, t=pop(); n=pop(); *(byte*)t=(byte)n; ) \
-	X(PLSTO,   "+!",      0, t=pop(); n=pop(); storeCell(t, fetchCell(t)+n); ) \
+	X(FET,     "@",       0, TOS = *(cell*)TOS; ) \
+	X(STO,     "!",       0, t=pop(); n=pop(); *(cell*)t = n; ) \
+	X(CFET,    "c@",      0, TOS = *(byte*)TOS; ) \
+	X(CSTO,    "c!",      0, t=pop(); n=pop(); *(byte*)t = (byte)n; ) \
+	X(PLSTO,   "+!",      0, t=pop(); n=pop(); *(cell*)t += n; ) \
 	X(ADD,     "+",       0, t=pop(); TOS += t; ) \
 	X(SUB,     "-",       0, t=pop(); TOS -= t; ) \
 	X(MUL,     "*",       0, t=pop(); TOS *= t; ) \
@@ -90,8 +93,7 @@ DE_T tmpWords[10];
 	X(CMOVE,   "cmove",   0, t=pop(); n=pop(); cmove(pop(), n, t); ) \
 	X(BYE,     "bye",     0, ttyMode(0); exit(0); )
 
-#define E1(op, name, imm, code) op,
-enum _PRIM  { STOP, LIT, JMP, JMPZ, NJMPZ, JMPNZ, NJMPNZ, PRIMS(E1) };
+enum _PRIM  { STOP, LIT, JMP, JMPZ, NJMPZ, JMPNZ, NJMPNZ, PRIMS(X1) };
 
 static void push(cell x) { if (dsp < STK_SZ) { dstk[++dsp] = x; } }
 static cell pop() { return (0<dsp) ? dstk[dsp--] : 0; }
@@ -99,10 +101,6 @@ static void rpush(cell x) { if (rsp < STK_SZ) { rstk[++rsp] = x; } }
 static cell rpop() { return (0<rsp) ? rstk[rsp--] : 0; }
 static int  lower(const char c) { return btwi(c, 'A', 'Z') ? c+32 : c; }
 static int  strLen(const char *s) { int l = 0; while (s[l]) { l++; } return l; }
-static void storeWord(byte *a, cell v) { *(ushort*)(a) = (ushort)v; }
-static ushort fetchWord(byte *a) { return *(ushort*)(a); }
-static void storeCell(cell a, cell v) { *(cell*)(a) = v; }
-static cell fetchCell(cell a) { return *(cell*)(a); }
 static void comma(cell n) { code[here++] = n; }
 static int  changeState(int newState) { state = newState; return newState; }
 static void checkWS(char c) { if (btwi(c,DEFINE,COMMENT)) { changeState(c); } }
@@ -156,22 +154,19 @@ static DE_T *addWord(char *w) {
 static DE_T *findWord(const char *w) {
 	if (!w) { nextWord(); w = wd; }
 	if (isTemp(w)) { return &tmpWords[w[1] - '0']; }
-	int len = strLen(w);
+	int ln = strLen(w);
 	cell cw = last;
 	while (cw < dictEnd) {
 		DE_T *dp = (DE_T*)cw;
-		if ((len == dp->len) && strEqI(dp->name, w)) { return dp; }
+		if ((ln == dp->len) && strEqI(dp->name, w)) { return dp; }
 		cw += sizeof(DE_T);
 	}
 	return (DE_T*)0;
 }
 
-#define C1(op, name, imm, code) NCASE op: code
-
 void cfInner(cell pc) {
 	cell t, n, ir;
-	next:
-	ir = code[pc++];
+	next: ir = code[pc++];
 	switch(ir) {
 		case  STOP:   return;
 		NCASE LIT:    push(code[pc++]);
@@ -180,7 +175,7 @@ void cfInner(cell pc) {
 		NCASE JMPNZ:  t=code[pc++]; if (pop())    { pc = t; }
 		NCASE NJMPZ:  t=code[pc++]; if (TOS==0)   { pc = t; }
 		NCASE NJMPNZ: t=code[pc++]; if (TOS)      { pc = t; }
-		PRIMS(C1)
+		PRIMS(X2)
 		default:
 			if ((ir & NUM_BITS) == NUM_BITS) { push(ir & NUM_MASK); goto next; }
 			if (code[pc] != EXIT) { rpush(pc); }
@@ -301,8 +296,7 @@ void cfInit() {
 		comma(EXIT);
 	}
 
-	#define D1(op, name, imm, code) { op, name, imm },
-	PRIM_T prims[] = { PRIMS(D1) {0, 0, 0} };
+	PRIM_T prims[] = { PRIMS(X3) {0, 0, 0} };
 	for (int i = 0; prims[i].name; i++) {
 		DE_T *dp = addWord((char*)prims[i].name);
 		dp->xt = prims[i].op;
