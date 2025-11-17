@@ -217,8 +217,8 @@ const -la-    const -ha-    vhere const -vha-
 : blk-max 1023 ; inline
 : blk-sz  1024 ; inline
 blk-sz blk-max 1+ * var blks
-cell var t0
-: blk@ ( --n ) t0 @ ;  : blk! ( n-- ) t0 ! ;
+cell var t0  1 t0 !
+: blk@ ( --n ) t0 @ ;  : blk! ( n-- ) 0 max blk-max min t0 ! ;
 : blk-data ( --a ) blk@ blk-sz * blks + ;
 : blk-end  ( --a ) blk-data blk-sz + 1- ;
 : blk-clr  ( -- )  blk-data blk-sz 0 fill ;
@@ -384,6 +384,7 @@ ed-blk blk-sz + 1- const ed-eob
 : w  dirty? if w! then ;
 : q  dirty? if0 q! exit then ." use 'wq' or 'q!'" ;
 : wq w q ;
+: ed! w blk! ed-load ;
 : do-cmd ->cmd ':' emit clr-eol pad accept
    space pad outer show! ;
 : next-pg w blk@ 1+ ed-goto ;
@@ -476,6 +477,7 @@ bl   case   mv-right
 'G'  case!  rows 1- row! 0 col! ;
 '+'  case   next-pg
 '-'  case   prev-pg
+'#'  case!  cls show! ;
 0 v, 0 v, (( end ))
 
 : process-key ( --, key is in a )
@@ -502,3 +504,5 @@ green .version white ."  - Chris Curl " cr
 yellow ."  Memory: " white mem-sz . ." bytes" cr
 yellow ."    Code: " white here . ." opcodes used" cr
 yellow ."    Dict: " white dict-end last - de-sz / . ." words defined" cr
+
+1 load
