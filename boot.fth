@@ -220,7 +220,7 @@ blk-sz blk-max 1+ * var blks
 cell var t0  1 t0 !
 : blk@ ( --n ) t0 @ ;  : blk! ( n-- ) 0 max blk-max min t0 ! ;
 : blk-data ( --a ) blk@ blk-sz * blks + ;
-: blk-end  ( --a ) blk-data blk-sz + 1- ;
+: blk-end  ( --a ) blk-data blk-max + ;
 : blk-clr  ( -- )  blk-data blk-sz 0 fill ;
 16 var t1
 : blk-fn ( --a ) t1 z" block-" s-cpy blk@ <# # # #s #> s-cat z" .fth" s-cat ;
