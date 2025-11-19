@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#define VERSION         20251113
+#define VERSION         20251119
 
 #define MEM_SZ          16*(1024*1024)
 #define STK_SZ          63
@@ -50,7 +50,6 @@ typedef struct { cell xt; byte flags, len; char name[NAME_MAX+1]; } DE_T;
 typedef struct { cell op; const char* name; byte fl; } PRIM_T;
 
 // These are defined by cf.c
-extern void cfInner(cell start);
 extern void cfOuter(const char *src);
 extern void cfInit();
 extern cell state, outputFp;

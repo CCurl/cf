@@ -164,7 +164,7 @@ static DE_T *findWord(const char *w) {
 	return (DE_T*)0;
 }
 
-void cfInner(cell pc) {
+static void cfInner(cell pc) {
 	cell t, n, ir;
 	next: ir = code[pc++];
 	switch(ir) {
