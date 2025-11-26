@@ -263,13 +263,13 @@ void cfOuter(const char *src) {
 
 void cfInit() {
 	code  = (cell*)&mem[0];
+	here  = BYE+1;
 	base  = 10;
 	state = INTERP;
-	last   = (cell)&mem[MEM_SZ-1];
+	last  = (cell)&mem[MEM_SZ-1];
 	while (last & (CELL_SZ-1)) { --last; }
 	dictEnd = last;
 	vhere = dsp = rsp = lsp = tsp = asp = state = 0;
-	here = BYE+1;
     struct { char *nm; cell val; } nvp[] = {
 		{ "(ztype)", ZTYPE },    { "(jmp)",   JMP },    { "(jmpz)",   JMPZ },
 		{ "(jmpnz)", JMPNZ },    { "(njmpz)", NJMPZ },  { "(njmpnz)", NJMPNZ },
@@ -282,11 +282,11 @@ void cfInit() {
 		{ "(bsp)",   (cell)&bsp },     { "bstk",  (cell)&bstk[0] },
 		{ "(ha)",    (cell)&here },    { "(vha)", (cell)&vhere },
 		{ "(la)",    (cell)&last },    { "(output-fp)",(cell)&outputFp },
-		{ "de-sz",   sizeof(DE_T) },   { "stk-sz",   STK_SZ+1 },
-		{ "tstk-sz", TSTK_SZ+1 },      { "lstk-sz",  LSTK_SZ+1 },
+		{ "de-sz",   sizeof(DE_T) },   { "stk-sz",  STK_SZ+1 },
+		{ "tstk-sz", TSTK_SZ+1 },      { "lstk-sz", LSTK_SZ+1 },
 		{ "memory",  (cell)&mem[0] },  { ">in",   (cell)&toIn },
 		{ "mem-sz",  MEM_SZ },         { "base",  (cell)&base },
-		{ "version", VERSION },        { "state",   (cell)&state },
+		{ "version", VERSION },        { "state", (cell)&state },
 		{ "cell",  CELL_SZ },          { 0 ,0 }
 	};
 	for (int i = 0; nvp[i].nm; i++) {

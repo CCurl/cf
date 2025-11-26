@@ -36,21 +36,13 @@ const -la-    const -ha-    vhere const -vha-
 : c!a+  a@+ c!    ; inline
 : c!a-  a@- c!    ; inline
 : adrop a> drop   ; inline
+
 : b+    b@+ drop  ; inline
+: b-    b@- drop  ; inline
+: c!b   b@ c!     ; inline
 : c!b+  b@+ c!    ; inline
 : c@b+  b@+ c@    ; inline
 : bdrop b> drop   ; inline
-: t+    t@+ drop  ; inline
-: t-    t@- drop  ; inline
-: c@t   t@  c@    ; inline
-: c@t+  t@+ c@    ; inline
-: c@t-  t@- c@    ; inline
-: c!t   t@  c!    ; inline
-: c!t+  t@+ c!    ; inline
-: c!t-  t@- c!    ; inline
-: t@+c  t@ dup cell + t! ;
-: tdrop t> drop   ; inline
-: atdrop adrop tdrop ;
 
 ( STATES/MODES )
 : define  1 ; inline
@@ -60,13 +52,13 @@ const -la-    const -ha-    vhere const -vha-
 : comp? state @ compile = ;
 
 ( quote subroutine )
-: t4 ( --a ) vhere dup >t  >in @ 1+ >a
+: t4 ( --a ) vhere dup >b  >in @ 1+ >a
    begin
       c@a '"' = if
-         0 c!t+  a> 1+ >in !
-         comp? if0 tdrop exit then
-         t> (vha) ! (lit) , , exit
-      then c@a+ c!t+
+         0 c!b+  a> 1+ >in !
+         comp? if0 bdrop exit then
+         b> (vha) ! (lit) , , exit
+      then c@a+ c!b+
    again ;
 
 : z"  t4 ; immediate
@@ -76,30 +68,31 @@ const -la-    const -ha-    vhere const -vha-
 : fopen-r z" rb"  fopen ;
 : fopen-w z" wb"  fopen ;
 
-( number formatting )
+( number format / print )
 : #neg 0 >a dup 0 < if com 1+ a+ then ;
-: <#   ( n--n' ) #neg last 32 - >t 0 t@ c! ;
-: hold ( c--n )  t- c!t ;
+: <#   ( n--n' ) #neg last 32 - >b 0 c!b ;
+: hold ( c--n )  b- c!b ;
 : #n   ( n-- )   '0' + dup '9' > if 7 + then hold ;
 : #.   ( -- )    '.' hold ;
 : #    ( n--n' ) base @ /mod swap #n ;
 : #s   ( n-- )   begin # -while drop ;
-: #>   ( --a )   a> if '-' hold then t> ;
+: #>   ( --a )   a> if '-' hold then b> ;
 : (.) ( n-- ) <# #s #> ztype ;
 : .   ( n-- ) (.) : space 32 emit ;
 
-: ?dup -if dup then ;
-: min ( a b--c ) over over > if swap then drop ;
-: max ( a b--c ) over over < if swap then drop ;
-: fill ( addr num ch-- ) >t >r >a  r> for t@ c!a+ next atdrop ;
-: s-end  ( str--end )     dup s-len + ; inline
-: s-cat  ( dst src--dst ) over s-end swap s-cpy drop ;
-: mb ( n--m ) 1024 dup * * ;
+: 2dup  over over ; inline
+: 2drop drop drop ; inline
+: ?dup  -if dup then ;
+: min   ( n m--n|m ) 2dup > if swap then drop ;
+: max   ( n m--n|m ) 2dup < if swap then drop ;
+: fill  ( a n c-- )  >r swap 1- r> for 2dup 1+ c! next 2drop ;
+: s-end ( s--e )     dup s-len + ; inline
+: s-cat ( d s--d )   over s-end swap s-cpy drop ;
 
 ( Blocks )
 : blk-max 1023 ; inline
 : blk-sz  1024 ; inline
-memory mem-sz + 2 mb - const blks
+memory mem-sz + 2 1024 dup * * - const blks
 cell var t0  1 t0 !
 : blk@ ( --n ) t0 @ ;
 : blk! ( n-- ) 0 max blk-max min t0 ! ;
@@ -119,6 +112,7 @@ cell var t0  1 t0 !
 : load-next  blk@ 1+ blk! blk-rd blk-data t1 >in ! ;
 
 ( everything from here on could be moved to blocks )
+
 : source-loc memory 100000 + ;
 : rb ( reboot )
    -vha- (vha) !  -la- (la) !  -ha- (ha) !
@@ -128,6 +122,19 @@ cell var t0  1 t0 !
       source-loc 50000 a@ fread drop a> fclose
       source-loc >in !
    then ;
+
+( T reg/stack words )
+: t+    t@+ drop  ; inline
+: t-    t@- drop  ; inline
+: c@t   t@  c@    ; inline
+: c@t+  t@+ c@    ; inline
+: c@t-  t@- c@    ; inline
+: c!t   t@  c!    ; inline
+: c!t+  t@+ c!    ; inline
+: c!t-  t@- c!    ; inline
+: t@+c  t@ dup cell + t! ;
+: tdrop t> drop   ; inline
+: atdrop adrop tdrop ;
 
 : val   ( -- )  addword (lit) , 111 , (exit) , ;
 : (val) ( -- )  here 2 - ->code const ;
@@ -162,8 +169,6 @@ cell var t0  1 t0 !
 : 2+ 1+ 1+ ; inline
 : 2* dup + ; inline
 : 2/ 2 / ; inline
-: 2dup over over ; inline
-: 2drop drop drop ; inline
 : mod /mod drop ; inline
 : ? @ . ;
 : nip  swap drop ; inline
