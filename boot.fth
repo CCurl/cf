@@ -43,6 +43,7 @@ const -la-    const -ha-    vhere const -vha-
 : c!b+  b@+ c!    ; inline
 : c@b+  b@+ c@    ; inline
 : bdrop b> drop   ; inline
+: abdrop adrop bdrop ;
 
 ( STATES/MODES )
 : define  1 ; inline
@@ -65,8 +66,9 @@ const -la-    const -ha-    vhere const -vha-
 : ."  t4 comp? if (ztype) , exit then ztype ; immediate
 
 ( Files )
-: fopen-r z" rb"  fopen ;
-: fopen-w z" wb"  fopen ;
+: fopen-r  ( fn--fh ) z" rb" fopen ;
+: fopen-w  ( fn--fh ) z" wb" fopen ;
+: fopen-rw ( fn--fh ) z" r+" fopen ;
 
 ( number format / print )
 : #neg 0 >a dup 0 < if com 1+ a+ then ;
@@ -89,15 +91,16 @@ const -la-    const -ha-    vhere const -vha-
 : s-end ( s--e )     dup s-len + ; inline
 : s-cat ( d s--d )   over s-end swap s-cpy drop ;
 
-( Blocks )
-: blk-max 1023 ; inline
+( Blocks, 1024 blocks, 1024 bytes each )
+: num-blks 1024 ; inline
+: blk-max num-blks 1- ;
 : blk-sz  1024 ; inline
-memory mem-sz + 2 1024 dup * * - const blks
+memory mem-sz + 2048 1024 * - const blks
 cell var t0  1 t0 !
 : blk@ ( --n ) t0 @ ;
 : blk! ( n-- ) 0 max blk-max min t0 ! ;
 : blk-data ( --a ) blk@ blk-sz * blks + ;
-: blk-end  ( --a ) blk-data blk-sz 1- + ;
+: blk-end  ( --a ) blk-data blk-sz + 1- ;
 : blk-clr  ( -- )  blk-data blk-sz 0 fill ;
 16 var t1
 : blk-fn ( --a ) t1 z" block-" s-cpy blk@ <# # # #s #> s-cat z" .fth" s-cat ;
@@ -105,6 +108,25 @@ cell var t0  1 t0 !
    if >a blk-data blk-sz a@ fread drop a> fclose then ;
 : blk-wr ( -- ) blk-fn fopen-w ?dup
    if >a blk-data blk-sz a@ fwrite drop a> fclose then ;
+num-blks var t1
+( 0 => clean, 1 => dirty )
+: bflg@ ( n--f ) t1 + c@ ;
+: bflg! ( f n-- ) t1 + c! ;
+: b-read ( fh n-- ) >a >b
+   a@ blk-sz * dup b@ fseek
+   blks + blk-sz b> fread drop
+   0 a> bflg! ;
+: b-write ( fh n-- ) >b >a
+   b@ blk-sz * dup a@ fseek
+   blks + blk-sz a> fwrite drop
+   0 b> bflg! ;
+: b-flush ( fh n-- ) dup bflg@ if b-write exit then 2drop ;
+: t4 ( fh--fh ) num-blks for dup i b-flush next ;
+: d-flush ( -- ) z" blocks.fth" fopen-rw t4 fclose ;
+: d-read ( -- ) z" blocks.fth" fopen-r >a
+   blks num-blks blk-sz * a@ fread drop
+   a> fclose ;
+: ddt blk-max 1+ for 1 i bflg! next ;
 
 ( load )
 : t1  0 blk-end c! ;
@@ -122,6 +144,11 @@ cell var t0  1 t0 !
       source-loc 50000 a@ fread drop a> fclose
       source-loc >in !
    then ;
+
+cell var t0    cell var t1    cell var t2
+: marker here t0 ! last t1 ! vhere t2 ! ;
+: forget t0 @ (ha) ! t1 @ (la) ! t2 @ (vha) ! ;
+marker
 
 ( T reg/stack words )
 : t+    t@+ drop  ; inline
@@ -501,13 +528,8 @@ bl   case   mv-right
 ( fgl: forget the last word )
 : fgl last dup de-sz + (la) ! de>xt (ha) ! ;  
 
-cell var t0    cell var t1    cell var t2
-: marker here t0 ! last t1 ! vhere t2 ! ;
-: forget t0 @ (ha) ! t1 @ (la) ! t2 @ (vha) ! ;
-
 : .version ." cf v" version <# # # #. # # #. #s #> ztype ;
 
-marker
 green .version white ."  - Chris Curl " cr
 yellow ."  Memory: " white mem-sz . ." bytes" cr
 yellow ."    Code: " white here . ." opcodes used" cr
