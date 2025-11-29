@@ -110,28 +110,31 @@ cell var t0  1 t0 !
    if >a blk-data blk-sz a@ fwrite drop a> fclose then ;
 num-blks var t1
 ( 0 => clean, 1 => dirty )
-: bflg@ ( n--f ) t1 + c@ ;
-: bflg! ( f n-- ) t1 + c! ;
-: b-read ( fh n-- ) >a >b
-   a@ blk-sz * dup b@ fseek
-   blks + blk-sz b> fread drop
-   0 a> bflg! ;
+: bflg!    ( f n-- ) t1 + c! ;
+: b-dirty? ( n--f )  t1 + c@ ;
+: b-dirty! ( n-- ) 1 swap bflg! ;
+: b-clean! ( n-- ) 0 swap bflg! ;
+: b-read ( fh n-- ) >b >a
+   b@ blk-sz * dup a@ fseek
+   blks + blk-sz a> fread drop
+   b> b-clean! ;
 : b-write ( fh n-- ) >b >a
    b@ blk-sz * dup a@ fseek
    blks + blk-sz a> fwrite drop
-   0 b> bflg! ;
-: b-flush ( fh n-- ) dup bflg@ if b-write exit then 2drop ;
+   b> b-clean! ;
+: b-flush ( fh n-- ) dup b-dirty? if b-write exit then 2drop ;
 : t4 ( fh--fh ) num-blks for dup i b-flush next ;
 : d-flush ( -- ) z" blocks.fth" fopen-rw t4 fclose ;
-: d-read ( -- ) z" blocks.fth" fopen-r >a
+: d-read  ( -- ) z" blocks.fth" fopen-r >a
    blks num-blks blk-sz * a@ fread drop
    a> fclose ;
-: ddt blk-max 1+ for 1 i bflg! next ;
+: ddt num-blks for i b-dirty! next ;
+d-read
 
 ( load )
 : t1  0 blk-end c! ;
-: load ( n-- )  blk! blk-rd blk-data t1 outer ;
-: load-next  blk@ 1+ blk! blk-rd blk-data t1 >in ! ;
+: load ( n-- )  blk! ( blk-rd ) blk-data t1 outer ;
+: load-next  blk@ 1+ blk! ( blk-rd ) blk-data t1 >in ! ;
 
 ( everything from here on could be moved to blocks )
 
@@ -346,7 +349,7 @@ ed-blk blk-sz + 1- const ed-eob
 : ed-ch@ ( --c ) rc->pos c@ ;
 : ed-bl ( -- ) ed-blk >a blk-sz for c@a if0 bl c!a then a+ next adrop ;
 : blk->ed ( -- ) blk-data ed-blk blk-sz cmove ed-bl ;
-: ed-load ( -- ) blk-rd blk->ed clean! show! 0 0 row! col! ;
+: ed-load ( -- ) ( blk-rd ) blk->ed clean! show! 0 0 row! col! ;
 : ->norm  0 mode! ;    : norm?  mode@  0 = ;
 : ->repl  1 mode! ;    : repl?  mode@  1 = ;
 : ->ins   2 mode! ;    : ins?   mode@  2 = ;
@@ -415,7 +418,7 @@ ed-blk blk-sz + 1- const ed-eob
       c@t+ 33 < if t> 1- pos->rc exit then
    again ;
 : rl blk@ ed-goto ;
-: w! ed-blk blk-data blk-sz cmove blk-wr clean! ;
+: w! ed-blk blk-data blk-sz cmove blk@ b-dirty! clean! ;
 : w  dirty? if w! then ;
 : q  dirty? if0 q! exit then ." use 'wq' or 'q!'" ;
 : wq w q ;
