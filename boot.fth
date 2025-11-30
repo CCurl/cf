@@ -39,7 +39,7 @@ const -la-    const -ha-    vhere const -vha-
 
 : b+    b@+ drop  ; inline
 : b-    b@- drop  ; inline
-: c!b   b@ c!     ; inline
+: c!b   b@  c!    ; inline
 : c!b+  b@+ c!    ; inline
 : c@b+  b@+ c@    ; inline
 : bdrop b> drop   ; inline
@@ -87,14 +87,15 @@ const -la-    const -ha-    vhere const -vha-
 : ?dup  -if dup then ;
 : min   ( n m--n|m ) 2dup > if swap then drop ;
 : max   ( n m--n|m ) 2dup < if swap then drop ;
-: fill  ( a n c-- )  >r swap 1- r> for 2dup 1+ c! next 2drop ;
+: fill  ( a n c-- )  >a >t >b  t> for a@ c!b+ next abdrop ;
 : s-end ( s--e )     dup s-len + ; inline
 : s-cat ( d s--d )   over s-end swap s-cpy drop ;
 
-( Blocks, 1024 blocks, 1024 bytes each )
-: num-blks 1024 ; inline
-: blk-max num-blks 1- ;
+( Blocks )
+: num-blks 256 ; inline
+: blk-max  255 ; inline
 : blk-sz  1024 ; inline
+: disk-sz  num-blks blk-sz * ;
 memory mem-sz + 2048 1024 * - const blks
 cell var t0  1 t0 !
 : blk@ ( --n ) t0 @ ;
@@ -102,39 +103,18 @@ cell var t0  1 t0 !
 : blk-data ( --a ) blk@ blk-sz * blks + ;
 : blk-end  ( --a ) blk-data blk-sz + 1- ;
 : blk-clr  ( -- )  blk-data blk-sz 0 fill ;
-16 var t1
-: blk-fn ( --a ) t1 z" block-" s-cpy blk@ <# # # #s #> s-cat z" .fth" s-cat ;
-: blk-rd ( -- ) blk-clr  blk-fn fopen-r ?dup
-   if >a blk-data blk-sz a@ fread drop a> fclose then ;
-: blk-wr ( -- ) blk-fn fopen-w ?dup
-   if >a blk-data blk-sz a@ fwrite drop a> fclose then ;
-num-blks var t1
-( 0 => clean, 1 => dirty )
-: bflg!    ( f n-- ) t1 + c! ;
-: b-dirty? ( n--f )  t1 + c@ ;
-: b-dirty! ( n-- ) 1 swap bflg! ;
-: b-clean! ( n-- ) 0 swap bflg! ;
-: b-read ( fh n-- ) >b >a
-   b@ blk-sz * dup a@ fseek
-   blks + blk-sz a> fread drop
-   b> b-clean! ;
-: b-write ( fh n-- ) >b >a
-   b@ blk-sz * dup a@ fseek
-   blks + blk-sz a> fwrite drop
-   b> b-clean! ;
-: b-flush ( fh n-- ) dup b-dirty? if b-write exit then 2drop ;
-: t4 ( fh--fh ) num-blks for dup i b-flush next ;
-: d-flush ( -- ) z" blocks.fth" fopen-rw t4 fclose ;
-: d-read  ( -- ) z" blocks.fth" fopen-r >a
-   blks num-blks blk-sz * a@ fread drop
+: d-read  ( -- ) z" disk.cf" fopen-r ?dup if
+   >a blks disk-sz a@ fread drop
+   a> fclose then ;
+: d-write ( -- ) z" disk.cf" fopen-w >a
+   blks disk-sz a@ fwrite drop
    a> fclose ;
-: ddt num-blks for i b-dirty! next ;
 d-read
 
 ( load )
 : t1  0 blk-end c! ;
-: load ( n-- )  blk! ( blk-rd ) blk-data t1 outer ;
-: load-next  blk@ 1+ blk! ( blk-rd ) blk-data t1 >in ! ;
+: load ( n-- )  blk! blk-data t1 outer ;
+: load-next ( -- )  blk@ 1+ blk! blk-data t1 >in ! ;
 
 ( everything from here on could be moved to blocks )
 
@@ -385,7 +365,7 @@ ed-blk blk-sz + 1- const ed-eob
 : insert-char  a@ printable? if ins-bl a@ ed-ch! mv-right then ;
 : del-c rc->pos >a a@ 1+ a> cols col@ - cmove dirty! 32 ed-eol c! ;
 : del-z rc->pos >a a@ 1+ a@ ed-eob a> - cmove dirty! 32 ed-eob c! ;
-: clr-line  rc->pos col@ - cols bl fill dirty! ;
+: clr-line  0 row@ cr->pos cols bl fill dirty! ;
 : clr-toend rc->pos cols col@ - bl fill dirty! ;
 : ed-goto ( blk-- ) blk! ed-load ;
 : insert-line  row@ last-row < if
@@ -418,7 +398,7 @@ ed-blk blk-sz + 1- const ed-eob
       c@t+ 33 < if t> 1- pos->rc exit then
    again ;
 : rl blk@ ed-goto ;
-: w! ed-blk blk-data blk-sz cmove blk@ b-dirty! clean! ;
+: w! ed-blk blk-data blk-sz cmove clean! ;
 : w  dirty? if w! then ;
 : q  dirty? if0 q! exit then ." use 'wq' or 'q!'" ;
 : wq w q ;
