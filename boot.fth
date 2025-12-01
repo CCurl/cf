@@ -103,13 +103,13 @@ cell var t0  1 t0 !
 : blk-data ( --a ) blk@ blk-sz * blks + ;
 : blk-end  ( --a ) blk-data blk-sz + 1- ;
 : blk-clr  ( -- )  blk-data blk-sz 0 fill ;
-: d-read  ( -- ) z" disk.cf" fopen-r ?dup if
+: disk-read  ( -- ) z" disk.cf" fopen-r ?dup if
    >a blks disk-sz a@ fread drop
    a> fclose then ;
-: d-write ( -- ) z" disk.cf" fopen-w >a
+: disk-write ( -- ) z" disk.cf" fopen-w >a
    blks disk-sz a@ fwrite drop
    a> fclose ;
-d-read
+disk-read
 
 ( load )
 : t1  0 blk-end c! ;

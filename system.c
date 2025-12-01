@@ -94,8 +94,8 @@ void boot(const char *fn) {
 		cfOuter((char*)&mem[100000]);
 	} else {
 		zType("WARNING: unable to open source file!\n");
-		zType("If no filename is provided, the default is 'boot.fth'\n");
-		zType("If no filename is provided, the default is 'boot.fth'\n");
+		zType("The default boot file is 'boot.fth' or ");
+		zType(BOOT_FILE); zType(".\n");
 	}
 }
 
