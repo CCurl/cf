@@ -202,10 +202,9 @@ static int isNumber(const char *w) {
 	return 1;
 }
 
-static int compileNumber(cell n) {
+static void compileNumber(cell n) {
 		if (btwi(n, 0, NUM_MASK)) { comma(n | NUM_BITS); }
 		else { comma(LIT); comma(n); }
-		return 1;
 }
 
 static void executeWord(DE_T *dp) {
