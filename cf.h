@@ -3,8 +3,11 @@
 #ifndef __CF_H__
 
 #ifdef _MSC_VER
-#define _CRT_SECURE_NO_WARNINGS
-#define IS_WINDOWS 1
+    #define _CRT_SECURE_NO_WARNINGS
+    #define IS_WINDOWS 1
+    #define BOOT_FILE "\\bin\\cf-boot.fth"
+#else
+    #define BOOT_FILE "/home/chris/bin/cf-boot.fth"
 #endif
 
 #include <stdio.h>
@@ -12,13 +15,16 @@
 #include <stdint.h>
 #include <time.h>
 
-#define VERSION         20251027
+#define VERSION         20251130
 
 #define MEM_SZ          16*(1024*1024)
 #define STK_SZ          63
 #define LSTK_SZ         60
 #define TSTK_SZ         63
-#define btwi(n,l,h)   ((l<=n) && (n<=h))
+
+#define btwi(n,l,h)     ((l<=n) && (n<=h))
+#define NCASE           goto next; case
+#define BCASE           break; case
 
 #if INTPTR_MAX > INT32_MAX
     #define CELL_T      int64_t
@@ -47,7 +53,6 @@ typedef struct { cell xt; byte flags, len; char name[NAME_MAX+1]; } DE_T;
 typedef struct { cell op; const char* name; byte fl; } PRIM_T;
 
 // These are defined by cf.c
-extern void cfInner(cell start);
 extern void cfOuter(const char *src);
 extern void cfInit();
 extern cell state, outputFp;

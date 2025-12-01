@@ -3,68 +3,64 @@
 #include "cf.h"
 
 #ifdef IS_WINDOWS
-
-#include <windows.h>
-#include <conio.h>
-int qKey() { return _kbhit(); }
-int key() { return _getch(); }
-void ttyMode(int isRaw) {}
-void ms(cell sleepForMS) { Sleep((DWORD)sleepForMS); }
-
+	#include <windows.h>
+	#include <conio.h>
+	int qKey() { return _kbhit(); }
+	int key() { return _getch(); }
+	void ttyMode(int isRaw) {}
+	void ms(cell sleepForMS) { Sleep((DWORD)sleepForMS); }
 #endif
 
 // Support for Linux, OpenBSD, FreeBSD
 #if defined(__linux__) || defined(__OpenBSD__) || defined(__FreeBSD__)
+	#include <termios.h>
+	#include <unistd.h>
+	#include <sys/time.h>
 
-#include <termios.h>
-#include <unistd.h>
-#include <sys/time.h>
-
-void ttyMode(int isRaw) {
-	static struct termios origt, rawt;
-	static int curMode = -1;
-	if (curMode == -1) {
-		curMode = 0;
-		tcgetattr( STDIN_FILENO, &origt);
-		cfmakeraw(&rawt);
-	}
-	if (isRaw != curMode) {
-		if (isRaw) {
-			tcsetattr( STDIN_FILENO, TCSANOW, &rawt);
-		} else {
-			tcsetattr( STDIN_FILENO, TCSANOW, &origt);
+	void ttyMode(int isRaw) {
+		static struct termios origt, rawt;
+		static int curMode = -1;
+		if (curMode == -1) {
+			curMode = 0;
+			tcgetattr( STDIN_FILENO, &origt);
+			cfmakeraw(&rawt);
 		}
-		curMode = isRaw;
+		if (isRaw != curMode) {
+			if (isRaw) {
+				tcsetattr( STDIN_FILENO, TCSANOW, &rawt);
+			} else {
+				tcsetattr( STDIN_FILENO, TCSANOW, &origt);
+			}
+			curMode = isRaw;
+		}
 	}
-}
-int qKey() {
-	struct timeval tv;
-	fd_set rdfs;
-	ttyMode(1);
-	tv.tv_sec = 0;
-	tv.tv_usec = 0;
-	FD_ZERO(&rdfs);
-	FD_SET(STDIN_FILENO, &rdfs);
-	select(STDIN_FILENO+1, &rdfs, NULL, NULL, &tv);
-	int x = FD_ISSET(STDIN_FILENO, &rdfs);
-	// ttyMode(0);
-	return x;
-}
-int key() {
-	ttyMode(1);
-	int x = fgetc(stdin);
-	// ttyMode(0);
-	return x;
-}
-void ms(cell sleepForMS) {
-	while (sleepForMS > 1000) {
-		usleep(500000);
-		usleep(500000);
-		sleepForMS -= 1000;
+	int qKey() {
+		struct timeval tv;
+		fd_set rdfs;
+		ttyMode(1);
+		tv.tv_sec = 0;
+		tv.tv_usec = 0;
+		FD_ZERO(&rdfs);
+		FD_SET(STDIN_FILENO, &rdfs);
+		select(STDIN_FILENO+1, &rdfs, NULL, NULL, &tv);
+		int x = FD_ISSET(STDIN_FILENO, &rdfs);
+		// ttyMode(0);
+		return x;
 	}
-	if (sleepForMS > 0) { usleep(sleepForMS * 1000); }
-}
-
+	int key() {
+		ttyMode(1);
+		int x = fgetc(stdin);
+		// ttyMode(0);
+		return x;
+	}
+	void ms(cell sleepForMS) {
+		while (sleepForMS > 1000) {
+			usleep(500000);
+			usleep(500000);
+			sleepForMS -= 1000;
+		}
+		if (sleepForMS > 0) { usleep(sleepForMS * 1000); }
+	}
 #endif // Linux, OpenBSD, FreeBSD
 
 cell timer() { return (cell)clock(); }
@@ -89,13 +85,17 @@ void repl() {
 void boot(const char *fn) {
 	if (!fn) { fn = "boot.fth"; }
 	cell fp = fOpen((cell)fn, (cell)"rb");
+	if (!fp) {
+		fp = fOpen((cell)BOOT_FILE, (cell)"rb");
+	}
 	if (fp) {
 		fRead((cell)&mem[100000], 99999, fp);
 		fClose(fp);
 		cfOuter((char*)&mem[100000]);
 	} else {
 		zType("WARNING: unable to open source file!\n");
-		zType("If no filename is provided, the default is 'boot.fth'\n");
+		zType("The default boot file is 'boot.fth' or ");
+		zType(BOOT_FILE); zType(".\n");
 	}
 }
 
