@@ -92,9 +92,9 @@ const -la-    const -ha-    vhere const -vha-
 : s-cat ( d s--d )   over s-end swap s-cpy drop ;
 
 ( Blocks )
-: num-blks 256 ; inline
-: blk-max  255 ; inline
-: blk-sz  1024 ; inline
+: num-blks 128 ; inline
+: blk-max  127 ; inline
+: blk-sz  2048 ; inline
 : disk-sz  num-blks blk-sz * ;
 memory mem-sz + 2048 1024 * - const blks
 cell var t0  1 t0 !
@@ -299,8 +299,8 @@ marker
   again ;
 
 (( Editor ))
-: rows 16 ; inline       : cols 64 ; inline
-: last-row 15 ; inline   : last-col 63 ; inline
+: rows 23 ; inline       : cols 89 ; inline
+: last-row 22 ; inline   : last-col 88 ; inline
 vhere const ed-colors
 219   vc, (( 0: default - purple ))
 c-red vc, (( 1: define  - red ))
