@@ -308,13 +308,13 @@ c-red vc, (( 1: define  - red ))
 226   vc, (( 3: interp  - yellow ))
 255   vc, (( 4: comment - white ))
 
-: ed-color@ ( n-- ) ed-colors + c@ ;
+: ed-color@ ( n-- )    ed-colors + c@ ;
 : ed-color! ( fg n-- ) ed-colors + c! ;
 
 cell var (r)  : row! (r) ! ;    : row@ (r) @ ;
 cell var (c)  : col! (c) ! ;    : col@ (c) @ ;
 blk-sz var ed-blk
-ed-blk blk-sz + 1- const ed-eob
+ed-blk rows cols * + 1- const ed-eob
 : norm-pos ( pos--new ) ed-blk max ed-eob min ;
 : pos->rc ( pos-- ) norm-pos ed-blk - cols /mod row! col! ;
 : cr->pos ( col row--pos ) cols * + ed-blk + ed-eob min ;
@@ -399,6 +399,7 @@ ed-blk blk-sz + 1- const ed-eob
    again ;
 : rl blk@ ed-goto ;
 : w! ed-blk blk-data blk-sz cmove clean! ;
+: w!! w! disk-write ;
 : w  dirty? if w! then ;
 : q  dirty? if0 q! exit then ." use 'wq' or 'q!'" ;
 : wq w q ;
@@ -485,8 +486,8 @@ bl   case   mv-right
 'P'  case!  insert-line put-line ;
 'q'  case!  0 8 mv ;
 'Q'  case!  0 8 negate mv ;
-'O'  case!  insert-line ->ins ;
-'o'  case!  mv-down insert-line ->ins ;
+'O'  case!  insert-line ->ins 0 col! ;
+'o'  case!  mv-down insert-line ->ins 0 col! ;
 'w'  case   ed-next-word
 'W'  case   ed-prev-word
 'Y'  case   yank-line
