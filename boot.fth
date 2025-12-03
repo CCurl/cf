@@ -180,6 +180,7 @@ marker
 : 2* dup + ; inline
 : 2/ 2 / ; inline
 : mod /mod drop ; inline
+: */ ( n x y--n' ) >r * r> / ;
 : ? @ . ;
 : nip  swap drop ; inline
 : tuck swap over ; inline
@@ -494,7 +495,7 @@ bl   case   mv-right
 'Z'  case   del-z
 'g'  case!  rows 0  row! 0 col! ;
 'G'  case!  rows 1- row! 0 col! ;
-'+'  case   next-pg
+'='  case   next-pg
 '-'  case   prev-pg
 '#'  case!  cls show! ;
 0 v, 0 v, (( end ))
