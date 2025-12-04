@@ -91,7 +91,7 @@ DE_T tmpWords[10];
 	X(SCOPY,   "s-cpy",   t=pop(); strcpy((char*)TOS, (char*)t); ) \
 	X(SEQI,    "s-eqi",   t=pop(); n=pop(); push(strEqI((char*)n, (char*)t)); ) \
 	X(SLEN,    "s-len",   TOS=strLen((char*)TOS); ) \
-	X(CMOVE,   "cmove",   t=pop(); n=pop(); cmove(pop(), n, t); ) \
+	X(CMOVE,   "cmove",   t=pop(); n=pop(); memmove((char*)n, (char*)pop(), t); ) \
 	X(BYE,     "bye",     ttyMode(0); exit(0); )
 
 enum _PRIM  { STOP, LIT, JMP, JMPZ, NJMPZ, JMPNZ, NJMPNZ, PRIMS(X1) };
@@ -105,17 +105,6 @@ static int  strLen(const char *s) { int l = 0; while (s[l]) { l++; } return l; }
 static void comma(cell n) { code[here++] = n; }
 static int  changeState(int newState) { state = newState; return newState; }
 static void checkWS(char c) { if (btwi(c,DEFINE,COMMENT)) { changeState(c); } }
-
-static void cmove(cell src, cell dst, cell sz) {
-	if ((src == dst) || (sz < 1)) { return; }
-	byte *s = (byte*)src, *d = (byte*)dst;
-	if (s < d) {
-		d += sz-1; s += sz-1;
-		while (sz--) { *(d--) = *(s--); }
-	} else {
-		while (sz--) { *(d++) = *(s++); }
-	}
-}
 
 static int nextWord() {
 	int len = 0;
