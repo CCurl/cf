@@ -1,4 +1,4 @@
-// A ColorForth inspired system, MIT license
+// A ColorForth and Tachyon inspired system, MIT license.
 
 #ifndef __CF_H__
 
@@ -15,7 +15,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#define VERSION         20251203
+#define VERSION         20251204
 
 #define MEM_SZ          16*(1024*1024)
 #define STK_SZ          63

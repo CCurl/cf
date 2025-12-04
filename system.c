@@ -1,4 +1,4 @@
-// A ColorForth inspired system, MIT license
+// A ColorForth and Tachyon inspired system, MIT license.
 
 #include "cf.h"
 

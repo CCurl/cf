@@ -1,4 +1,4 @@
-// A ColorForth inspired system, MIT license
+// A ColorForth and Tachyon inspired system, MIT license.
 
 #include "cf.h"
 
@@ -297,7 +297,6 @@ void cfInit() {
 
 	PRIM_T prims[] = { PRIMS(X3) {0, 0, 0} };
 	for (int i = 0; prims[i].name; i++) {
-		DE_T *dp = addWord((char*)prims[i].name);
-		dp->xt = prims[i].op;
+		addWord((char*)prims[i].name)->xt = prims[i].op;
 	}
 }
