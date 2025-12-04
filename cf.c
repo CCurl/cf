@@ -94,8 +94,6 @@ DE_T tmpWords[10];
 	X(CMOVE,   "cmove",   t=pop(); n=pop(); memmove((char*)n, (char*)pop(), t); ) \
 	X(BYE,     "bye",     ttyMode(0); exit(0); )
 
-enum _PRIM  { STOP, LIT, JMP, JMPZ, NJMPZ, JMPNZ, NJMPNZ, PRIMS(X1) };
-
 static void push(cell x) { if (dsp < STK_SZ) { dstk[++dsp] = x; } }
 static cell pop() { return (0<dsp) ? dstk[dsp--] : 0; }
 static void rpush(cell x) { if (rsp < STK_SZ) { rstk[++rsp] = x; } }
@@ -144,6 +142,7 @@ static DE_T *findWord(const char *w) {
 	return (DE_T*)0;
 }
 
+enum { STOP, LIT, JMP, JMPZ, NJMPZ, JMPNZ, NJMPNZ, PRIMS(X1) };
 static void cfInner(cell pc) {
 	cell t, n, ir;
 	next: ir = code[pc++];
