@@ -13,9 +13,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <time.h>
 
-#define VERSION         20251204
+#define VERSION         20251205
 
 #define MEM_SZ          16*(1024*1024)
 #define STK_SZ          63

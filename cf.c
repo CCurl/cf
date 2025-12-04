@@ -8,6 +8,7 @@
 #define L1            lstk[lsp-1]
 #define L2            lstk[lsp-2]
 #define isTemp(w)     ((w[0]=='t') && btwi(w[1],'0','9') && (w[2]==0))
+#define strEqI(s, d)  (_strcmpi(s, d) == 0)
 #define X1(op, name, code) op,
 #define X2(op, name, code) NCASE op: code
 #define X3(op, name, code) { op, name, 0 },
@@ -87,7 +88,7 @@ DE_T tmpWords[10];
 	X(FWRITE,  "fwrite",  t=pop(); n=pop(); TOS=fWrite(TOS, n, t); ) \
 	X(FSEEK,   "fseek",   t=pop(); n=pop(); fSeek(t,n); ) \
 	X(SYSTEM,  "system",  t=pop(); ttyMode(0); system((char*)t); ) \
-	X(SCOPY,   "s-cpy",   t=pop(); strCpy((char*)TOS, (char*)t); ) \
+	X(SCOPY,   "s-cpy",   t=pop(); strcpy((char*)TOS, (char*)t); ) \
 	X(SEQI,    "s-eqi",   t=pop(); n=pop(); push(strEqI((char*)n, (char*)t)); ) \
 	X(SLEN,    "s-len",   TOS=strLen((char*)TOS); ) \
 	X(CMOVE,   "cmove",   t=pop(); n=pop(); cmove(pop(), n, t); ) \
@@ -104,16 +105,6 @@ static int  strLen(const char *s) { int l = 0; while (s[l]) { l++; } return l; }
 static void comma(cell n) { code[here++] = n; }
 static int  changeState(int newState) { state = newState; return newState; }
 static void checkWS(char c) { if (btwi(c,DEFINE,COMMENT)) { changeState(c); } }
-
-static int strEqI(const char *s, const char *d) {
-	while (lower(*s) == lower(*d)) { if (*s == 0) { return 1; } s++; d++; }
-	return 0;
-}
-
-static void strCpy(char *d, const char *s) {
-	while (*s) { *(d++) = *(s++); }
-	*(d) = 0;
-}
 
 static void cmove(cell src, cell dst, cell sz) {
 	if ((src == dst) || (sz < 1)) { return; }
@@ -147,7 +138,7 @@ static DE_T *addWord(char *w) {
 	dp->xt = (cell)here;
 	dp->flags = 0;
 	dp->len = ln;
-	strCpy(dp->name, w);
+	strcpy(dp->name, w);
 	return dp;
 }
 

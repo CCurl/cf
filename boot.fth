@@ -70,26 +70,11 @@ const -la-    const -ha-    vhere const -vha-
 : fopen-w  ( fn--fh ) z" wb" fopen ;
 : fopen-rw ( fn--fh ) z" r+" fopen ;
 
-( number format / print )
-: #neg 0 >a dup 0 < if com 1+ a+ then ;
-: <#   ( n--n' ) #neg last 32 - >b 0 c!b ;
-: hold ( c--n )  b- c!b ;
-: #n   ( n-- )   '0' + dup '9' > if 7 + then hold ;
-: #.   ( -- )    '.' hold ;
-: #    ( n--n' ) base @ /mod swap #n ;
-: #s   ( n-- )   begin # -while drop ;
-: #>   ( --a )   a> if '-' hold then b> ;
-: (.) ( n-- ) <# #s #> ztype ;
-: .   ( n-- ) (.) : space 32 emit ;
-
 : 2dup  over over ; inline
-: 2drop drop drop ; inline
 : ?dup  -if dup then ;
 : min   ( n m--n|m ) 2dup > if swap then drop ;
 : max   ( n m--n|m ) 2dup < if swap then drop ;
 : fill  ( a n c-- )  >a >t >b  t> for a@ c!b+ next abdrop ;
-: s-end ( s--e )     dup s-len + ; inline
-: s-cat ( d s--d )   over s-end swap s-cpy drop ;
 
 ( Blocks )
 : num-blks 128 ; inline
@@ -104,12 +89,24 @@ cell var t0  1 t0 !
 : blk-end  ( --a ) blk-data blk-sz + 1- ;
 : blk-clr  ( -- )  blk-data blk-sz 0 fill ;
 : disk-read  ( -- ) z" disk.cf" fopen-r ?dup if
-   >a blks disk-sz a@ fread drop
-   a> fclose then ;
-: disk-write ( -- ) z" disk.cf" fopen-w >a
-   blks disk-sz a@ fwrite drop
-   a> fclose ;
+   >r blks disk-sz r@ fread drop
+   r> fclose then ;
+: disk-write ( -- ) z" disk.cf" fopen-w
+   >r blks disk-sz r@ fwrite drop
+   r> fclose ;
 disk-read
+
+( number format / print )
+: #neg 0 >a dup 0 < if com 1+ a+ then ;
+: <#   ( n--n' ) #neg last 32 - >b 0 c!b ;
+: hold ( c--n )  b- c!b ;
+: #n   ( n-- )   '0' + dup '9' > if 7 + then hold ;
+: #.   ( -- )    '.' hold ;
+: #    ( n--n' ) base @ /mod swap #n ;
+: #s   ( n-- )   begin # -while drop ;
+: #>   ( --a )   a> if '-' hold then b> ;
+: (.) ( n-- ) <# #s #> ztype ;
+: .   ( n-- ) (.) : space 32 emit ;
 
 ( load )
 : t1  0 blk-end c! ;
@@ -179,6 +176,7 @@ marker
 : 2+ 1+ 1+ ; inline
 : 2* dup + ; inline
 : 2/ 2 / ; inline
+: 2drop drop drop ; inline
 : mod /mod drop ; inline
 : */ ( n x y--n' ) >r * r> / ;
 : ? @ . ;
@@ -201,6 +199,8 @@ marker
    then rpar ;
 
 ( strings )
+: s-end ( s--e )     dup s-len + ; inline
+: s-cat ( d s--d )   over s-end swap s-cpy drop ;
 : s-catc ( dst ch--dst )  over s-end tuck c! 0 swap 1+ c! ;
 : s-catn ( dst num--dst ) <# #s #> over s-end swap s-cpy drop ;
 : s-scat ( src dst--dst ) swap s-cat ;
