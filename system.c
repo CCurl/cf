@@ -1,4 +1,4 @@
-// A ColorForth inspired system, MIT license
+// A ColorForth and Tachyon inspired system, MIT license.
 
 #include "cf.h"
 
@@ -94,8 +94,8 @@ void boot(const char *fn) {
 		cfOuter((char*)&mem[100000]);
 	} else {
 		zType("WARNING: unable to open source file!\n");
-		zType("The default boot file is 'boot.fth' or ");
-		zType(BOOT_FILE); zType(".\n");
+		zType("The default boot file is 'boot.fth' or '");
+		zType(BOOT_FILE); zType("'.\n");
 	}
 }
 

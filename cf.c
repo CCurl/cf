@@ -1,4 +1,4 @@
-// A ColorForth inspired system, MIT license
+// A ColorForth and Tachyon inspired system, MIT license.
 
 #include "cf.h"
 
@@ -8,9 +8,9 @@
 #define L1            lstk[lsp-1]
 #define L2            lstk[lsp-2]
 #define isTemp(w)     ((w[0]=='t') && btwi(w[1],'0','9') && (w[2]==0))
-#define X1(op, name, imm, code) op,
-#define X2(op, name, imm, code) NCASE op: code
-#define X3(op, name, imm, code) { op, name, imm },
+#define X1(op, name, code) op,
+#define X2(op, name, code) NCASE op: code
+#define X3(op, name, code) { op, name, 0 },
 
 byte mem[MEM_SZ];
 cell dsp, dstk[STK_SZ+1],  rsp, rstk[STK_SZ+1];
@@ -22,76 +22,76 @@ char *toIn, wd[128];
 DE_T tmpWords[10];
 
 #define PRIMS(X) \
-	X(DUP,     "dup",     0, t=TOS; push(t); ) \
-	X(SWAP,    "swap",    0, t=TOS; TOS=NOS; NOS=t; ) \
-	X(DROP,    "drop",    0, pop(); ) \
-	X(OVER,    "over",    0, t=NOS; push(t); ) \
-	X(FET,     "@",       0, TOS = *(cell*)TOS; ) \
-	X(STO,     "!",       0, t=pop(); n=pop(); *(cell*)t = n; ) \
-	X(CFET,    "c@",      0, TOS = *(byte*)TOS; ) \
-	X(CSTO,    "c!",      0, t=pop(); n=pop(); *(byte*)t = (byte)n; ) \
-	X(PLSTO,   "+!",      0, t=pop(); n=pop(); *(cell*)t += n; ) \
-	X(ADD,     "+",       0, t=pop(); TOS += t; ) \
-	X(SUB,     "-",       0, t=pop(); TOS -= t; ) \
-	X(MUL,     "*",       0, t=pop(); TOS *= t; ) \
-	X(DIV,     "/",       0, t=pop(); TOS /= t; ) \
-	X(SLMOD,   "/mod",    0, t=TOS; n = NOS; TOS = n/t; NOS = n%t; ) \
-	X(INCR,    "1+",      0, ++TOS; ) \
-	X(DECR,    "1-",      0, --TOS; ) \
-	X(LT,      "<",       0, t=pop(); TOS = (TOS < t); ) \
-	X(EQ,      "=",       0, t=pop(); TOS = (TOS == t); ) \
-	X(GT,      ">",       0, t=pop(); TOS = (TOS > t); ) \
-	X(EXIT,    "exit",    0, if (0<rsp) { pc = rpop(); } else { return; } ) \
-	X(EQ0,     "0=",      0, TOS = (TOS == 0) ? 1 : 0; ) \
-	X(AND,     "and",     0, t=pop(); TOS &= t; ) \
-	X(OR,      "or",      0, t=pop(); TOS |= t; ) \
-	X(XOR,     "xor",     0, t=pop(); TOS ^= t; ) \
-	X(COM,     "com",     0, TOS = ~TOS; ) \
-	X(FOR,     "for",     0, lsp+=3; L0=0; L1=pop(); L2=pc; ) \
-	X(NDX_I,   "i",       0, push(L0); ) \
-	X(NEXT,    "next",    0, if (++L0<L1) { pc=L2; } else { lsp=(2<lsp)?(lsp-3):0; } ) \
-	X(TOR,     ">r",      0, rpush(pop()); ) \
-	X(RAT,     "r@",      0, push(rstk[rsp]); ) \
-	X(RFROM,   "r>",      0, push(rpop()); ) \
-	X(RDROP,   "rdrop",   0, rpop(); ) \
-	X(ATO,     ">a",      0, if (asp < STK_SZ) { astk[++asp] = pop(); } ) \
-	X(ASET,    "a!",      0, astk[asp] = pop(); ) \
-	X(AGET,    "a@",      0, push(astk[asp]); ) \
-	X(AGETI,   "a@+",     0, push(astk[asp]++); ) \
-	X(AGETD,   "a@-",     0, push(astk[asp]--); ) \
-	X(AFROM,   "a>",      0, push(0<asp ? astk[asp--]: 0); ) \
-	X(BTO,     ">b",      0, if (bsp < STK_SZ) { bstk[++bsp] = pop(); } ) \
-	X(BSET,    "b!",      0, bstk[bsp] = pop(); ) \
-	X(BGET,    "b@",      0, push(bstk[bsp]); ) \
-	X(BGETI,   "b@+",     0, push(bstk[bsp]++); ) \
-	X(BGETD,   "b@-",     0, push(bstk[bsp]--); ) \
-	X(BFROM,   "b>",      0, push(0<bsp ? bstk[bsp--]: 0); ) \
-	X(TTO,     ">t",      0, if (tsp < STK_SZ) { tstk[++tsp] = pop(); } ) \
-	X(TSET,    "t!",      0, tstk[tsp] = pop(); ) \
-	X(TGET,    "t@",      0, push(tstk[tsp]); ) \
-	X(TGETI,   "t@+",     0, push(tstk[tsp]++); ) \
-	X(TGETD,   "t@-",     0, push(tstk[tsp]--); ) \
-	X(TFROM,   "t>",      0, push(0<tsp ? tstk[tsp--]: 0); ) \
-	X(EMIT,    "emit",    0, emit((char)pop()); ) \
-	X(KEY,     "key",     0, push(key()); ) \
-	X(QKEY,    "?key",    0, push(qKey()); ) \
-	X(OUTER,   "outer",   0, t=pop(); n=(cell)toIn; cfOuter((char*)t); toIn=(char*)n; ) \
-	X(ADDWORD, "addword", 0, addWord(0); ) \
-	X(FIND,    "find",    0, { DE_T *dp=findWord(0); push(dp?dp->xt:0); push((cell)dp); } ) \
-	X(CLK,     "timer",   0, push(timer()); ) \
-	X(MS,      "ms",      0, ms(pop()); ) \
-	X(ZTYPE,   "ztype",   0, zType((const char *)pop()); ) \
-	X(FOPEN,   "fopen",   0, t=pop(); TOS=fOpen(TOS, t); ) \
-	X(FCLOSE,  "fclose",  0, t=pop(); fClose(t); ) \
-	X(FREAD,   "fread",   0, t=pop(); n=pop(); TOS=fRead(TOS, n, t); ) \
-	X(FWRITE,  "fwrite",  0, t=pop(); n=pop(); TOS=fWrite(TOS, n, t); ) \
-	X(FSEEK,   "fseek",   0, t=pop(); n=pop(); fSeek(t,n); ) \
-	X(SYSTEM,  "system",  0, t=pop(); ttyMode(0); system((char*)t); ) \
-	X(SCOPY,   "s-cpy",   0, t=pop(); strCpy((char*)TOS, (char*)t); ) \
-	X(SEQI,    "s-eqi",   0, t=pop(); n=pop(); push(strEqI((char*)n, (char*)t)); ) \
-	X(SLEN,    "s-len",   0, TOS=strLen((char*)TOS); ) \
-	X(CMOVE,   "cmove",   0, t=pop(); n=pop(); cmove(pop(), n, t); ) \
-	X(BYE,     "bye",     0, ttyMode(0); exit(0); )
+	X(DUP,     "dup",     t=TOS; push(t); ) \
+	X(SWAP,    "swap",    t=TOS; TOS=NOS; NOS=t; ) \
+	X(DROP,    "drop",    pop(); ) \
+	X(OVER,    "over",    t=NOS; push(t); ) \
+	X(FET,     "@",       TOS = *(cell*)TOS; ) \
+	X(STO,     "!",       t=pop(); n=pop(); *(cell*)t = n; ) \
+	X(CFET,    "c@",      TOS = *(byte*)TOS; ) \
+	X(CSTO,    "c!",      t=pop(); n=pop(); *(byte*)t = (byte)n; ) \
+	X(PLSTO,   "+!",      t=pop(); n=pop(); *(cell*)t += n; ) \
+	X(ADD,     "+",       t=pop(); TOS += t; ) \
+	X(SUB,     "-",       t=pop(); TOS -= t; ) \
+	X(MUL,     "*",       t=pop(); TOS *= t; ) \
+	X(DIV,     "/",       t=pop(); TOS /= t; ) \
+	X(SLMOD,   "/mod",    t=TOS; n = NOS; TOS = n/t; NOS = n%t; ) \
+	X(INCR,    "1+",      ++TOS; ) \
+	X(DECR,    "1-",      --TOS; ) \
+	X(LT,      "<",       t=pop(); TOS = (TOS < t); ) \
+	X(EQ,      "=",       t=pop(); TOS = (TOS == t); ) \
+	X(GT,      ">",       t=pop(); TOS = (TOS > t); ) \
+	X(EXIT,    "exit",    if (0<rsp) { pc = rpop(); } else { return; } ) \
+	X(EQ0,     "0=",      TOS = (TOS == 0) ? 1 : 0; ) \
+	X(AND,     "and",     t=pop(); TOS &= t; ) \
+	X(OR,      "or",      t=pop(); TOS |= t; ) \
+	X(XOR,     "xor",     t=pop(); TOS ^= t; ) \
+	X(COM,     "com",     TOS = ~TOS; ) \
+	X(FOR,     "for",     lsp+=3; L0=0; L1=pop(); L2=pc; ) \
+	X(NDX_I,   "i",       push(L0); ) \
+	X(NEXT,    "next",    if (++L0<L1) { pc=L2; } else { lsp=(2<lsp)?(lsp-3):0; } ) \
+	X(TOR,     ">r",      rpush(pop()); ) \
+	X(RAT,     "r@",      push(rstk[rsp]); ) \
+	X(RFROM,   "r>",      push(rpop()); ) \
+	X(RDROP,   "rdrop",   rpop(); ) \
+	X(ATO,     ">a",      if (asp < STK_SZ) { astk[++asp] = pop(); } ) \
+	X(ASET,    "a!",      astk[asp] = pop(); ) \
+	X(AGET,    "a@",      push(astk[asp]); ) \
+	X(AGETI,   "a@+",     push(astk[asp]++); ) \
+	X(AGETD,   "a@-",     push(astk[asp]--); ) \
+	X(AFROM,   "a>",      push(0<asp ? astk[asp--]: 0); ) \
+	X(BTO,     ">b",      if (bsp < STK_SZ) { bstk[++bsp] = pop(); } ) \
+	X(BSET,    "b!",      bstk[bsp] = pop(); ) \
+	X(BGET,    "b@",      push(bstk[bsp]); ) \
+	X(BGETI,   "b@+",     push(bstk[bsp]++); ) \
+	X(BGETD,   "b@-",     push(bstk[bsp]--); ) \
+	X(BFROM,   "b>",      push(0<bsp ? bstk[bsp--]: 0); ) \
+	X(TTO,     ">t",      if (tsp < STK_SZ) { tstk[++tsp] = pop(); } ) \
+	X(TSET,    "t!",      tstk[tsp] = pop(); ) \
+	X(TGET,    "t@",      push(tstk[tsp]); ) \
+	X(TGETI,   "t@+",     push(tstk[tsp]++); ) \
+	X(TGETD,   "t@-",     push(tstk[tsp]--); ) \
+	X(TFROM,   "t>",      push(0<tsp ? tstk[tsp--]: 0); ) \
+	X(EMIT,    "emit",    emit((char)pop()); ) \
+	X(KEY,     "key",     push(key()); ) \
+	X(QKEY,    "?key",    push(qKey()); ) \
+	X(OUTER,   "outer",   t=pop(); n=(cell)toIn; cfOuter((char*)t); toIn=(char*)n; ) \
+	X(ADDWORD, "addword", addWord(0); ) \
+	X(FIND,    "find",    { DE_T *dp=findWord(0); push(dp?dp->xt:0); push((cell)dp); } ) \
+	X(CLK,     "timer",   push(timer()); ) \
+	X(MS,      "ms",      ms(pop()); ) \
+	X(ZTYPE,   "ztype",   zType((const char *)pop()); ) \
+	X(FOPEN,   "fopen",   t=pop(); TOS=fOpen(TOS, t); ) \
+	X(FCLOSE,  "fclose",  t=pop(); fClose(t); ) \
+	X(FREAD,   "fread",   t=pop(); n=pop(); TOS=fRead(TOS, n, t); ) \
+	X(FWRITE,  "fwrite",  t=pop(); n=pop(); TOS=fWrite(TOS, n, t); ) \
+	X(FSEEK,   "fseek",   t=pop(); n=pop(); fSeek(t,n); ) \
+	X(SYSTEM,  "system",  t=pop(); ttyMode(0); system((char*)t); ) \
+	X(SCOPY,   "s-cpy",   t=pop(); strCpy((char*)TOS, (char*)t); ) \
+	X(SEQI,    "s-eqi",   t=pop(); n=pop(); push(strEqI((char*)n, (char*)t)); ) \
+	X(SLEN,    "s-len",   TOS=strLen((char*)TOS); ) \
+	X(CMOVE,   "cmove",   t=pop(); n=pop(); cmove(pop(), n, t); ) \
+	X(BYE,     "bye",     ttyMode(0); exit(0); )
 
 enum _PRIM  { STOP, LIT, JMP, JMPZ, NJMPZ, JMPNZ, NJMPNZ, PRIMS(X1) };
 
@@ -297,8 +297,6 @@ void cfInit() {
 
 	PRIM_T prims[] = { PRIMS(X3) {0, 0, 0} };
 	for (int i = 0; prims[i].name; i++) {
-		DE_T *dp = addWord((char*)prims[i].name);
-		dp->xt = prims[i].op;
-		dp->flags = prims[i].fl;
+		addWord((char*)prims[i].name)->xt = prims[i].op;
 	}
 }

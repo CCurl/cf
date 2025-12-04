@@ -3,9 +3,8 @@
 <img src="/images/editing.jpg" width="400" height="300" />
 
 ## ColorForth influences on CF
-- NOTE: **cf is a work in progress. Please collaborate with me on it!**
 - cf is inspired by ColorForth, but it is NOT ColorForth.
-- cf has 4 states: DEFINE, INTERPRET, COMPILE, and COMMENT.
+- cf has 4 states: DEFINE, COMPILE, INTERPRET, and COMMENT.
 - cf uses markers in the source whitespace to control its state.
 - cf also supports using the standard words to change the state.
 - cf has `a` and `b` registers like ColorForth. It also has a `t` register.
@@ -66,13 +65,14 @@ The CODE area starts at the beginning of the memory.<br/>
 CF can easily be embedded into a C program.<br/>
 The cf VM is implemented in `cf.c`.<br/>
 The configuration and API for cf are located in `cf.h`.<br/>
-That is what `system.c` does, it creates a C program around the cf VM.<br/>
+File `system.c` embeds the CF VM into an executable.<br/>
 
 ## Building cf
 Building cf is simple and fast since there are only 3 small source files.<br/>
+32-bit or 64-bit builds are supported.<br/>
 
 Windows
-- There is a `cf.sln` file for Visual Studio. 32-bit or 64-bit builds are supported.
+- There is a `cf.sln` file for Visual Studio.
 
 Linux, OpenBSD, and FreeBSD
 - There is a makefile, which uses the system C compiler (specified by the CC variable).
@@ -98,3 +98,4 @@ $CC -m64 -O3 -o cf *.c
 
 ## The Editor
 - A block editor is implemented in the default source file.
+- The editor has a vi-like feel.

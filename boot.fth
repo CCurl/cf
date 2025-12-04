@@ -92,9 +92,9 @@ const -la-    const -ha-    vhere const -vha-
 : s-cat ( d s--d )   over s-end swap s-cpy drop ;
 
 ( Blocks )
-: num-blks 256 ; inline
-: blk-max  255 ; inline
-: blk-sz  1024 ; inline
+: num-blks 128 ; inline
+: blk-max  127 ; inline
+: blk-sz  2048 ; inline
 : disk-sz  num-blks blk-sz * ;
 memory mem-sz + 2048 1024 * - const blks
 cell var t0  1 t0 !
@@ -180,6 +180,7 @@ marker
 : 2* dup + ; inline
 : 2/ 2 / ; inline
 : mod /mod drop ; inline
+: */ ( n x y--n' ) >r * r> / ;
 : ? @ . ;
 : nip  swap drop ; inline
 : tuck swap over ; inline
@@ -299,8 +300,8 @@ marker
   again ;
 
 (( Editor ))
-: rows 16 ; inline       : cols 64 ; inline
-: last-row 15 ; inline   : last-col 63 ; inline
+: rows 23 ; inline       : cols 89 ; inline
+: last-row 22 ; inline   : last-col 88 ; inline
 vhere const ed-colors
 219   vc, (( 0: default - purple ))
 c-red vc, (( 1: define  - red ))
@@ -308,13 +309,13 @@ c-red vc, (( 1: define  - red ))
 226   vc, (( 3: interp  - yellow ))
 255   vc, (( 4: comment - white ))
 
-: ed-color@ ( n-- ) ed-colors + c@ ;
+: ed-color@ ( n-- )    ed-colors + c@ ;
 : ed-color! ( fg n-- ) ed-colors + c! ;
 
 cell var (r)  : row! (r) ! ;    : row@ (r) @ ;
 cell var (c)  : col! (c) ! ;    : col@ (c) @ ;
 blk-sz var ed-blk
-ed-blk blk-sz + 1- const ed-eob
+ed-blk rows cols * + 1- const ed-eob
 : norm-pos ( pos--new ) ed-blk max ed-eob min ;
 : pos->rc ( pos-- ) norm-pos ed-blk - cols /mod row! col! ;
 : cr->pos ( col row--pos ) cols * + ed-blk + ed-eob min ;
@@ -399,6 +400,7 @@ ed-blk blk-sz + 1- const ed-eob
    again ;
 : rl blk@ ed-goto ;
 : w! ed-blk blk-data blk-sz cmove clean! ;
+: w!! w! disk-write ;
 : w  dirty? if w! then ;
 : q  dirty? if0 q! exit then ." use 'wq' or 'q!'" ;
 : wq w q ;
@@ -485,15 +487,15 @@ bl   case   mv-right
 'P'  case!  insert-line put-line ;
 'q'  case!  0 8 mv ;
 'Q'  case!  0 8 negate mv ;
-'O'  case!  insert-line ->ins ;
-'o'  case!  mv-down insert-line ->ins ;
+'O'  case!  insert-line ->ins 0 col! ;
+'o'  case!  mv-down insert-line ->ins 0 col! ;
 'w'  case   ed-next-word
 'W'  case   ed-prev-word
 'Y'  case   yank-line
 'Z'  case   del-z
 'g'  case!  rows 0  row! 0 col! ;
 'G'  case!  rows 1- row! 0 col! ;
-'+'  case   next-pg
+'='  case   next-pg
 '-'  case   prev-pg
 '#'  case!  cls show! ;
 0 v, 0 v, (( end ))
