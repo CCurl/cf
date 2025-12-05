@@ -8,7 +8,6 @@
 #define L1            lstk[lsp-1]
 #define L2            lstk[lsp-2]
 #define isTemp(w)     ((w[0]=='t') && btwi(w[1],'0','9') && (w[2]==0))
-#define strEqI(s, d)  (_strcmpi(s, d) == 0)
 #define X1(op, name, code) op,
 #define X2(op, name, code) NCASE op: code
 #define X3(op, name, code) { op, name, 0 },
@@ -90,7 +89,7 @@ DE_T tmpWords[10];
 	X(SYSTEM,  "system",  t=pop(); ttyMode(0); system((char*)t); ) \
 	X(SCOPY,   "s-cpy",   t=pop(); strcpy((char*)TOS, (char*)t); ) \
 	X(SEQI,    "s-eqi",   t=pop(); n=pop(); push(strEqI((char*)n, (char*)t)); ) \
-	X(SLEN,    "s-len",   TOS=strLen((char*)TOS); ) \
+	X(SLEN,    "s-len",   TOS=strlen((char*)TOS); ) \
 	X(CMOVE,   "cmove",   t=pop(); n=pop(); memmove((char*)n, (char*)pop(), t); ) \
 	X(BYE,     "bye",     ttyMode(0); exit(0); )
 
@@ -99,7 +98,6 @@ static cell pop() { return (0<dsp) ? dstk[dsp--] : 0; }
 static void rpush(cell x) { if (rsp < STK_SZ) { rstk[++rsp] = x; } }
 static cell rpop() { return (0<rsp) ? rstk[rsp--] : 0; }
 static int  lower(const char c) { return btwi(c, 'A', 'Z') ? c+32 : c; }
-static int  strLen(const char *s) { int l = 0; while (s[l]) { l++; } return l; }
 static void comma(cell n) { code[here++] = n; }
 static int  changeState(int newState) { state = newState; return newState; }
 static void checkWS(char c) { if (btwi(c,DEFINE,COMMENT)) { changeState(c); } }
@@ -118,7 +116,7 @@ static DE_T *addWord(char *w) {
 		tmpWords[w[1]-'0'].xt = (cell)here;
 		return &tmpWords[w[1]-'0'];
 	}
-	int ln = strLen(w);
+	int ln = strlen(w);
 	if (ln > NAME_MAX) { ln=NAME_MAX; w[ln]=0; }
 	last -= sizeof(DE_T);
 	DE_T *dp = (DE_T*)last;
@@ -132,7 +130,7 @@ static DE_T *addWord(char *w) {
 static DE_T *findWord(const char *w) {
 	if (!w) { nextWord(); w = wd; }
 	if (isTemp(w)) { return &tmpWords[w[1] - '0']; }
-	int ln = strLen(w);
+	int ln = strlen(w);
 	cell cw = last;
 	while (cw < dictEnd) {
 		DE_T *dp = (DE_T*)cw;
