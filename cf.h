@@ -2,21 +2,24 @@
 
 #ifndef __CF_H__
 
-#ifdef _MSC_VER
-    #define _CRT_SECURE_NO_WARNINGS
-    #define IS_WINDOWS 1
-    #define BOOT_FILE "\\bin\\cf-boot.fth"
-#else
-    #define BOOT_FILE "/home/chris/bin/cf-boot.fth"
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
 
-#define VERSION         20251205
+#define VERSION         20251206
+
+#ifdef _MSC_VER
+    #define _CRT_SECURE_NO_WARNINGS
+    #define IS_WINDOWS 1
+    #define BOOT_FILE "\\bin\\cf-boot.fth"
+    #define strEqI(s, d)  (_strcmpi(s, d) == 0)
+#else
+    #include <strings.h>
+    #define BOOT_FILE "/home/chris/bin/cf-boot.fth"
+    #define strEqI(s, d)  (strcasecmp(s, d) == 0)
+#endif    
 
 #define MEM_SZ          16*(1024*1024)
 #define STK_SZ          63
