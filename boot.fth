@@ -95,6 +95,15 @@ disk-read
 
 ( everything from here on could be moved to blocks )
 
+: source-loc memory 100000 + ;
+: rb ( reboot )
+   -vha- (vha) !  -la- (la) !  -ha- (ha) !
+   z" boot.fth" fopen-r -if dup then if a!
+      source-loc b! 50000 for 0 c!b+ next
+      source-loc 50000 a@ fread drop a@ fclose
+      source-loc >in !
+   then ;
+
 ( number format / print )
 : #neg 0 >a dup 0 < if com 1+ a+ then ;
 : <#   ( n--n' ) #neg last 32 - >b 0 c!b ;
@@ -106,16 +115,6 @@ disk-read
 : #>   ( --a )   a> if '-' hold then b> ;
 : (.) ( n-- ) <# #s #> ztype ;
 : .   ( n-- ) (.) : space 32 emit ;
-
-: source-loc memory 100000 + ;
-: rb ( reboot )
-   -vha- (vha) !  -la- (la) !  -ha- (ha) !
-   z" boot.fth" fopen-r -if dup then if >a
-      source-loc >b
-      50000 for 0 c!b+ next bdrop
-      source-loc 50000 a@ fread drop a> fclose
-      source-loc >in !
-   then ;
 
 cell var t0    cell var t1    cell var t2
 : marker here t0 ! last t1 ! vhere t2 ! ;
