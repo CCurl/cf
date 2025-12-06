@@ -70,12 +70,6 @@ const -la-    const -ha-    vhere const -vha-
 : fopen-w  ( fn--fh ) z" wb" fopen ;
 : fopen-rw ( fn--fh ) z" r+" fopen ;
 
-: 2dup  over over ; inline
-: ?dup  -if dup then ;
-: min   ( n m--n|m ) 2dup > if swap then drop ;
-: max   ( n m--n|m ) 2dup < if swap then drop ;
-: fill  ( a n c-- )  >a >t >b  t> for a@ c!b+ next abdrop ;
-
 ( Blocks )
 : num-blks 128 ; inline
 : blk-max  127 ; inline
@@ -84,17 +78,22 @@ const -la-    const -ha-    vhere const -vha-
 memory mem-sz + 2048 1024 * - const blks
 cell var t0  1 t0 !
 : blk@ ( --n ) t0 @ ;
-: blk! ( n-- ) 0 max blk-max min t0 ! ;
+: blk! ( n-- ) blk-max and t0 ! ;
 : blk-data ( --a ) blk@ blk-sz * blks + ;
-: blk-end  ( --a ) blk-data blk-sz + 1- ;
-: blk-clr  ( -- )  blk-data blk-sz 0 fill ;
-: disk-read  ( -- ) z" disk.cf" fopen-r ?dup if
-   >r blks disk-sz r@ fread drop
-   r> fclose then ;
+: blk-end ( --a ) blk-data blk-sz + 1- ;
+: disk-read ( -- ) z" disk.cf" fopen-r
+   dup if0 drop exit then
+   >r blks disk-sz r@ fread drop r> fclose ;
 : disk-write ( -- ) z" disk.cf" fopen-w
-   >r blks disk-sz r@ fwrite drop
-   r> fclose ;
+   >r blks disk-sz r@ fwrite drop r@ fclose rdrop ;
 disk-read
+
+( load )
+: t1  0 blk-end c! ;
+: load ( n-- )  blk! blk-data t1 outer ;
+: load-next ( -- )  blk@ 1+ blk! blk-data t1 >in ! ;
+
+( everything from here on could be moved to blocks )
 
 ( number format / print )
 : #neg 0 >a dup 0 < if com 1+ a+ then ;
@@ -107,13 +106,6 @@ disk-read
 : #>   ( --a )   a> if '-' hold then b> ;
 : (.) ( n-- ) <# #s #> ztype ;
 : .   ( n-- ) (.) : space 32 emit ;
-
-( load )
-: t1  0 blk-end c! ;
-: load ( n-- )  blk! blk-data t1 outer ;
-: load-next ( -- )  blk@ 1+ blk! blk-data t1 >in ! ;
-
-( everything from here on could be moved to blocks )
 
 : source-loc memory 100000 + ;
 : rb ( reboot )
@@ -128,7 +120,6 @@ disk-read
 cell var t0    cell var t1    cell var t2
 : marker here t0 ! last t1 ! vhere t2 ! ;
 : forget t0 @ (ha) ! t1 @ (la) ! t2 @ (vha) ! ;
-marker
 
 ( T reg/stack words )
 : t+    t@+ drop  ; inline
@@ -153,6 +144,7 @@ marker
 : spaces for bl emit next ; inline
 : negate com 1+ ; inline
 : abs dup 0 < if negate then ;
+: ?dup  -if dup then ;
 
 : .nw  ( n w-- ) >r <# r> ?dup if 1- for # next then #s #> ztype ;
 : .nwb ( n w b-- ) base @ >b base ! .nw b> base ! ;
@@ -176,7 +168,10 @@ marker
 : 2+ 1+ 1+ ; inline
 : 2* dup + ; inline
 : 2/ 2 / ; inline
+: 2dup  over over ; inline
 : 2drop drop drop ; inline
+: min   ( n m--n|m ) 2dup > if swap then drop ;
+: max   ( n m--n|m ) 2dup < if swap then drop ;
 : mod /mod drop ; inline
 : */ ( n x y--n' ) >r * r> / ;
 : ? @ . ;
@@ -199,6 +194,7 @@ marker
    then rpar ;
 
 ( strings )
+: fill  ( a n c-- )  >a >t >b  t> for a@ c!b+ next abdrop ;
 : s-end ( s--e )     dup s-len + ; inline
 : s-cat ( d s--d )   over s-end swap s-cpy drop ;
 : s-catc ( dst ch--dst )  over s-end tuck c! 0 swap 1+ c! ;
@@ -299,7 +295,7 @@ marker
       a@ printable? if a@ dup c!t+ emit then
   again ;
 
-(( Editor ))
+( Editor )
 : rows 23 ; inline       : cols 89 ; inline
 : last-row 22 ; inline   : last-col 88 ; inline
 vhere const ed-colors
@@ -519,5 +515,7 @@ green .version white ."  - Chris Curl " cr
 yellow ."  Memory: " white mem-sz . ." bytes" cr
 yellow ."    Code: " white here . ." opcodes used" cr
 yellow ."    Dict: " white dict-end last - de-sz / . ." words defined" cr
+
+marker
 
 1 load
