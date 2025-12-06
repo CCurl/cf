@@ -116,7 +116,7 @@ static DE_T *addWord(char *w) {
 		tmpWords[w[1]-'0'].xt = (cell)here;
 		return &tmpWords[w[1]-'0'];
 	}
-	int ln = strlen(w);
+	int ln = (int)strlen(w);
 	if (ln > NAME_MAX) { ln=NAME_MAX; w[ln]=0; }
 	last -= sizeof(DE_T);
 	DE_T *dp = (DE_T*)last;
@@ -130,7 +130,7 @@ static DE_T *addWord(char *w) {
 static DE_T *findWord(const char *w) {
 	if (!w) { nextWord(); w = wd; }
 	if (isTemp(w)) { return &tmpWords[w[1] - '0']; }
-	int ln = strlen(w);
+	int ln = (int)strlen(w);
 	cell cw = last;
 	while (cw < dictEnd) {
 		DE_T *dp = (DE_T*)cw;

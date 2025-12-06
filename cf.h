@@ -12,6 +12,7 @@
 
 #ifdef _MSC_VER
     #define _CRT_SECURE_NO_WARNINGS
+    #pragma warning(disable : 4996) // stupid deprecated warnings
     #define IS_WINDOWS 1
     #define BOOT_FILE "\\bin\\cf-boot.fth"
     #define strEqI(s, d)  (_strcmpi(s, d) == 0)
