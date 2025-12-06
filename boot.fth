@@ -85,7 +85,7 @@ cell var t0  1 t0 !
    dup if0 drop exit then
    >r blks disk-sz r@ fread drop r> fclose ;
 : disk-write ( -- ) z" disk.cf" fopen-w
-   >r blks disk-sz r@ fwrite drop r@ fclose rdrop ;
+   >r blks disk-sz r@ fwrite drop r> fclose ;
 disk-read
 
 ( load )
