@@ -130,6 +130,7 @@ cell var t0    cell var t1    cell var t2
 : c!t+  t@+ c!    ; inline
 : c!t-  t@- c!    ; inline
 : t@+c  t@ dup cell + t! ;
+: @t+   t@+c @ ;
 : tdrop t> drop   ; inline
 : atdrop adrop tdrop ;
 
@@ -378,7 +379,7 @@ ed-blk rows cols * + 1- const ed-eob
 : del-line yank-line row@ rows < if
       0 row@ cr->pos >t  t@ cols + >a  ed-eob >r
       begin c@a+ c!t+  a@ r@ > until atdrop rdrop
-   then row@  rows 1- row!  clr-line  row! ;
+   then row@  last-row row!  clr-line  row! ;
 : join-lines row@ last-row < if
       col@ >t mv-down del-line mv-up
       yanked >b mv-end begin
@@ -391,7 +392,7 @@ ed-blk rows cols * + 1- const ed-eob
    again ;
 : ed-next-word rc->pos 1+ >t begin
       t@ ed-eob > if t> pos->rc exit then
-      c@t+ 33 < if t> 1- pos->rc exit then
+      c@t+ 33 < if t> pos->rc exit then
    again ;
 : rl blk@ ed-goto ;
 : w! ed-blk blk-data blk-sz cmove clean! ;
@@ -410,7 +411,7 @@ ed-blk rows cols * + 1- const ed-eob
 : case!  ( ch-- )  v, here v, compile state ! ;   ( case-table entry - code )
 : switch ( tbl-- ) >t begin
    t@ @ if0 tdrop exit then
-   t@+c @ a@ = if t> @ >r exit then
+   @t+ a@ = if t> @ >r exit then
    t@ cell+ t! again ;
 
 (( delete commands ))
@@ -444,7 +445,7 @@ key-del     case   del-c
 key-pgup    case   prev-pg
 key-pgdn    case   next-pg
 key-chome   case!  0 dup row! col! ;
-key-cend    case!  rows 1- row! 0 col! ;
+key-cend    case!  last-row row! 0 col! ;
 key-f1      case!  define  ed-ch! ;
 key-f2      case!  compile ed-ch! ;
 key-f3      case!  interp  ed-ch! ;
@@ -489,7 +490,7 @@ bl   case   mv-right
 'Y'  case   yank-line
 'Z'  case   del-z
 'g'  case!  rows 0  row! 0 col! ;
-'G'  case!  rows 1- row! 0 col! ;
+'G'  case!  last-row row! 0 col! ;
 '='  case   next-pg
 '-'  case   prev-pg
 '#'  case!  cls show! ;
