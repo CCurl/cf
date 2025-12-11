@@ -232,7 +232,7 @@ The embedded X() macro in PRIMS is a powerful use of C macros.<br/>
 The X() macro takes 3 parameters:
 - A name for the ENUM entry (used by the inner interpreter)
 - A name for the word to be created in the Forth dictionary
-- Code that implements the primitive's action. This can ba a call to any funciton,
+- Code that implements the primitive's action. This can be a call to any function.
 
 `PRIMS` is used create the opcode values and code for the switch statement in `cfInner()`, and to create the dictionary entries in `cfInit()`.
 
