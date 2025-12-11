@@ -53,13 +53,16 @@ The operations for the 'b' and 't' stacks are the same.<br/>
 
 ## Architecture
 CF is really just a Forth VM, upon which any Forth system can be built.<br/>
-To that end, cf provides a set of primitives and the inner/outer interpreters.<br/>
-See the `PRIMS` macro in `cf.c` for the list of primitives.<br/>
+To that end, cf defines a set of primitives and the inner/outer interpreters.<br/>
+See the `PRIMS` macro in `cf.c` for the list of primitives and their definitions.<br/>
 The rest of the system is defined by the source code file.<br/>
 CF takes a source file name as its only argument.<br/>
-If cf is executed without arguments, the default source file is 'cf-boot.fth'.<br/>
+If cf is executed without arguments, the source file defaults to `BOOT_FN1`.<br/>
+If `BOOT_FN1` (cf-boot.fth) is not found, it tries `BOOT_FN2`.<br/>
+`BOOT_FN1` and `BOOT_FN2` are defined in cf.h. Change them as appropriate.<br/>
 CF provides a single chunk of memory (see cf.h, MEM_SZ) for data and code.<br/>
 The CODE area starts at the beginning of the memory.<br/>
+The start of the data area (VHERE) is defined in the source file.<br/>
 
 ## Embedding cf into a C program
 CF can easily be embedded into a C program.<br/>
@@ -80,10 +83,10 @@ Linux, OpenBSD, and FreeBSD
 - Example:
 
 ```
-# default, 64 bit:
+# the default is 64 bit cells:
 make
 
-# for 32 bit:
+# for 32 bit cells:
 ARCH=32 make
 
 # or manually:
@@ -99,9 +102,9 @@ The embedded X() macro in PRIMS is a powerful use of C macros.<br/>
 The X() macro takes 3 parameters:
 - A name for the ENUM entry (used by the inner interpreter)
 - A name for the word to be created in the Forth dictionary
-- Code that implements the primitive's action
+- Code that implements the primitive's action. This can ba a call to any funciton,
 
-It is used create the ENUMs and code for the switch statement in `cfInner()`, and to create the dictionary entries in `cfInit()`.
+`PRIMS` is used create the opcode values and code for the switch statement in `cfInner()`, and to create the dictionary entries in `cfInit()`.
 
 For example, in the following example, `SCOPY` is the name for the enum, `s-cpy` is the name for the Forth dictionary entry, and `t=pop(); strcpy((char*)TOS, (char*)t);` is the code to be executed by the inner interpreter when `SCOPY` is encountered by the inner interpreter.
 ```

@@ -84,14 +84,14 @@ void repl() {
 
 void boot(const char *fn) {
 	if (!fn) {
-		fn = BOOT_FILE;
+		fn = BOOT_FN1;
 		zType("WARNING: No boot file specified\n");
 		zType("Using default boot file '");
-		zType(BOOT_FILE); zType("' or '");
-		zType(BOOT2); zType("'.\n");
+		zType(BOOT_FN1); zType("' or '");
+		zType(BOOT_FN2); zType("'.\n");
 	}
 	cell fp = fOpen((cell)fn, (cell)"rb");
-	if (!fp) { fp = fOpen((cell)BOOT2, (cell)"rb"); }
+	if (!fp) { fp = fOpen((cell)BOOT_FN2, (cell)"rb"); }
 	if (fp) {
 		fRead((cell)&mem[100000], 99999, fp);
 		fClose(fp);
