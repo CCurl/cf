@@ -83,19 +83,18 @@ void repl() {
 }
 
 void boot(const char *fn) {
-	if (!fn) { fn = "boot.fth"; }
+	if (!fn) { fn = BOOT_FN1; }
 	cell fp = fOpen((cell)fn, (cell)"rb");
-	if (!fp) {
-		fp = fOpen((cell)BOOT_FILE, (cell)"rb");
-	}
+	if (!fp) { fp = fOpen((cell)BOOT_FN2, (cell)"rb"); }
 	if (fp) {
 		fRead((cell)&mem[100000], 99999, fp);
 		fClose(fp);
 		cfOuter((char*)&mem[100000]);
 	} else {
 		zType("WARNING: unable to open source file!\n");
-		zType("The default boot file is 'boot.fth' or '");
-		zType(BOOT_FILE); zType("'.\n");
+		zType("When no boot file specified, cf tries to use '");
+		zType(BOOT_FN1); zType("' or '");
+		zType(BOOT_FN2); zType("'.\n");
 	}
 }
 

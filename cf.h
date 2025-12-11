@@ -8,16 +8,18 @@
 #include <string.h>
 #include <time.h>
 
-#define VERSION         20251206
+#define VERSION         20251211
+#define BOOT_FN1        "cf-boot.fth"
 
 #ifdef _MSC_VER
     #define _CRT_SECURE_NO_WARNINGS
+    #pragma warning(disable : 4996) // stupid deprecated warnings
     #define IS_WINDOWS 1
-    #define BOOT_FILE "\\bin\\cf-boot.fth"
+    #define BOOT_FN2 "\\bin\\cf-boot.fth"
     #define strEqI(s, d)  (_strcmpi(s, d) == 0)
 #else
     #include <strings.h>
-    #define BOOT_FILE "/home/chris/bin/cf-boot.fth"
+    #define BOOT_FN2 "/home/chris/bin/cf-boot.fth"
     #define strEqI(s, d)  (strcasecmp(s, d) == 0)
 #endif    
 
