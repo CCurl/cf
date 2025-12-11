@@ -54,10 +54,10 @@ The operations for the 'b' and 't' stacks are the same.<br/>
 ## Architecture
 CF is really just a Forth VM, upon which any Forth system can be built.<br/>
 To that end, cf provides a set of primitives and the inner/outer interpreters.<br/>
-See `cf.c` for the list of primitives.
+See the `PRIMS` macro in `cf.c` for the list of primitives.
 The rest of the system is defined by the source code file.<br/>
-CF takes a source file as its only argument.<br/>
-If cf is executed without arguments, the default source file is 'boot.fth'.<br/>
+CF takes a source file name as its only argument.<br/>
+If cf is executed without arguments, the default source file is 'cf-boot.fth'.<br/>
 CF provides a single chunk of memory (see cf.h, MEM_SZ) for data and code.<br/>
 The CODE area starts at the beginning of the memory.<br/>
 
@@ -95,7 +95,7 @@ $CC -m64 -O3 -o cf *.c
 ## Adding a primitive to CF
 
 Adding a primitive to CF is easy. Add an X() line to the PRIMS macro.<br/>
-Embedded the X() macro in PRIMS is a powerful use of C macros.<br/>
+The embedded X() macro in PRIMS is a powerful use of C macros.<br/>
 The X() macro takes 3 parameters:
 - A name for the ENUM entry (used by the inner interpreter)
 - A name for the word to be created in the Forth dictionary
