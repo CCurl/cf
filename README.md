@@ -92,6 +92,22 @@ $CC -m32 -O3 -o cf *.c
 $CC -m64 -O3 -o cf *.c
 ```
 
+## Adding a primitive to CF
+
+Adding a primitive to CF is easy. Add an X() line to the PRIMS macro.<br/>
+Embedded the X() macro in PRIMS is a powerful use of C macros.<br/>
+The X() macro takes 3 parameters:
+- A name for the ENUM entry (used by the inner interpreter)
+- A name for the word to be created in the Forth dictionary
+- Code that implements the primitive's action
+
+It is used create the ENUMs and code for the switch statement in `cfInner()`, and to create the dictionary entries in `cfInit()`.
+
+For example, in the following example, `SCOPY` is the name for the enum, `s-cpy` is the name for the Forth dictionary entry, and `t=pop(); strcpy((char*)TOS, (char*)t);` is the code to be executed by the inner interpreter when `SCOPY` is encountered by the inner interpreter.
+```
+	X(SCOPY,   "s-cpy",   t=pop(); strcpy((char*)TOS, (char*)t); ) \
+```
+
 ## Blocks
 - Blocks are not native to cf.
 - They are implemented in the default source file.
