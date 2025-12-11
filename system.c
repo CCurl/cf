@@ -92,7 +92,7 @@ void boot(const char *fn) {
 		cfOuter((char*)&mem[100000]);
 	} else {
 		zType("WARNING: unable to open source file!\n");
-		zType("When no boot file specified, cf tries use '");
+		zType("When no boot file specified, cf tries to use '");
 		zType(BOOT_FN1); zType("' or '");
 		zType(BOOT_FN2); zType("'.\n");
 	}
