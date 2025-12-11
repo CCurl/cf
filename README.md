@@ -54,7 +54,7 @@ The operations for the 'b' and 't' stacks are the same.<br/>
 ## Architecture
 CF is really just a Forth VM, upon which any Forth system can be built.<br/>
 To that end, cf provides a set of primitives and the inner/outer interpreters.<br/>
-See the `PRIMS` macro in `cf.c` for the list of primitives.
+See the `PRIMS` macro in `cf.c` for the list of primitives.<br/>
 The rest of the system is defined by the source code file.<br/>
 CF takes a source file name as its only argument.<br/>
 If cf is executed without arguments, the default source file is 'cf-boot.fth'.<br/>
