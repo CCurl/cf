@@ -516,6 +516,56 @@ yellow ."  Memory: " white mem-sz . ." bytes" cr
 yellow ."    Code: " white here . ." opcodes used" cr
 yellow ."    Dict: " white dict-end last - de-sz / . ." words defined" cr
 
-marker
+(( 1: compile then execute ))
+ cell var t1
+: [[ here t1 ! compile state ! ;
+: ]] (exit) , t1 @ (ha) ! interp state ! here execute ; immediate
 
-1 load
+( 1: some benchmarks )
+: elapsed ( n-- ) timer swap - . ." usec" ;
+: mil ( n--m ) 1000 dup * * ;
+: bm  ( n-- ) timer swap for next elapsed ;
+: bb  ( -- ) 1000 mil bm ;
+: fib ( n--m ) 1- dup 2 < if drop 1 exit then dup fib swap 1- fib + ;
+: fib-bm ( n-- ) timer swap fib . elapsed ;
+
+( 2: some util words )
+: vi   z" vi boot.fth" system ;
+: lg   z" lazygit" system ;
+: ll   z" ls -l" system ;
+: dev  z" ccc dev" system ;
+: pull z" git pull" system ;
+: dw  disk-write ;
+
+(( 3: fixed point ))
+cell var t0       : fbase t0 @ ;  : fbase! t0 ! ;
+cell var t1       : fprec t1 @ ;  : fprec! t1 ! 1 fprec for 10 * next fbase! ;
+: f+ + ;          : f- - ;
+: f* * fbase / ;  : f/ >a fbase * a> / ;
+: f. fbase /mod (.) '.' emit abs fprec .nw ;
+2 fprec!
+
+( 4: This dump is from Peter Jakacki )
+: a-emit ( b-- ) dup $1f $7f btw if0 drop '.' then emit ;
+: .ascii ( -- ) a@ $10 - $10 for dup c@ a-emit 1+ next drop ;
+: dump ( f n-- ) swap >a 0 >t for
+     t@ if0 cr a@ .hex ':' emit space then
+     c@a+ .hex space
+     t@+ $0f = if 3 spaces .ascii 0 t! then
+   next atdrop ;
+
+( 5: more block words )
+16 var t1
+: blk-fn ( --a ) t1 z" block-" s-cpy blk@ <# # # #s #> s-cat z" .fth" s-cat ;
+: blk-cp ( f t-- ) blk! blk-data swap blk! blk-data swap blk-sz cmove ;
+: blk-clr ( n-- ) blk@ >r blk! blk-data blk-sz 0 fill r> blk! ;
+: blk-out ( n-- ) blk! blk-fn fopen-w >t  blk-data blk-sz t@ fwrite drop  t> fclose ;
+: blk-in ( n-- ) blk! blk-fn fopen-r >t  t@ if0 tdrop exit then
+   blk-data blk-sz t@ fread drop  t> fclose ;
+: b-o blk! blk-data a! pad3 b! rows for
+      a@ b@ cols cmove  0 b@ cols + c!
+      b@ s-rtrim ztype cr  a@ cols + a!
+   next ;
+
+(( 1 load ))
+marker
