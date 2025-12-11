@@ -83,13 +83,7 @@ void repl() {
 }
 
 void boot(const char *fn) {
-	if (!fn) {
-		fn = BOOT_FN1;
-		zType("WARNING: No boot file specified\n");
-		zType("Using default boot file '");
-		zType(BOOT_FN1); zType("' or '");
-		zType(BOOT_FN2); zType("'.\n");
-	}
+	if (!fn) { fn = BOOT_FN1; }
 	cell fp = fOpen((cell)fn, (cell)"rb");
 	if (!fp) { fp = fOpen((cell)BOOT_FN2, (cell)"rb"); }
 	if (fp) {
@@ -98,6 +92,9 @@ void boot(const char *fn) {
 		cfOuter((char*)&mem[100000]);
 	} else {
 		zType("WARNING: unable to open source file!\n");
+		zType("When no boot file specified, cf tries use '");
+		zType(BOOT_FN1); zType("' or '");
+		zType(BOOT_FN2); zType("'.\n");
 	}
 }
 
