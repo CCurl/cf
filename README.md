@@ -95,6 +95,136 @@ $CC -m32 -O3 -o cf *.c
 $CC -m64 -O3 -o cf *.c
 ```
 
+## Primitives Reference
+
+CF provides a set of primitives defined in the `PRIMS` macro in `cf.c`.
+
+### Stack Operations
+| Word | Stack Effect | Description |
+| :--- | :----------- | :---------- |
+| `dup` | (n--n n) | Duplicate top of stack |
+| `swap` | (a b--b a) | Swap top two stack items |
+| `drop` | (n--) | Remove top of stack |
+| `over` | (a b--a b a) | Copy second item to top |
+
+### Memory Access
+| Word | Stack Effect | Description |
+| :--- | :----------- | :---------- |
+| `@` | (addr--n) | Fetch cell from address |
+| `!` | (n addr--) | Store cell to address |
+| `c@` | (addr--c) | Fetch byte from address |
+| `c!` | (c addr--) | Store byte to address |
+| `+!` | (n addr--) | Add n to cell at address |
+
+### Arithmetic
+| Word | Stack Effect | Description |
+| :--- | :----------- | :---------- |
+| `+` | (a b--sum) | Add two numbers |
+| `-` | (a b--diff) | Subtract (a-b) |
+| `*` | (a b--prod) | Multiply two numbers |
+| `/` | (a b--quot) | Divide (a/b) |
+| `/mod` | (a b--rem quot) | Divide, return remainder and quotient |
+| `1+` | (n--n+1) | Increment by 1 |
+| `1-` | (n--n-1) | Decrement by 1 |
+
+### Comparison
+| Word | Stack Effect | Description |
+| :--- | :----------- | :---------- |
+| `<` | (a b--flag) | Less than comparison |
+| `=` | (a b--flag) | Equality comparison |
+| `>` | (a b--flag) | Greater than comparison |
+| `0=` | (n--flag) | Test if zero |
+
+### Logical Operations
+| Word | Stack Effect | Description |
+| :--- | :----------- | :---------- |
+| `and` | (a b--n) | Bitwise AND |
+| `or` | (a b--n) | Bitwise OR |
+| `xor` | (a b--n) | Bitwise XOR |
+| `com` | (n--~n) | Bitwise complement |
+
+### Control Flow
+| Word | Stack Effect | Description |
+| :--- | :----------- | :---------- |
+| `exit` | (--) | Exit current word definition |
+| `for` | (limit--) | Begin counted loop |
+| `i` | (--index) | Current loop index |
+| `next` | (--) | Increment and loop if not done |
+
+### Return Stack
+| Word | Stack Effect | Description |
+| :--- | :----------- | :---------- |
+| `>r` | (n--) (R:--n) | Move n to return stack |
+| `r@` | (--n) (R: n--n) | Copy n from return stack |
+| `r>` | (--n) (R: n--) | Move n from return stack |
+| `rdrop` | (--) (R: n--) | Drop from return stack |
+
+### A Stack
+| Word | Stack Effect | Description |
+| :--- | :----------- | :---------- |
+| `>a` | (n--) (A:--n) | Move n to the A stack |
+| `a!` | (n--) | Store n to A TOS |
+| `a@` | (--n) (A: n--n) | Copy n from A |
+| `a@+` | (--n) (A: n--n+1) | Copy n from A, then increment A TOS |
+| `a@-` | (--n) (A: n--n-1) | Copy n from A, then decrement A TOS |
+| `a>` | (--n) (A: n--) | Move n from A |
+
+### B Stack
+| Word | Stack Effect | Description |
+| :--- | :----------- | :---------- |
+| `>b` | (n--) (B:--n) | Move n to the B stack |
+| `b!` | (n--) | Store n to B TOS |
+| `b@` | (--n) (B: n--n) | Copy n from B |
+| `b@+` | (--n) (B: n--n+1) | Copy n from B, then increment B TOS |
+| `b@-` | (--n) (B: n--n-1) | Copy n from B, then decrement B TOS |
+| `b>` | (--n) (B: n--) | Move from B stack |
+
+### T Stack
+| Word | Stack Effect | Description |
+| :--- | :----------- | :---------- |
+| `>t` | (n--) (T:--n) | Move n to the T stack |
+| `t!` | (n--) | Store n to T TOS |
+| `t@` | (--n) (T: n--n) | Copy n from T stack |
+| `t@+` | (--n) (T: n--n+1) | Copy n from T, then increment T TOS |
+| `t@-` | (--n) (T: n--n-1) | Copy n from T, then decrement T TOS |
+| `t>` | (--n) (T: n--) | Move n from T stack |
+
+### I/O Operations
+| Word | Stack Effect | Description |
+| :--- | :----------- | :---------- |
+| `emit` | (c--) | Output character |
+| `key` | (--c) | Wait for and read a character |
+| `?key` | (--f) | f: 1 if a key was pressed, 0 otherwise |
+| `ztype` | (addr--) | Print null-terminated string at addr |
+
+### File Operations
+| Word | Stack Effect | Description |
+| :--- | :----------- | :---------- |
+| `fopen` | (name mode--fh) | Open file, return file handle fh |
+| `fclose` | (fh--) | Close file fh |
+| `fread` | (buf sz fh--n) | Read from file, return bytes read |
+| `fwrite` | (buf sz fh--n) | Write to file, return bytes written |
+| `fseek` | (fh offset--) | Seek to position in file |
+
+### String Operations
+| Word | Stack Effect | Description |
+| :--- | :----------- | :---------- |
+| `s-cpy` | (dest src--dst) | Copy null-terminated string |
+| `s-eqi` | (s1 s2--flag) | Case-insensitive string comparison |
+| `s-len` | (addr--len) | Get string length |
+| `cmove` | (src dest n--) | Move n bytes from src to dest |
+
+### System Operations
+| Word | Stack Effect | Description |
+| :--- | :----------- | :---------- |
+| `outer` | (addr--) | Execute Forth source at address |
+| `addword` | (--) | Add word to dictionary (uses >in) |
+| `find` | (--xt addr) | Find word (uses >in), return xt and dict addr |
+| `timer` | (--n) | Get current time |
+| `ms` | (n--) | Sleep for n milliseconds |
+| `system` | (cmd--) | Execute system(cmd) |
+| `bye` | (--) | Exit CF |
+
 ## Adding a primitive to CF
 
 Adding a primitive to CF is easy. Add an X() line to the PRIMS macro.<br/>
