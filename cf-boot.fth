@@ -530,7 +530,7 @@ yellow ."    Dict: " white dict-end last - de-sz / . ." words defined" cr
 : fib-bm ( n-- ) timer swap fib . elapsed ;
 
 ( 2: some util words )
-: vi   z" vi boot.fth" system ;
+: vi   z" vi cf-boot.fth" system ;
 : lg   z" lazygit" system ;
 : ll   z" ls -l" system ;
 : dev  z" ccc dev" system ;
