@@ -76,7 +76,7 @@ const -la-    const -ha-    vhere const -vha-
 : blk-sz  2048 ; inline
 num-blks  blk-sz *  const disk-sz  inline
 memory  mem-sz + 2 1024 1024 * * - const blks  inline
-cell var t0  1 t0 !
+cell var t0
 : blk@ ( --n ) t0 @ ;
 : blk! ( n-- ) blk-max and t0 ! ;
 : blk-data ( --a ) blk@ blk-sz * blks + ;
@@ -86,7 +86,7 @@ cell var t0  1 t0 !
    >r blks disk-sz r@ fread drop r> fclose ;
 : disk-write ( -- ) z" disk.cf" fopen-w
    >r blks disk-sz r@ fwrite drop r> fclose ;
-disk-read
+disk-read  0 blk!
 
 ( load )
 : t1  0 blk-end c! ;
@@ -316,6 +316,7 @@ ed-blk rows cols * + 1- const ed-eob
 : pos->rc ( pos-- ) norm-pos ed-blk - cols /mod row! col! ;
 : cr->pos ( col row--pos ) cols * + ed-blk + ed-eob min ;
 : rc->pos ( --pos ) col@ row@ cr->pos ;
+: r->pos ( r--pos ) 0 swap  last-row min 0 max  cr->pos ;
 : ed-eol  ( --pos ) last-col row@ cr->pos ;
 1 var t1  : mode!  t1 c! ;  : mode@  t1 c@ ;
 1 var t1  : show?  t1 c@ ;  : shown  0 t1 c! ;  : show!  1 t1 c! ;
@@ -362,23 +363,20 @@ ed-blk rows cols * + 1- const ed-eob
 : insert-char  a@ printable? if ins-bl a@ ed-ch! mv-right then ;
 : del-c rc->pos >a a@ 1+ a> cols col@ - cmove dirty! 32 ed-eol c! ;
 : del-z rc->pos >a a@ 1+ a@ ed-eob a> - cmove dirty! 32 ed-eob c! ;
-: clr-line  0 row@ cr->pos cols bl fill dirty! ;
+: clr-line  row@ r->pos cols bl fill dirty! ;
 : clr-toend rc->pos cols col@ - bl fill dirty! ;
 : ed-goto ( blk-- ) blk! ed-load ;
-: insert-line  row@ last-row < if
-      ed-eob >a  a@ cols - >t  0 row@ cr->pos >r
-      begin c@t- c!a- t@ r@ < until atdrop rdrop
-   then clr-line ;
+: insert-line  row@ r->pos >a  a@ row@ 1+ r->pos  last-row r->pos a> - cmove  clr-line ;
 : ?insert-line ins? if0 mv-down 0 col! exit then
    mv-down insert-line mv-up
    rc->pos pad3 cols cmove clr-toend
    mv-down 0 col! pad3 rc->pos cols cmove ;
 : yanked pad2 ;
-: yank-line  0 row@ cr->pos yanked cols cmove ;
-: put-line   yanked 0 row@ cr->pos cols cmove ;
+: yank-line  row@ r->pos yanked cols cmove ;
+: put-line   yanked row@ r->pos cols cmove ;
 : del-line yank-line row@ rows < if
-      0 row@ cr->pos >t  t@ cols + >a  ed-eob >r
-      begin c@a+ c!t+  a@ r@ > until atdrop rdrop
+      row@ r->pos >b  b@ cols + >a  ed-eob >r
+      begin c@a+ c!b+  a@ r@ > until abdrop rdrop
    then row@  last-row row!  clr-line  row! ;
 : join-lines row@ last-row < if
       col@ >t mv-down del-line mv-up
