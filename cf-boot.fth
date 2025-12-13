@@ -6,7 +6,7 @@
 : ->code ( n--a ) cell * memory + ;
 : , ( n-- ) here ->code ! 1 (ha) +! ;
 : allot ( n-- ) (vha) +! ;
-: const ( n-- ) addword (lit) , , (exit) , ;
+: const ( n-- ) addword lit, (exit) , ;
 : var   ( n-- ) vhere const allot ;
 
 (( these are used by "rb" ))
@@ -58,7 +58,7 @@ const -la-    const -ha-    vhere const -vha-
       c@a '"' = if
          0 c!b+  a> 1+ >in !
          comp? if0 bdrop exit then
-         b> (vha) ! (lit) , , exit
+         b> (vha) ! lit, exit
       then c@a+ c!b+
    again ;
 
@@ -74,8 +74,8 @@ const -la-    const -ha-    vhere const -vha-
 : num-blks 128 ; inline
 : blk-max  127 ; inline
 : blk-sz  2048 ; inline
-: disk-sz  num-blks blk-sz * ;
-memory mem-sz + 2048 1024 * - const blks
+num-blks  blk-sz *  const disk-sz  inline
+memory  mem-sz + 2 1024 1024 * * - const blks  inline
 cell var t0  1 t0 !
 : blk@ ( --n ) t0 @ ;
 : blk! ( n-- ) blk-max and t0 ! ;
@@ -134,7 +134,7 @@ cell var t0    cell var t1    cell var t2
 : tdrop t> drop   ; inline
 : atdrop adrop tdrop ;
 
-: val   ( -- )  addword (lit) , 111 , (exit) , ;
+: val   ( -- )  addword (lit) , 0 , (exit) , ;
 : (val) ( -- )  here 2 - ->code const ;
 : ->file ( fh-- ) (output-fp) ! ;
 : ->stdout 0 ->file ;
@@ -209,13 +209,13 @@ cell var t0    cell var t1    cell var t2
 : pad3 ( --a ) vhere $300 + ;
 
 ( words )
-: dict-end memory mem-sz + 1- 7 com and ;
 : de>xt    @ ; inline
-: de>flags cell + c@ ; inline
-: de>len   cell + 1+ c@ ; inline
-: de>name  cell + 2+ ; inline
+: de>flags cell + c@ ;
+: de>len   cell + 1+ c@ ;
+: de>name  cell + 2+ ;
 : .word de>name ztype ;
 : .de-word .word t@+ 9 > if 0 t! cr exit then tab ;
+memory mem-sz + 1- 7 com and  const dict-end
 
 : words last >a 1 >t 0 >b begin
    a@ de>len  7 > if t+ then

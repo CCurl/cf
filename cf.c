@@ -49,6 +49,7 @@ DE_T tmpWords[10];
 	X(COM,     "com",     TOS = ~TOS; ) \
 	X(FOR,     "for",     lsp+=3; L0=0; L1=pop(); L2=pc; ) \
 	X(NDX_I,   "i",       push(L0); ) \
+	X(LITC,    "lit,",    compileNumber(pop()); ) \
 	X(NEXT,    "next",    if (++L0<L1) { pc=L2; } else { lsp=(2<lsp)?(lsp-3):0; } ) \
 	X(TOR,     ">r",      rpush(pop()); ) \
 	X(RAT,     "r@",      push(rstk[rsp]); ) \
@@ -92,6 +93,8 @@ DE_T tmpWords[10];
 	X(SLEN,    "s-len",   TOS=strlen((char*)TOS); ) \
 	X(CMOVE,   "cmove",   t=pop(); n=pop(); memmove((char*)n, (char*)pop(), t); ) \
 	X(BYE,     "bye",     ttyMode(0); exit(0); )
+
+enum { STOP, LIT, JMP, JMPZ, NJMPZ, JMPNZ, NJMPNZ, PRIMS(X1) };
 
 static void push(cell x) { if (dsp < STK_SZ) { dstk[++dsp] = x; } }
 static cell pop() { return (0<dsp) ? dstk[dsp--] : 0; }
@@ -140,7 +143,11 @@ static DE_T *findWord(const char *w) {
 	return (DE_T*)0;
 }
 
-enum { STOP, LIT, JMP, JMPZ, NJMPZ, JMPNZ, NJMPNZ, PRIMS(X1) };
+static void compileNumber(cell n) {
+		if (btwi(n, 0, NUM_MASK)) { comma(n | NUM_BITS); }
+		else { comma(LIT); comma(n); }
+}
+
 static void cfInner(cell pc) {
 	cell t, n, ir;
 	next: ir = code[pc++];
@@ -177,11 +184,6 @@ static int isNumber(const char *w) {
 	}
 	push(isNeg ? -n : n);
 	return 1;
-}
-
-static void compileNumber(cell n) {
-		if (btwi(n, 0, NUM_MASK)) { comma(n | NUM_BITS); }
-		else { comma(LIT); comma(n); }
 }
 
 static void executeWord(DE_T *dp) {
