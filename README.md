@@ -36,13 +36,13 @@ hello
 
 ## Tachyon's influence on cf
 In cf, a program is a sequence of OPCODEs.<br/>
-An OPCODE is a CELL-sized unsigned number (32 or 64 bits).<br/>
-Primitives are assigned numbers sequentially from 0 to `(bye)`.<br/>
+An OPCODE is an unsigned CELL (32 or 64 bits).<br/>
+Primitives are assigned sequentially from 0 to `(bye)`.<br/>
 If an OPCODE is less than or equal to `(bye)`, it is a primitive.<br/>
-If the top 3 bits are set, it is an unsigned literal with the top 3 bits masked off.<br/>
-Else, it is the CODE slot of a word to execute.<br/>
-CODE slots 0-24 are used by cf.<br/>
-CODE slots 25-`(bye)` are free CELL-sized slots that can be used for any purpose.<br/>
+Else if the top 3 bits are set, it is a literal with the top 3 bits masked off.<br/>
+Else, it is the CODE slot (XT) of a word to execute.<br/>
+CODE slots 0-24 are used by cf. Slots 25-`(bye)` are unused by CF.<br/>
+They are free CELL-sized slots that can be used for any purpose.<br/>
 HERE starts at `(bye)+1`.<br/>
 
 ## The A, B and T register stacks
@@ -54,7 +54,7 @@ The operations for the 'b' and 't' stacks are the same.<br/>
 ## Architecture
 CF is really just a Forth VM, upon which any Forth system can be built.<br/>
 To that end, cf defines a set of primitives and the inner/outer interpreters.<br/>
-See the `PRIMS` macro in `cf.c` for the list of primitives and their definitions.<br/>
+The list of primitives and their definitions is detailed below.<br/>
 The rest of the system is defined by the source code file.<br/>
 CF takes a source file name as its only argument.<br/>
 If cf is executed without arguments, the source file defaults to `BOOT_FN1`.<br/>
@@ -67,7 +67,7 @@ The start of the data area (VHERE) is defined in the source file.<br/>
 ## Embedding cf into a C program
 CF can easily be embedded into a C program.<br/>
 The cf VM is implemented in `cf.c`.<br/>
-The configuration and API for cf are located in `cf.h`.<br/>
+The configuration settings and API for cf are located in `cf.h`.<br/>
 File `system.c` embeds the CF VM into an executable.<br/>
 
 ## Building cf
@@ -97,7 +97,7 @@ $CC -m64 -O3 -o cf *.c
 
 ## Primitives Reference
 
-CF provides a set of primitives defined in the `PRIMS` macro in `cf.c`.
+The CF primitives defined in the `PRIMS` macro in `cf.c`.
 
 ### Stack Operations
 | Word | Stack Effect | Description |
@@ -230,8 +230,8 @@ CF provides a set of primitives defined in the `PRIMS` macro in `cf.c`.
 
 Adding a primitive to CF is easy. Add an X() line to the PRIMS macro.<br/>
 The embedded X() macro in PRIMS is a powerful use of C macros.<br/>
-The X() macro takes 3 parameters:
-- A name for the ENUM entry (used by the inner interpreter)
+The X(op, name, code) macro takes 3 parameters:
+- A name for the ENUM of opcodes (used by the inner interpreter)
 - A name for the word to be created in the Forth dictionary
 - Code that implements the primitive's action. This can be a call to any function.
 
