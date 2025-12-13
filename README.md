@@ -217,6 +217,7 @@ CF provides a set of primitives defined in the `PRIMS` macro in `cf.c`.
 ### System Operations
 | Word | Stack Effect | Description |
 | :--- | :----------- | :---------- |
+| `lit,` | (n--) | Compile literal value |
 | `outer` | (addr--) | Execute Forth source at addr |
 | `addword` | (--) | Add word to dictionary (uses >in) |
 | `find` | (--xt addr) | Find word (uses >in), return xt and dict addr |
