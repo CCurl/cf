@@ -98,7 +98,7 @@ disk-read
 : source-loc memory 100000 + ;
 : rb ( reboot )
    -vha- (vha) !  -la- (la) !  -ha- (ha) !
-   z" boot.fth" fopen-r -if dup then if a!
+   z" cf-boot.fth" fopen-r -if dup then if a!
       source-loc b! 50000 for 0 c!b+ next
       source-loc 50000 a@ fread drop a@ fclose
       source-loc >in !
