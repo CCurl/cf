@@ -136,15 +136,16 @@ cell var t0    cell var t1    cell var t2
 
 : val   ( -- )  addword (lit) , 0 , (exit) , ;
 : (val) ( -- )  here 2 - ->code const ;
-: ->file ( fh-- ) (output-fp) ! ;
-: ->stdout 0 ->file ;
+: ?dup  -if dup then ;
 : bl 32 ; inline
 : tab 9 emit ; inline
 : cr 13 emit 10 emit ; inline
 : spaces for bl emit next ; inline
 : negate com 1+ ; inline
 : abs dup 0 < if negate then ;
-: ?dup  -if dup then ;
+: ->file ( fh-- ) (output-fp) ! ;
+: ->stdout 0 ->file ;
+: ->stdout! (output-fp) @ ?dup if fclose then ->stdout ;
 
 : .nw  ( n w-- ) >r <# r> ?dup if 1- for # next then #s #> ztype ;
 : .nwb ( n w b-- ) base @ >b base ! .nw b> base ! ;
@@ -533,7 +534,6 @@ yellow ."    Dict: " white dict-end last - de-sz / . ." words defined" cr
 : ll   z" ls -l" system ;
 : dev  z" ccc dev" system ;
 : pull z" git pull" system ;
-: dw  disk-write ;
 
 (( 3: fixed point ))
 cell var t0       : fbase t0 @ ;  : fbase! t0 ! ;
@@ -557,13 +557,13 @@ cell var t1       : fprec t1 @ ;  : fprec! t1 ! 1 fprec for 10 * next fbase! ;
 : blk-fn ( --a ) t1 z" block-" s-cpy blk@ <# # # #s #> s-cat z" .fth" s-cat ;
 : blk-cp ( f t-- ) blk! blk-data swap blk! blk-data swap blk-sz cmove ;
 : blk-clr ( n-- ) blk@ >r blk! blk-data blk-sz 0 fill r> blk! ;
-: blk-out ( n-- ) blk! blk-fn fopen-w >t  blk-data blk-sz t@ fwrite drop  t> fclose ;
-: blk-in ( n-- ) blk! blk-fn fopen-r >t  t@ if0 tdrop exit then
-   blk-data blk-sz t@ fread drop  t> fclose ;
-: b-o blk! blk-data a! pad3 b! rows for
-      a@ b@ cols cmove  0 b@ cols + c!
-      b@ s-rtrim ztype cr  a@ cols + a!
-   next ;
+: blk-exp ( n-- ) blk! blk-fn fopen-w >t  blk-data blk-sz t@ fwrite drop  t> fclose ;
+: blk-imp ( n-- ) blk! blk-fn fopen-r ?dup if
+       >t blk-data blk-sz t@ fread drop t> fclose
+   then ;
+: blk-out ( n-- ) blk! blk-fn fopen-w ->file  blk-data a!  pad3 b!  rows for
+      a@ b@ cols cmove  0 b@ cols + c!  b@ s-rtrim ztype cr  a@ cols + a!
+   next ->stdout! ;
 
 (( 1 load ))
 marker
