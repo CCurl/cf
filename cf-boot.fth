@@ -240,8 +240,7 @@ memory mem-sz + 1- 7 com and  const dict-end
 : color ( bg fg-- ) csi (.) ';' emit (.) 'm' emit ;
 : bg    ( color-- ) csi ." 48;5;" (.) 'm' emit ;
 : fg    ( color-- ) csi ." 38;5;" (.) 'm' emit ;
-: c-red 203 ; inline
-: black   0 fg ;      : red    c-red fg ;
+: black   0 fg ;      : red    203 fg ;
 : green  40 fg ;      : yellow 226 fg ;
 : blue   63 fg ;      : purple 201 fg ;
 : cyan  117 fg ;      : grey   246 fg ;
@@ -261,13 +260,7 @@ memory mem-sz + 1- 7 com and  const dict-end
 256  79 + const key-end    (( VT: 27 91 70 ))
 256  80 + const key-down   (( VT: 27 91 66 ))
 256  81 + const key-pgdn   (( VT: 27 91 54 126 ))
-256  82 + const key-ins    (( VT: 27 91 50 126 ))
-256  83 + const key-del    (( VT: 27 91 51 126 ))
-256 119 + const key-chome  (( VT: 27 91 ?? ??? ))
-256 117 + const key-cend   (( VT: 27 91 ?? ??? ))
 : vk2 ( --k ) key 126 = if0 27 exit then
-   a@ 50 = if key-ins   exit then
-   a@ 51 = if key-del   exit then
    a@ 53 = if key-pgup  exit then
    a@ 54 = if key-pgdn  exit then    27 ;
 : vk1 ( --k ) key a!
@@ -301,7 +294,7 @@ memory mem-sz + 1- 7 com and  const dict-end
 : last-row 22 ; inline   : last-col 88 ; inline
 vhere const ed-colors
 219   vc, (( 0: default - purple ))
-c-red vc, (( 1: define  - red ))
+203   vc, (( 1: define  - red ))
  76   vc, (( 2: compile - green ))
 226   vc, (( 3: interp  - yellow ))
 255   vc, (( 4: comment - white ))
@@ -317,7 +310,7 @@ ed-blk rows cols * + 1- const ed-eob
 : pos->rc ( pos-- ) norm-pos ed-blk - cols /mod row! col! ;
 : cr->pos ( col row--pos ) cols * + ed-blk + ed-eob min ;
 : rc->pos ( --pos ) col@ row@ cr->pos ;
-: r->pos ( r--pos ) 0 swap  last-row min 0 max  cr->pos ;
+: r->pos ( r--pos ) last-row min 0 max  0 swap  cr->pos ;
 : ed-eol  ( --pos ) last-col row@ cr->pos ;
 1 var t1  : mode!  t1 c! ;  : mode@  t1 c@ ;
 1 var t1  : show?  t1 c@ ;  : shown  0 t1 c! ;  : show!  1 t1 c! ;
@@ -385,20 +378,10 @@ ed-blk rows cols * + 1- const ed-eob
          mv-right c@b+ ed-ch! col@ last-col <
       while bdrop t> col!
    then ;
-: ed-prev-word rc->pos 1- >t begin
-      t@ ed-blk < if t> pos->rc exit then
-      c@t- 33 < if t> 1+ pos->rc exit then
-   again ;
-: ed-next-word rc->pos 1+ >t begin
-      t@ ed-eob > if t> pos->rc exit then
-      c@t+ 33 < if t> pos->rc exit then
-   again ;
 : rl blk@ ed-goto ;
-: w! ed-blk blk-data blk-sz cmove clean! ;
-: w!! w! disk-write ;
-: w  dirty? if w! then ;
-: q  dirty? if0 q! exit then ." use 'wq' or 'q!'" ;
-: wq w q ;
+: w ed-blk blk-data blk-sz cmove clean! ;
+: w!! w disk-write ;
+: q  dirty? if0 q! exit then ." use 'w q' or 'q!'" ;
 : ed! w blk! ed-load ;
 : do-cmd ->cmd ':' emit clr-eol pad accept
    space pad outer show! ;
@@ -439,12 +422,8 @@ key-up      case   mv-up
 key-down    case   mv-down
 key-home    case!  0 col! ;
 key-end     case   mv-end
-key-ins     case!  ins? if ->norm exit then ->ins ;
-key-del     case   del-c
 key-pgup    case   prev-pg
 key-pgdn    case   next-pg
-key-chome   case!  0 dup row! col! ;
-key-cend    case!  last-row row! 0 col! ;
 key-f1      case!  define  ed-ch! ;
 key-f2      case!  compile ed-ch! ;
 key-f3      case!  interp  ed-ch! ;
@@ -456,7 +435,6 @@ vhere const ed-cases
 'k'  case   mv-up
 'h'  case   mv-left
 'l'  case   mv-right
-bl   case   mv-right
 '1'  case!  define  ed-ch! ;
 '2'  case!  compile ed-ch! ;
 '3'  case!  interp  ed-ch! ;
@@ -480,16 +458,12 @@ bl   case   mv-right
 'J'  case   join-lines
 'p'  case!  mv-down insert-line put-line ;
 'P'  case!  insert-line put-line ;
-'q'  case!  0 8 mv ;
-'Q'  case!  0 8 negate mv ;
+'q'  case!  0  8 mv ;
+'Q'  case!  0 -8 mv ;
 'O'  case!  insert-line ->ins 0 col! ;
 'o'  case!  mv-down insert-line ->ins 0 col! ;
-'w'  case   ed-next-word
-'W'  case   ed-prev-word
 'Y'  case   yank-line
 'Z'  case   del-z
-'g'  case!  rows 0  row! 0 col! ;
-'G'  case!  last-row row! 0 col! ;
 '='  case   next-pg
 '-'  case   prev-pg
 '#'  case!  cls show! ;
@@ -515,55 +489,5 @@ yellow ."  Memory: " white mem-sz . ." bytes" cr
 yellow ."    Code: " white here . ." opcodes used" cr
 yellow ."    Dict: " white dict-end last - de-sz / . ." words defined" cr
 
-(( 1: compile then execute ))
- cell var t1
-: [[ here t1 ! compile state ! ;
-: ]] (exit) , t1 @ (ha) ! interp state ! here execute ; immediate
-
-( 1: some benchmarks )
-: elapsed ( n-- ) timer swap - . ." usec" ;
-: mil ( n--m ) 1000 dup * * ;
-: bm  ( n-- ) timer swap for next elapsed ;
-: bb  ( -- ) 1000 mil bm ;
-: fib ( n--m ) 1- dup 2 < if drop 1 exit then dup fib swap 1- fib + ;
-: fib-bm ( n-- ) timer swap fib . elapsed ;
-
-( 2: some util words )
-: vi   z" vi cf-boot.fth" system ;
-: lg   z" lazygit" system ;
-: ll   z" ls -l" system ;
-: dev  z" ccc dev" system ;
-: pull z" git pull" system ;
-
-(( 3: fixed point ))
-cell var t0       : fbase t0 @ ;  : fbase! t0 ! ;
-cell var t1       : fprec t1 @ ;  : fprec! t1 ! 1 fprec for 10 * next fbase! ;
-: f+ + ;          : f- - ;
-: f* * fbase / ;  : f/ >a fbase * a> / ;
-: f. fbase /mod (.) '.' emit abs fprec .nw ;
-2 fprec!
-
-( 4: This dump is from Peter Jakacki )
-: a-emit ( b-- ) dup $1f $7f btw if0 drop '.' then emit ;
-: .ascii ( -- ) a@ $10 - $10 for dup c@ a-emit 1+ next drop ;
-: dump ( f n-- ) swap >a 0 >t for
-     t@ if0 cr a@ .hex ':' emit space then
-     c@a+ .hex space
-     t@+ $0f = if 3 spaces .ascii 0 t! then
-   next atdrop ;
-
-( 5: more block words )
-16 var t1
-: blk-fn ( --a ) t1 z" block-" s-cpy blk@ <# # # #s #> s-cat z" .fth" s-cat ;
-: blk-cp ( f t-- ) blk! blk-data swap blk! blk-data swap blk-sz cmove ;
-: blk-clr ( n-- ) blk@ >r blk! blk-data blk-sz 0 fill r> blk! ;
-: blk-exp ( n-- ) blk! blk-fn fopen-w >t  blk-data blk-sz t@ fwrite drop  t> fclose ;
-: blk-imp ( n-- ) blk! blk-fn fopen-r ?dup if
-       >t blk-data blk-sz t@ fread drop t> fclose
-   then ;
-: blk-out ( n-- ) blk! blk-fn fopen-w ->file  blk-data a!  pad3 b!  rows for
-      a@ b@ cols cmove  0 b@ cols + c!  b@ s-rtrim ztype cr  a@ cols + a!
-   next ->stdout! ;
-
-(( 1 load ))
+1 load
 marker
