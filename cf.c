@@ -201,15 +201,15 @@ static void compileWord(DE_T *dp) {
 }
 
 static int isStateChange() {
-	if (strEqI(wd, ")"))  { return changeState(COMPILE); }
-	if (strEqI(wd, "))")) { return changeState(INTERP); }
-	if (state == COMMENT) { return 0; }
+	if (state == COMMENT) { return COMMENT; }
 	if (strEqI(wd, ":"))  { return changeState(DEFINE); }
 	if (strEqI(wd, ";"))  { comma(EXIT); return changeState(INTERP); }
 	if (strEqI(wd, "["))  { return changeState(INTERP); }
 	if (strEqI(wd, "]"))  { return changeState(COMPILE); }
-	if (strEqI(wd, "("))  { return changeState(COMMENT); }
-	if (strEqI(wd, "((")) { return changeState(COMMENT); }
+	if (strEqI(wd, "("))  {
+		while (wd[0] && !strEqI(wd, ")")) { nextWord(); }
+		return state;
+	}
 	return 0;
 }
 
@@ -218,7 +218,6 @@ void cfOuter(const char *src) {
 	toIn = (char*)src;
 	while (nextWord()) {
 		if (isStateChange()) { continue; }
-		if (state == COMMENT) { continue; }
 		if (state == DEFINE)  { if (addWord(wd)) { state = COMPILE; continue; } }
 		if (isNumber(wd)) {
 			if (state == COMPILE) { compileNumber(pop()); }
@@ -232,7 +231,7 @@ void cfOuter(const char *src) {
 		}
 		if (state == INTERP) { executeWord(dp); continue; }
 		if (state == COMPILE) { compileWord(dp); continue; }
-		zType("-state?-");
+		zType("-state?-"); zType(wd);
 		state = INTERP;
 		break;
 	}
@@ -247,7 +246,7 @@ void cfInit() {
 	last  = (cell)&mem[MEM_SZ-1];
 	while (last & (CELL_SZ-1)) { --last; }
 	dictEnd = last;
-	vhere = dsp = rsp = lsp = tsp = asp = state = 0;
+	vhere = dsp = rsp = lsp = tsp = asp = 0;
     struct { char *nm; cell val; } nvp[] = {
 		{ "(ztype)", ZTYPE },    { "(jmp)",   JMP },    { "(jmpz)",   JMPZ },
 		{ "(jmpnz)", JMPNZ },    { "(njmpz)", NJMPZ },  { "(njmpnz)", NJMPNZ },
@@ -265,7 +264,7 @@ void cfInit() {
 		{ "memory",  (cell)&mem[0] },  { ">in",   (cell)&toIn },
 		{ "mem-sz",  MEM_SZ },         { "base",  (cell)&base },
 		{ "version", VERSION },        { "state", (cell)&state },
-		{ "cell",  CELL_SZ },          { 0 ,0 }
+		{ "cell",    CELL_SZ },        { 0 ,0 }
 	};
 	for (int i = 0; nvp[i].nm; i++) {
 		DE_T *dp = addWord(nvp[i].nm);

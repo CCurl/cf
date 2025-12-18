@@ -12,27 +12,21 @@
 
 ## Whitespace characters and WORDS that change the state:
 
-| Byte  | Word(s)     | New State |
-| :--   | :--         | :--       |
-| $01   | ":"         | DEFINE    |
-| $02   | "]" or ")"  | COMPILE   |
-| $03   | "[" or "))" | INTERPRET |
-| $04   | "(" or "((" | COMMENT   |
-|       | ";"         | INTERPRET |
+| Byte  | Word | New State |
+| :--   | :--  | :--       |
+| $01   | ":"  | DEFINE    |
+| $02   | "]"  | COMPILE   |
+| $03   | "["  | INTERPRET |
+| $04   |      | COMMENT   |
+|       | ";"  | INTERPRET |
 
 ## Notes:
 - DEFINE changes the state to COMPILE after adding the word to the dictionary.
 - ";" compiles EXIT and changes the state to INTERPRET.
-- There is no difference between `(` and `((`, they make the code more readable.
+- The `(` word simply skips words until `)`. It does not change the state.
 - CF still supports IMMEDIATE words.
 - Flow control words like IF/THEN would be marked as IMMEDIATE.
 - They are defined in the source file.
-
-```
-(( A comment in INTERPRET mode ))
-: hello ( A comment in COMPILE mode ) ." Hello World!" ;
-hello
-```
 
 ## Tachyon's influence on cf
 In cf, a program is a sequence of OPCODEs.<br/>
@@ -237,8 +231,8 @@ The X(op, name, code) macro takes 3 parameters:
 
 `PRIMS` is used create the opcode values and code for the switch statement in `cfInner()`, and to create the dictionary entries in `cfInit()`.
 
-For example, in the following example, `SCOPY` is the name for the enum, `s-cpy` is the name for the Forth dictionary entry, and `t=pop(); strcpy((char*)TOS, (char*)t);` is the code to be executed by the inner interpreter when `SCOPY` is encountered by the inner interpreter.
-```
+For example, in the following example, `SCOPY` is the name for the enum, `s-cpy` is the name for the Forth dictionary entry, and `t=pop(); strcpy((char*)TOS, (char*)t);` is the code to be executed when `SCOPY` is encountered by the inner interpreter.
+```c
 	X(SCOPY,   "s-cpy",   t=pop(); strcpy((char*)TOS, (char*)t); ) \
 ```
 
@@ -247,5 +241,6 @@ For example, in the following example, `SCOPY` is the name for the enum, `s-cpy`
 - They are implemented in the default source file.
 
 ## The Editor
-- A block editor is implemented in the default source file.
+- An editor is not native to cf.
+- One is implemented in the default source file.
 - The editor has a vi-like feel.

@@ -1,4 +1,4 @@
-(( code: 65536 cells, then vars ))
+( code: 65536 cells, then vars )
 65536 cell * memory + (vha) ! (ha) @ (la) @
 : here  (ha)  @ ;
 : vhere (vha) @ ;
@@ -9,7 +9,7 @@
 : const ( n-- ) addword lit, (exit) , ;
 : var   ( n-- ) vhere const allot ;
 
-(( these are used by "rb" ))
+( these are used by "rb" )
 const -la-    const -ha-    vhere const -vha-
 
 : immediate 1 last cell + c! ; immediate
@@ -247,19 +247,19 @@ memory mem-sz + 1- 7 com and  const dict-end
 : white 255 fg ;
 : colors 31 >a 7 for a@ fg ." color #" a@+ . cr next white adrop ;
 
-(( Keys ))
+( Keys )
 256  59 + const key-f1
 256  60 + const key-f2
 256  61 + const key-f3
 256  62 + const key-f4
-256  71 + const key-home   (( VT: 27 91 72 ))
-256  72 + const key-up     (( VT: 27 91 65 ))
-256  73 + const key-pgup   (( VT: 27 91 53 126 ))
-256  75 + const key-left   (( VT: 27 91 68 ))
-256  77 + const key-right  (( VT: 27 91 67 ))
-256  79 + const key-end    (( VT: 27 91 70 ))
-256  80 + const key-down   (( VT: 27 91 66 ))
-256  81 + const key-pgdn   (( VT: 27 91 54 126 ))
+256  71 + const key-home   ( VT: 27 91 72 )
+256  72 + const key-up     ( VT: 27 91 65 )
+256  73 + const key-pgup   ( VT: 27 91 53 126 )
+256  75 + const key-left   ( VT: 27 91 68 )
+256  77 + const key-right  ( VT: 27 91 67 )
+256  79 + const key-end    ( VT: 27 91 70 )
+256  80 + const key-down   ( VT: 27 91 66 )
+256  81 + const key-pgdn   ( VT: 27 91 54 126 )
 : vk2 ( --k ) key 126 = if0 27 exit then
    a@ 53 = if key-pgup  exit then
    a@ 54 = if key-pgdn  exit then    27 ;
@@ -293,11 +293,11 @@ memory mem-sz + 1- 7 com and  const dict-end
 : rows 23 ; inline       : cols 89 ; inline
 : last-row 22 ; inline   : last-col 88 ; inline
 vhere const ed-colors
-219   vc, (( 0: default - purple ))
-203   vc, (( 1: define  - red ))
- 76   vc, (( 2: compile - green ))
-226   vc, (( 3: interp  - yellow ))
-255   vc, (( 4: comment - white ))
+219   vc, ( 0: default - purple )
+203   vc, ( 1: define  - red )
+ 76   vc, ( 2: compile - green )
+226   vc, ( 3: interp  - yellow )
+255   vc, ( 4: comment - white )
 
 : ed-color@ ( n-- )    ed-colors + c@ ;
 : ed-color! ( fg n-- ) ed-colors + c! ;
@@ -396,15 +396,15 @@ ed-blk rows cols * + 1- const ed-eob
    @t+ a@ = if t> @ >r exit then
    t@ cell+ t! again ;
 
-(( delete commands ))
+( delete commands )
 vhere const ed-del-cases
 'x'    case   del-c
 'Z'    case   del-z
 'd'    case   del-line
 '$'    case   clr-toend
-0 v, 0 v, (( end ))
+0 v, 0 v, ( end )
 
-(( VI-like commands ))
+( VI-like commands )
 vhere const ed-ctrl-cases
   3         case   ->norm
   8         case!  mv-left ins? if del-c then ;
@@ -428,7 +428,7 @@ key-f1      case!  define  ed-ch! ;
 key-f2      case!  compile ed-ch! ;
 key-f3      case!  interp  ed-ch! ;
 key-f4      case!  comment ed-ch! ;
-0 v, 0 v, (( end ))
+0 v, 0 v, ( end )
 
 vhere const ed-cases
 'j'  case   mv-down
@@ -467,7 +467,7 @@ vhere const ed-cases
 '='  case   next-pg
 '-'  case   prev-pg
 '#'  case!  cls show! ;
-0 v, 0 v, (( end ))
+0 v, 0 v, ( end )
 
 : process-key ( --, key is in a )
    a@ bl < a@ 126 > or if ed-ctrl-cases switch exit then
