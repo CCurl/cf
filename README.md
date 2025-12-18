@@ -187,8 +187,8 @@ The CF primitives defined in the `PRIMS` macro in `cf.c`.
 | Word | Stack Effect | Description |
 | :--- | :----------- | :---------- |
 | `emit` | (c--) | Output character |
-| `key` | (--c) | Wait for and read a character |
-| `?key` | (--f) | f: 1 if a key was pressed, 0 otherwise |
+| `key`  | (--c) | Wait for and read a character |
+| `key?` | (--f) | f: 1 if a key was pressed, 0 otherwise |
 | `ztype` | (addr--) | Print null-terminated string at addr |
 
 ### File Operations

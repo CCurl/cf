@@ -75,7 +75,7 @@ DE_T tmpWords[10];
 	X(TFROM,   "t>",      push(0<tsp ? tstk[tsp--]: 0); ) \
 	X(EMIT,    "emit",    emit((char)pop()); ) \
 	X(KEY,     "key",     push(key()); ) \
-	X(QKEY,    "?key",    push(qKey()); ) \
+	X(KEYQ,    "key?",    push(qKey()); ) \
 	X(OUTER,   "outer",   t=pop(); n=(cell)toIn; cfOuter((char*)t); toIn=(char*)n; ) \
 	X(ADDWORD, "addword", addWord(0); ) \
 	X(FIND,    "find",    { DE_T *dp=findWord(0); push(dp?dp->xt:0); push((cell)dp); } ) \
