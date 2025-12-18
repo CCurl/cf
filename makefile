@@ -10,9 +10,5 @@ run: cf
 clean:
 	rm -f cf
 
-test: cf
-	./cf block-200.cf
-
 bin: cf
 	cp -u -p cf ~/bin/
-	cp -u -p cf-boot.fth ~/bin
