@@ -208,7 +208,7 @@ static int isStateChange() {
 	if (strEqI(wd, "]"))  { return changeState(COMPILE); }
 	if (strEqI(wd, "("))  {
 		while (wd[0] && !strEqI(wd, ")")) { nextWord(); }
-		return state;
+		return 1;
 	}
 	return 0;
 }
