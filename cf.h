@@ -8,7 +8,7 @@
 #include <string.h>
 #include <time.h>
 
-#define VERSION         20251218
+#define VERSION         20251219
 #define BOOT_FN1        "cf-boot.fth"
 
 #ifdef _MSC_VER
