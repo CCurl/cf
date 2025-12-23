@@ -31,6 +31,7 @@ const -la-    const -ha-    vhere const -vha-
 
 : a+    a@+ drop  ; inline
 : a-    a@- drop  ; inline
+: @a    a@  @     ; inline
 : c@a   a@  c@    ; inline
 : c@a+  a@+ c@    ; inline
 : c@a-  a@- c@    ; inline
@@ -383,6 +384,7 @@ ed-blk rows cols * + 1- const ed-eob
 : rl blk@ ed-goto ;
 : w ed-blk blk-data blk-sz cmove clean! ;
 : w!! w disk-write ;
+: wq w q! ;
 : q  dirty? if0 q! exit then ." use 'w q' or 'q!'" ;
 : ed! w blk! ed-load ;
 : do-cmd ->cmd ':' emit clr-eol pad accept
