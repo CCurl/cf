@@ -4,7 +4,9 @@
 : vhere (vha) @ ;
 : last  (la)  @ ;
 : ->code ( n--a ) cell * memory + ;
-: , ( n-- ) here ->code ! 1 (ha) +! ;
+: code! ( n a-- ) ->code ! ;
+: code@ ( a--n )  ->code @ ;
+: , ( n-- ) here code! 1 (ha) +! ;
 : allot ( n-- ) (vha) +! ;
 : const ( n-- ) addword lit, (exit) , ;
 : var   ( n-- ) vhere const allot ;
@@ -25,7 +27,7 @@ const -la-    const -ha-    vhere const -vha-
 : if (jmpz)   , here 0 ,  ; immediate
 : -if (njmpz) , here 0 ,  ; immediate
 : if0 (jmpnz) , here 0 ,  ; immediate
-: then here swap ->code ! ; immediate
+: then here swap code! ; immediate
 
 : a+    a@+ drop  ; inline
 : a-    a@- drop  ; inline
