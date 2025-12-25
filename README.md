@@ -96,7 +96,7 @@ The CF primitives defined in the `PRIMS` macro in `cf.c`.
 ### Stack Operations
 | Word | Stack Effect | Description |
 | :--- | :----------- | :---------- |
-| `dup` | (n--n n) | Duplicate top of stack |
+| `dup` | (n--n n) | Duplicate top of stack (TOS) |
 | `swap` | (a b--b a) | Swap top two stack items |
 | `drop` | (n--) | Remove top of stack |
 | `over` | (a b--a b a) | Copy second item to top |
@@ -118,8 +118,8 @@ The CF primitives defined in the `PRIMS` macro in `cf.c`.
 | `*` | (a b--prod) | Multiply two numbers |
 | `/` | (a b--quot) | Divide (a/b) |
 | `/mod` | (a b--rem quot) | Divide, return remainder and quotient |
-| `1+` | (n--n+1) | Increment by 1 |
-| `1-` | (n--n-1) | Decrement by 1 |
+| `1+` | (n--n+1) | Increment TOS by 1 |
+| `1-` | (n--n-1) | Decrement TOS by 1 |
 
 ### Comparison
 | Word | Stack Effect | Description |
@@ -140,10 +140,10 @@ The CF primitives defined in the `PRIMS` macro in `cf.c`.
 ### Control Flow
 | Word | Stack Effect | Description |
 | :--- | :----------- | :---------- |
-| `exit` | (--) | Exit current word definition |
-| `for` | (limit--) | Begin counted loop |
-| `i` | (--index) | Current loop index |
-| `next` | (--) | Increment and loop if not done |
+| `exit` | (--) (R: n--) | Exit current word |
+| `for` | (count--) | Begin counted loop, starting at 0. |
+| `i` | (--I) | Current loop index `I` |
+| `next` | (--) | Increment `I`. Restart loop if (I < count) |
 
 ### Return Stack
 | Word | Stack Effect | Description |
@@ -156,32 +156,32 @@ The CF primitives defined in the `PRIMS` macro in `cf.c`.
 ### A Stack
 | Word | Stack Effect | Description |
 | :--- | :----------- | :---------- |
-| `>a` | (n--) (A:--n) | Move n to the A stack |
-| `a!` | (n--) | Store n to A TOS |
-| `a@` | (--n) (A: n--n) | Copy n from A |
-| `a@+` | (--n) (A: n--n+1) | Copy n from A, then increment A TOS |
-| `a@-` | (--n) (A: n--n-1) | Copy n from A, then decrement A TOS |
-| `a>` | (--n) (A: n--) | Move n from A |
+| `>a` | (n--) (A:--n) | Move/push n to the A stack |
+| `a!` | (n--) | Store n to A-TOS |
+| `a@` | (--n) (A: n--n) | Copy n from A-TOS |
+| `a@+` | (--n) (A: n--n+1) | Copy A-TOS, then increment A-TOS |
+| `a@-` | (--n) (A: n--n-1) | Copy A-TOS, then decrement A-TOS |
+| `a>` | (--n) (A: n--) | Move/pop n from A |
 
 ### B Stack
 | Word | Stack Effect | Description |
 | :--- | :----------- | :---------- |
-| `>b` | (n--) (B:--n) | Move n to the B stack |
-| `b!` | (n--) | Store n to B TOS |
-| `b@` | (--n) (B: n--n) | Copy n from B |
-| `b@+` | (--n) (B: n--n+1) | Copy n from B, then increment B TOS |
-| `b@-` | (--n) (B: n--n-1) | Copy n from B, then decrement B TOS |
-| `b>` | (--n) (B: n--) | Move from B stack |
+| `>b` | (n--) (B:--n) | Move/push n to the B stack |
+| `b!` | (n--) | Store n to B-TOS |
+| `b@` | (--n) (B: n--n) | Copy n from B-TOS |
+| `b@+` | (--n) (B: n--n+1) | Copy B-TOS, then increment B-TOS |
+| `b@-` | (--n) (B: n--n-1) | Copy B-TOS, then decrement B-TOS |
+| `b>` | (--n) (B: n--) | Move/pop from B stack |
 
 ### T Stack
 | Word | Stack Effect | Description |
 | :--- | :----------- | :---------- |
-| `>t` | (n--) (T:--n) | Move n to the T stack |
-| `t!` | (n--) | Store n to T TOS |
-| `t@` | (--n) (T: n--n) | Copy n from T stack |
-| `t@+` | (--n) (T: n--n+1) | Copy n from T, then increment T TOS |
-| `t@-` | (--n) (T: n--n-1) | Copy n from T, then decrement T TOS |
-| `t>` | (--n) (T: n--) | Move n from T stack |
+| `>t` | (n--) (T:--n) | Move/push n to the T stack |
+| `t!` | (n--) | Store n to T-TOS |
+| `t@` | (--n) (T: n--n) | Copy n from T-TOS |
+| `t@+` | (--n) (T: n--n+1) | Copy T-TOS, then increment T-TOS |
+| `t@-` | (--n) (T: n--n-1) | Copy T-TOS, then decrement T-TOS |
+| `t>` | (--n) (T: n--) | Move/pop n from T stack |
 
 ### I/O Operations
 | Word | Stack Effect | Description |
@@ -198,7 +198,7 @@ The CF primitives defined in the `PRIMS` macro in `cf.c`.
 | `fclose` | (fh--) | Close file fh |
 | `fread` | (buf sz fh--n) | Read from file, return bytes read |
 | `fwrite` | (buf sz fh--n) | Write to file, return bytes written |
-| `fseek` | (fh offset--) | Seek to position in file |
+| `fseek` | (fh offset--) | Seek to position in file (uses SEEK_SET) |
 
 ### String Operations
 | Word | Stack Effect | Description |
