@@ -89,6 +89,46 @@ $CC -m32 -O3 -o cf *.c
 $CC -m64 -O3 -o cf *.c
 ```
 
+## Built-in words
+| Word        | Stack Effect | Description |
+| :---------- | :----------- | :---------- |
+| version     | (--n) | CF version number |
+| (lit)       | (--n) | Opcode for LIT |
+| (jmp)       | (--n) | Opcode for JMP |
+| (jmpz)      | (--n) | Opcode for JMPZ |
+| (jmpnz)     | (--n) | Opcode for JMPNZ |
+| (njmpz)     | (--n) | Opcode for NJMPZ |
+| (njmpnz)    | (--n) | Opcode for NJMPNZ |
+| (exit)      | (--n) | Opcode for EXIT |
+| (ztype)     | (--n) | Opcode for ZTYPE |
+| (bye)       | (--n) | Opcode for BYE |
+| memory      | (--n) | Address of the memory area |
+| mem-sz      | (--n) | Size of the memory area |
+| de-sz       | (--n) | Size of a dictionary entry |
+| stk-sz      | (--n) | Size of the Data and Return stacks |
+| tstk-sz     | (--n) | Size of the A, B, and T stacks |
+| lstk-sz     | (--n) | Size of the Loop stack |
+| cell        | (--n) | Size of a CELL in bytes |
+| (dsp)       | (--n) | Address of of the Data stack pointer |
+| (rsp)       | (--n) | Address of of the Return stack pointer |
+| (lsp)       | (--n) | Address of of the Loop stack pointer |
+| (asp)       | (--n) | Address of of the A stack pointer |
+| (bsp)       | (--n) | Address of of the B stack pointer |
+| (tsp)       | (--n) | Address of of the T stack pointer |
+| (ha)        | (--n) | Address of HERE |
+| (la)        | (--n) | Address of LAST |
+| dstk        | (--n) | Address of the Data stack |
+| rstk        | (--n) | Address of the Return stack |
+| lstk        | (--n) | Address of the Loop stack |
+| astk        | (--n) | Address of the A stack |
+| bstk        | (--n) | Address of the B stack |
+| tstk        | (--n) | Address of the T stack |
+| (vha)       | (--n) | Address of VHERE |
+| (output-fp) | (--n) | Address of the output file handle. 0 means STDOUT |
+| >in         | (--n) | Address of the input pointer |
+| base        | (--n) | Address of BASE |
+| state       | (--n) | Address of STATE |
+
 ## Primitives Reference
 
 The CF primitives defined in the `PRIMS` macro in `cf.c`.
