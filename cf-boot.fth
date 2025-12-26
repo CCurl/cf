@@ -142,8 +142,8 @@ cell var t0    cell var t1    cell var t2
 : ?dup  -if dup then ;
 : bl 32 ; inline
 : tab 9 emit ; inline
-: cr 13 emit 10 emit ; inline
-: spaces for bl emit next ; inline
+: cr 13 emit 10 emit ;
+: spaces for space next ;
 : negate com 1+ ; inline
 : abs dup 0 < if negate then ;
 : ->file ( fh-- ) (output-fp) ! ;
@@ -199,7 +199,7 @@ cell var t0    cell var t1    cell var t2
 
 ( strings )
 : fill  ( a n c-- )  >a >t >b  t> for a@ c!b+ next abdrop ;
-: s-end ( s--e )     dup s-len + ; inline
+: s-end ( s--e )     dup s-len + ;
 : s-cat ( d s--d )   over s-end swap s-cpy drop ;
 : s-catc ( dst ch--dst )  over s-end tuck c! 0 swap 1+ c! ;
 : s-catn ( dst num--dst ) <# #s #> over s-end swap s-cpy drop ;
@@ -486,12 +486,12 @@ vhere const ed-cases
 ( fgl: forget the last word )
 : fgl last dup de-sz + (la) ! de>xt (ha) ! ;  
 
-: .version ." cf v" version <# # # #. # # #. #s #> ztype ;
+1 load
 
+: .version ." cf v" version <# # # #. # # #. #s #> ztype ;
 green .version white ."  - Chris Curl " cr
 yellow ."  Memory: " white mem-sz . ." bytes" cr
 yellow ."    Code: " white here . ." opcodes used" cr
 yellow ."    Dict: " white dict-end last - de-sz / . ." words defined" cr
 
-1 load
 marker
