@@ -12,10 +12,10 @@
 : var   ( n-- ) vhere const allot ;
 
 ( these are used by "rb" )
-const -la-    const -ha-    vhere const -vha-
+const -la-    const -ha-
 
-: immediate 1 last cell + c! ; immediate
-: inline    2 last cell + c! ; immediate
+: immediate 1 last cell + c! ;
+: inline    2 last cell + c! ;
 
 : begin here ; immediate
 : while  (jmpnz)  , , ; immediate
@@ -100,11 +100,11 @@ disk-read  0 blk!
 
 : source-loc memory 100000 + ;
 : rb ( reboot )
-   -vha- (vha) !  -la- (la) !  -ha- (ha) !
+   0 (vha) !  -la- (la) !  -ha- (ha) !
    z" cf-boot.fth" fopen-r -if dup then if a!
       source-loc b! 50000 for 0 c!b+ next
       source-loc 50000 a@ fread drop a@ fclose
-      source-loc >in !
+      source-loc >in !  0 (dsp) !
    then ;
 
 ( number format / print )
