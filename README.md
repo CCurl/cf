@@ -76,7 +76,7 @@ Linux, OpenBSD, and FreeBSD
 - Or you can easily build cf from the command line:
 - Example:
 
-```
+```sh
 # the default is 64 bit cells:
 make
 
@@ -131,7 +131,7 @@ $CC -m64 -O3 -o cf *.c
 
 ## Primitives Reference
 
-The CF primitives defined in the `PRIMS` macro in `cf.c`.
+The CF primitives are defined in the `PRIMS` macro in `cf.c`.
 
 ### Stack Operations
 | Word | Stack Effect | Description |
@@ -174,10 +174,10 @@ The CF primitives defined in the `PRIMS` macro in `cf.c`.
 ### Comparison
 | Word | Stack Effect | Description |
 | :--- | :----------- | :---------- |
-| `<`  | (a b--flag) | Less than comparison |
-| `=`  | (a b--flag) | Equality comparison |
-| `>`  | (a b--flag) | Greater than comparison |
-| `0=` | (n--flag) | Test if zero |
+| `<`  | (a b--f) | Less than comparison |
+| `=`  | (a b--f) | Equality comparison |
+| `>`  | (a b--f) | Greater than comparison |
+| `0=` | (n--f) | Test if zero |
 
 ### Logical Operations
 | Word  | Stack Effect | Description |
