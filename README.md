@@ -141,15 +141,15 @@ The CF primitives defined in the `PRIMS` macro in `cf.c`.
 | `drop` | (n--) | Remove top of stack |
 | `over` | (a b--a b a) | Copy second item to top |
 
-### Flow Control
+### Flow Control and Literal
 | Prim | Stack  | Description |
 | :--- | :----  | :---------- |
-|  1   | (--n)  | `LIT`: Push CODE[PC]. Increment PC |
-|  2   | (--)   | `JMP`: PC = CODE[PC] |
-|  3   | (f--)  | `JMPZ`: If pop() == 0, PC = CODE[PC], else increment PC. |
-|  4   | (f--)  | `JMPNZ`: If pop() != 0, PC = CODE[PC], else increment PC. |
-|  5   | (f--f) | `NJMPZ`: If TOS == 0, PC = CODE[PC], else increment PC. |
-|  6   | (f--f) | `NJMPNZ`: If TOS != 0, PC = CODE[PC], else increment PC. |
+| (lit)    | (--n)  | **LIT**: Push CODE[PC]. Increment PC. |
+| (jmp)    | (--)   | **JMP**: PC = CODE[PC]. |
+| (jmpz)   | (f--)  | **JMPZ**: If (pop() == 0) then PC = CODE[PC], else increment PC. |
+| (jmpnz)  | (f--)  | **JMPNZ**: If (pop() != 0) then PC = CODE[PC], else increment PC. |
+| (njmpz)  | (f--f) | **NJMPZ**: If (TOS == 0) then PC = CODE[PC], else increment PC. |
+| (njmpnz) | (f--f) | **NJMPNZ**: If (TOS != 0) then PC = CODE[PC], else increment PC. |
 
 ### Memory Access
 | Word | Stack Effect | Description |
