@@ -77,6 +77,7 @@ DE_T tmpWords[10];
 	X(KEYQ,    "key?",    push(qKey()); ) \
 	X(OUTER,   "outer",   t=pop(); n=(cell)toIn; cfOuter((char*)t); toIn=(char*)n; ) \
 	X(ADDWORD, "addword", addWord(0); ) \
+	X(NXTWORD, "nextword",nextWord(); push((cell)wd); ) \
 	X(FIND,    "find",    { DE_T *dp=findWord(0); push(dp?dp->xt:0); push((cell)dp); } ) \
 	X(CLK,     "timer",   push(timer()); ) \
 	X(MS,      "ms",      ms(pop()); ) \
@@ -262,7 +263,8 @@ void cfInit() {
 		{ "memory",  (cell)&mem[0] },  { ">in",   (cell)&toIn },
 		{ "mem-sz",  MEM_SZ },         { "base",  (cell)&base },
 		{ "version", VERSION },        { "state", (cell)&state },
-		{ "cell",    CELL_SZ },        { 0 ,0 }
+		{ "cell",    CELL_SZ },        { "word",  (cell)&wd[0]},
+		{ 0 ,0 }
 	};
 	for (int i = 0; nvp[i].nm; i++) {
 		DE_T *dp = addWord(nvp[i].nm);

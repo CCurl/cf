@@ -94,13 +94,13 @@ $CC -m64 -O3 -o cf *.c
 | :---------- | :----------- | :---------- |
 | version     | (--n) | CF version number |
 | cell        | (--n) | Size of a CELL in bytes |
-| (ha)        | (--n) | Address of HERE |
-| (la)        | (--n) | Address of LAST |
-| (vha)       | (--n) | Address of VHERE |
-| base        | (--n) | Address of BASE |
-| state       | (--n) | Address of STATE |
-| >in         | (--n) | Address of the input pointer |
-| memory      | (--n) | Address of the memory area |
+| (ha)        | (--a) | Address of HERE |
+| (la)        | (--a) | Address of LAST |
+| (vha)       | (--a) | Address of VHERE |
+| base        | (--a) | Address of BASE |
+| state       | (--a) | Address of STATE |
+| >in         | (--a) | Address of the input pointer |
+| memory      | (--a) | Address of the memory area |
 | mem-sz      | (--n) | Size of the memory area |
 | (lit)       | (--n) | Opcode for LIT |
 | (jmp)       | (--n) | Opcode for JMP |
@@ -115,19 +115,20 @@ $CC -m64 -O3 -o cf *.c
 | stk-sz      | (--n) | Size of the Data and Return stacks |
 | lstk-sz     | (--n) | Size of the Loop stack |
 | tstk-sz     | (--n) | Size of the A, B, and T stacks |
-| (dsp)       | (--n) | Address of of the Data stack pointer |
-| (rsp)       | (--n) | Address of of the Return stack pointer |
-| (lsp)       | (--n) | Address of of the Loop stack pointer |
-| (asp)       | (--n) | Address of of the A stack pointer |
-| (bsp)       | (--n) | Address of of the B stack pointer |
-| (tsp)       | (--n) | Address of of the T stack pointer |
-| dstk        | (--n) | Address of the Data stack |
-| rstk        | (--n) | Address of the Return stack |
-| lstk        | (--n) | Address of the Loop stack |
-| astk        | (--n) | Address of the A stack |
-| bstk        | (--n) | Address of the B stack |
-| tstk        | (--n) | Address of the T stack |
-| (output-fp) | (--n) | Address of the output file handle. 0 means STDOUT |
+| (dsp)       | (--a) | Address of of the Data stack pointer |
+| (rsp)       | (--a) | Address of of the Return stack pointer |
+| (lsp)       | (--a) | Address of of the Loop stack pointer |
+| (asp)       | (--a) | Address of of the A stack pointer |
+| (bsp)       | (--a) | Address of of the B stack pointer |
+| (tsp)       | (--a) | Address of of the T stack pointer |
+| dstk        | (--a) | Address of the Data stack |
+| rstk        | (--a) | Address of the Return stack |
+| lstk        | (--a) | Address of the Loop stack |
+| astk        | (--a) | Address of the A stack |
+| bstk        | (--a) | Address of the B stack |
+| tstk        | (--a) | Address of the T stack |
+| (output-fp) | (--a) | Address of the output file handle. 0 means STDOUT |
+| word        | (--a) | Address of the buffer for the current word |
 
 ## Primitives Reference
 
@@ -264,6 +265,7 @@ The CF primitives are defined in the `PRIMS` macro in `cf.c`.
 | `lit,` | (n--) | Compile literal value |
 | `outer` | (addr--) | Execute Forth source at addr |
 | `addword` | (--) | Add word to dictionary (uses >in) |
+| `nextword` | (--addr) | Parse the next word from the input stream |
 | `find` | (--xt addr) | Find word (uses >in), return xt and dict addr |
 | `timer` | (--n) | Get current time |
 | `ms` | (n--) | Sleep for n milliseconds |
