@@ -248,7 +248,7 @@ memory mem-sz + 1- 7 com and  const dict-end
 : blue   63 fg ;      : purple 201 fg ;
 : cyan  117 fg ;      : grey   246 fg ;
 : white 255 fg ;
-: colors 31 >a 7 for a@ fg ." color #" a@+ . cr next white adrop ;
+: colors ( s n-- ) swap >a for a@ fg ." color #" a@+ . cr next white adrop ;
 
 ( Keys )
 256  59 + const key-f1

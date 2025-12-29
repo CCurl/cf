@@ -141,11 +141,21 @@ The CF primitives defined in the `PRIMS` macro in `cf.c`.
 | `drop` | (n--) | Remove top of stack |
 | `over` | (a b--a b a) | Copy second item to top |
 
+### Flow Control
+| Prim | Stack  | Description |
+| :--- | :----  | :---------- |
+|  1   | (--n)  | `LIT`: Push CODE[PC]. Increment PC |
+|  2   | (--)   | `JMP`: PC = CODE[PC] |
+|  3   | (f--)  | `JMPZ`: If pop() == 0, PC = CODE[PC], else increment PC. |
+|  4   | (f--)  | `JMPNZ`: If pop() != 0, PC = CODE[PC], else increment PC. |
+|  5   | (f--f) | `NJMPZ`: If TOS == 0, PC = CODE[PC], else increment PC. |
+|  6   | (f--f) | `NJMPNZ`: If TOS != 0, PC = CODE[PC], else increment PC. |
+
 ### Memory Access
 | Word | Stack Effect | Description |
 | :--- | :----------- | :---------- |
-| `@` | (addr--n) | Fetch cell from address |
-| `!` | (n addr--) | Store cell to address |
+| `@`  | (addr--n) | Fetch cell from address |
+| `!`  | (n addr--) | Store cell to address |
 | `c@` | (addr--c) | Fetch byte from address |
 | `c!` | (c addr--) | Store byte to address |
 | `+!` | (n addr--) | Add n to cell at address |
@@ -153,10 +163,10 @@ The CF primitives defined in the `PRIMS` macro in `cf.c`.
 ### Arithmetic
 | Word | Stack Effect | Description |
 | :--- | :----------- | :---------- |
-| `+` | (a b--sum) | Add two numbers |
-| `-` | (a b--diff) | Subtract (a-b) |
-| `*` | (a b--prod) | Multiply two numbers |
-| `/` | (a b--quot) | Divide (a/b) |
+| `+`  | (a b--sum) | Add two numbers |
+| `-`  | (a b--diff) | Subtract (a-b) |
+| `*`  | (a b--prod) | Multiply two numbers |
+| `/`  | (a b--quot) | Divide (a/b) |
 | `/mod` | (a b--rem quot) | Divide, return remainder and quotient |
 | `1+` | (n--n+1) | Increment TOS by 1 |
 | `1-` | (n--n-1) | Decrement TOS by 1 |
@@ -164,25 +174,25 @@ The CF primitives defined in the `PRIMS` macro in `cf.c`.
 ### Comparison
 | Word | Stack Effect | Description |
 | :--- | :----------- | :---------- |
-| `<` | (a b--flag) | Less than comparison |
-| `=` | (a b--flag) | Equality comparison |
-| `>` | (a b--flag) | Greater than comparison |
+| `<`  | (a b--flag) | Less than comparison |
+| `=`  | (a b--flag) | Equality comparison |
+| `>`  | (a b--flag) | Greater than comparison |
 | `0=` | (n--flag) | Test if zero |
 
 ### Logical Operations
-| Word | Stack Effect | Description |
-| :--- | :----------- | :---------- |
+| Word  | Stack Effect | Description |
+| :---  | :----------- | :---------- |
 | `and` | (a b--n) | Bitwise AND |
-| `or` | (a b--n) | Bitwise OR |
+| `or`  | (a b--n) | Bitwise OR |
 | `xor` | (a b--n) | Bitwise XOR |
 | `com` | (n--~n) | Bitwise complement |
 
 ### Control Flow
-| Word | Stack Effect | Description |
-| :--- | :----------- | :---------- |
+| Word   | Stack Effect | Description |
+| :----- | :----------- | :---------- |
 | `exit` | (--) (R: n--) | Exit current word |
-| `for` | (count--) | Begin counted loop, starting at 0. |
-| `i` | (--I) | Current loop index `I` |
+| `for`  | (count--) | Begin counted loop, starting at 0. |
+| `i`    | (--I) | Current loop index `I` |
 | `next` | (--) | Increment `I`. Restart loop if (I < count) |
 
 ### Return Stack
@@ -194,51 +204,51 @@ The CF primitives defined in the `PRIMS` macro in `cf.c`.
 | `rdrop` | (--) (R: n--) | Drop from return stack |
 
 ### A Stack
-| Word | Stack Effect | Description |
-| :--- | :----------- | :---------- |
-| `>a` | (n--) (A:--n) | Move/push n to the A stack |
-| `a!` | (n--) | Store n to A-TOS |
-| `a@` | (--n) (A: n--n) | Copy n from A-TOS |
+| Word  | Stack Effect | Description |
+| :---- | :----------- | :---------- |
+| `>a`  | (n--) (A:--n) | Move/push n to the A stack |
+| `a!`  | (n--) | Store n to A-TOS |
+| `a@`  | (--n) (A: n--n) | Copy n from A-TOS |
 | `a@+` | (--n) (A: n--n+1) | Copy A-TOS, then increment A-TOS |
 | `a@-` | (--n) (A: n--n-1) | Copy A-TOS, then decrement A-TOS |
-| `a>` | (--n) (A: n--) | Move/pop n from A |
+| `a>`  | (--n) (A: n--) | Move/pop n from A |
 
 ### B Stack
-| Word | Stack Effect | Description |
-| :--- | :----------- | :---------- |
-| `>b` | (n--) (B:--n) | Move/push n to the B stack |
-| `b!` | (n--) | Store n to B-TOS |
-| `b@` | (--n) (B: n--n) | Copy n from B-TOS |
+| Word  | Stack Effect | Description |
+| :---- | :----------- | :---------- |
+| `>b`  | (n--) (B:--n) | Move/push n to the B stack |
+| `b!`  | (n--) | Store n to B-TOS |
+| `b@`  | (--n) (B: n--n) | Copy n from B-TOS |
 | `b@+` | (--n) (B: n--n+1) | Copy B-TOS, then increment B-TOS |
 | `b@-` | (--n) (B: n--n-1) | Copy B-TOS, then decrement B-TOS |
-| `b>` | (--n) (B: n--) | Move/pop from B stack |
+| `b>`  | (--n) (B: n--) | Move/pop from B stack |
 
 ### T Stack
-| Word | Stack Effect | Description |
-| :--- | :----------- | :---------- |
-| `>t` | (n--) (T:--n) | Move/push n to the T stack |
-| `t!` | (n--) | Store n to T-TOS |
-| `t@` | (--n) (T: n--n) | Copy n from T-TOS |
+| Word  | Stack Effect | Description |
+| :---- | :----------- | :---------- |
+| `>t`  | (n--) (T:--n) | Move/push n to the T stack |
+| `t!`  | (n--) | Store n to T-TOS |
+| `t@`  | (--n) (T: n--n) | Copy n from T-TOS |
 | `t@+` | (--n) (T: n--n+1) | Copy T-TOS, then increment T-TOS |
 | `t@-` | (--n) (T: n--n-1) | Copy T-TOS, then decrement T-TOS |
-| `t>` | (--n) (T: n--) | Move/pop n from T stack |
+| `t>`  | (--n) (T: n--) | Move/pop n from T stack |
 
 ### I/O Operations
 | Word | Stack Effect | Description |
 | :--- | :----------- | :---------- |
-| `emit` | (c--) | Output character |
-| `key`  | (--c) | Wait for and read a character |
-| `key?` | (--f) | f: 1 if a key was pressed, 0 otherwise |
+| `emit`  | (c--) | Output character |
+| `key`   | (--c) | Wait for and read a character |
+| `key?`  | (--f) | f: 1 if a key was pressed, 0 otherwise |
 | `ztype` | (addr--) | Print null-terminated string at addr |
 
 ### File Operations
 | Word | Stack Effect | Description |
 | :--- | :----------- | :---------- |
-| `fopen` | (name mode--fh) | Open file, return file handle fh |
+| `fopen`  | (name mode--fh) | Open file, return file handle fh |
 | `fclose` | (fh--) | Close file fh |
-| `fread` | (buf sz fh--n) | Read from file, return bytes read |
+| `fread`  | (buf sz fh--n) | Read from file, return bytes read |
 | `fwrite` | (buf sz fh--n) | Write to file, return bytes written |
-| `fseek` | (fh offset--) | Seek to position in file (uses SEEK_SET) |
+| `fseek`  | (fh offset--) | Seek to position in file (uses SEEK_SET) |
 
 ### String Operations
 | Word | Stack Effect | Description |
@@ -266,10 +276,10 @@ Adding a primitive to CF is easy. Add an X() line to the PRIMS macro.<br/>
 The embedded X() macro in PRIMS is a powerful use of C macros.<br/>
 The X(op, name, code) macro takes 3 parameters:
 - A name for the ENUM of opcodes (used by the inner interpreter)
-- A name for the word to be created in the Forth dictionary
+- A name for the word to be created in the Forth dictionary entry
 - Code that implements the primitive's action. This can be a call to any function.
 
-`PRIMS` is used create the opcode values and code for the switch statement in `cfInner()`, and to create the dictionary entries in `cfInit()`.
+The `PRIMS` macro is used to create the opcode values and code for the switch statement in `cfInner()`, and to create the dictionary entries in `cfInit()`.
 
 For example, in the following example, `SCOPY` is the name for the enum, `s-cpy` is the name for the Forth dictionary entry, and `t=pop(); strcpy((char*)TOS, (char*)t);` is the code to be executed when `SCOPY` is encountered by the inner interpreter.
 ```c
@@ -279,8 +289,13 @@ For example, in the following example, `SCOPY` is the name for the enum, `s-cpy`
 ## Blocks
 - Blocks are not native to cf.
 - They are implemented in the default source file.
+- In this implentation, they are 2048 bytes.
+- Feel free to change it in any way that suits your needs.
 
 ## The Editor
 - An editor is not native to cf.
 - One is implemented in the default source file.
-- The editor has a vi-like feel.
+- The editor has a vi-like feel. See `ed-cases` in cf-boot.fth for details.
+- It uses 23 rows and 89 columns, for a total of 2047 editable bytes.
+- The last byte is set to 0 to NULL terminate the block.
+- This stops the OUTER interpreter.

@@ -13,9 +13,8 @@
 #define X3(op, name, code) { op, name, 0 },
 
 byte mem[MEM_SZ];
-cell dsp, dstk[STK_SZ+1],  rsp, rstk[STK_SZ+1];
-cell asp, astk[TSTK_SZ+1], bsp, bstk[TSTK_SZ+1];
-cell tsp, tstk[TSTK_SZ+1], lsp, lstk[LSTK_SZ+1];
+cell dsp, dstk[STK_SZ+1],  rsp, rstk[STK_SZ+1],  lsp, lstk[LSTK_SZ+1];
+cell asp, astk[TSTK_SZ+1], bsp, bstk[TSTK_SZ+1], tsp, tstk[TSTK_SZ+1];
 cell base, state, dictEnd, outputFp;
 cell *code, here, vhere, last;
 char *toIn, wd[128];
@@ -100,7 +99,6 @@ static void push(cell x) { if (dsp < STK_SZ) { dstk[++dsp] = x; } }
 static cell pop() { return (0<dsp) ? dstk[dsp--] : 0; }
 static void rpush(cell x) { if (rsp < STK_SZ) { rstk[++rsp] = x; } }
 static cell rpop() { return (0<rsp) ? rstk[rsp--] : 0; }
-static int  lower(const char c) { return btwi(c, 'A', 'Z') ? c+32 : c; }
 static void comma(cell n) { code[here++] = n; }
 static int  changeState(int newState) { state = newState; return newState; }
 static void checkWS(char c) { if (btwi(c,DEFINE,COMMENT)) { changeState(c); } }
@@ -177,7 +175,7 @@ static int isNumber(const char *w) {
 	if (w[0]=='-') { isNeg=1; w++; }
 	if (w[0]==0) { return 0; }
 	while (*w) {
-		int c = lower(*(w++));
+		int a = *(w++), c = btwi(a,'A','Z') ? (a+32) : a;
 		int x = btwi(c,'0','9') ? c-'0' : 99;
 		if (btwi(c,'a','f')) { x = (c-'a'+10); }
 		if (btwi(x, 0, b-1)) { n = (n*b)+x; } else { return 0; }
