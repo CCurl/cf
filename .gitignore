@@ -7,3 +7,4 @@ cf
 /cf.vcxproj.user
 /enc_temp_folder
 test.txt
+block-*.fth

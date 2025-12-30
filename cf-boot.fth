@@ -1,58 +1,43 @@
 ( code: 65536 cells, then vars )
 65536 cell * memory + (vha) ! (ha) @ (la) @
-: here  (ha)  @ ;
-: vhere (vha) @ ;
-: last  (la)  @ ;
-: ->code ( n--a ) cell * memory + ;
-: code! ( n a-- ) ->code ! ;
-: code@ ( a--n )  ->code @ ;
-: , ( n-- ) here code! 1 (ha) +! ;
-: allot ( n-- ) (vha) +! ;
+: ->code ( offset--a ) cell * memory + ;
+: code! ( op offset-- ) ->code ! ;
+: code@ ( offset--op )  ->code @ ;
+: here  ( --offset ) (ha) @ ;
+: , ( op-- ) here code! 1 (ha) +! ;
 : const ( n-- ) addword lit, (exit) , ;
-: var   ( n-- ) vhere const allot ;
 
 ( these are used by "rb" )
 const -la-    const -ha-
 
-: immediate 1 last cell + c! ;
-: inline    2 last cell + c! ;
+: vhere ( --a ) (vha) @ ;
+: last  ( --a ) (la)  @ ;
+: allot ( bytes-- ) (vha) +! ;
+: var   ( bytes-- ) vhere const allot ;
+: immediate ( -- ) 1 last cell + c! ;
+: inline    ( -- ) 2 last cell + c! ;
 
-: begin here ; immediate
-: while  (jmpnz)  , , ; immediate
-: -while (njmpnz) , , ; immediate
-:  until (jmpz)   , , ; immediate
-: -until (njmpz)  , , ; immediate
-: again  (jmp)    , , ; immediate
+: begin here ;  immediate
+: while  (jmpnz)  , , ;  immediate
+: -while (njmpnz) , , ;  immediate
+:  until (jmpz)   , , ;  immediate
+: -until (njmpz)  , , ;  immediate
+: again  (jmp)    , , ;  immediate
 
-: if (jmpz)   , here 0 ,  ; immediate
-: -if (njmpz) , here 0 ,  ; immediate
-: if0 (jmpnz) , here 0 ,  ; immediate
-: then here swap code! ; immediate
+: if (jmpz)   , here 0 , ;  immediate
+: -if (njmpz) , here 0 , ;  immediate
+: if0 (jmpnz) , here 0 , ;  immediate
+: then here swap code!   ;  immediate
 
-: a+    a@+ drop  ; inline
-: a-    a@- drop  ; inline
-: @a    a@  @     ; inline
-: c@a   a@  c@    ; inline
-: c@a+  a@+ c@    ; inline
-: c@a-  a@- c@    ; inline
-: c!a   a@  c!    ; inline
-: c!a+  a@+ c!    ; inline
-: c!a-  a@- c!    ; inline
-: adrop a> drop   ; inline
-
-: b+    b@+ drop  ; inline
-: b-    b@- drop  ; inline
-: c!b   b@  c!    ; inline
-: c!b+  b@+ c!    ; inline
-: c@b+  b@+ c@    ; inline
-: bdrop b> drop   ; inline
-: abdrop adrop bdrop ;
+: c@a   ( --n ) a@  c@ ;  inline
+: c@a+  ( --n ) a@+ c@ ;  inline
+: c!b+  ( n-- ) b@+ c! ;  inline
 
 ( STATES/MODES )
-: define  1 ; inline
-: compile 2 ; inline
-: interp  3 ; inline
-: comment 4 ; inline
+: define  1 ;  inline
+: compile 2 ;  inline
+: interp  3 ;  inline
+: comment 4 ;  inline
 : comp? state @ compile = ;
 
 ( quote subroutine )
@@ -60,30 +45,29 @@ const -la-    const -ha-
    begin
       c@a '"' = if
          0 c!b+  a> 1+ >in !
-         comp? if0 bdrop exit then
-         b> (vha) ! lit, exit
+         b> comp? if0 drop exit then
+         (vha) ! lit, exit
       then c@a+ c!b+
    again ;
 
-: z"  t4 ; immediate
-: ."  t4 comp? if (ztype) , exit then ztype ; immediate
+: z"  t4 ;  immediate
+: ."  t4 comp? if (ztype) , exit then ztype ;  immediate
 
 ( Files )
 : fopen-r  ( fn--fh ) z" rb" fopen ;
 : fopen-w  ( fn--fh ) z" wb" fopen ;
-: fopen-rw ( fn--fh ) z" r+" fopen ;
 
 ( Blocks )
-: num-blks 128 ; inline
-: blk-max  127 ; inline
-: blk-sz  2048 ; inline
-num-blks  blk-sz *  const disk-sz  inline
-memory  mem-sz + 2 1024 1024 * * - const blks  inline
+: blk-sz  2048 ;  inline
+: num-blks 128 ;  inline
+: blk-max  127 ;  inline
+num-blks blk-sz *         const disk-sz
+memory mem-sz + 2000000 - const blks
 cell var t0
 : blk@ ( --n ) t0 @ ;
 : blk! ( n-- ) blk-max and t0 ! ;
 : blk-data ( --a ) blk@ blk-sz * blks + ;
-: blk-end ( --a ) blk-data blk-sz + 1- ;
+: blk-end  ( --a ) blk-data blk-sz + 1- ;
 : disk-read ( -- ) z" disk.cf" fopen-r
    dup if0 drop exit then
    >r blks disk-sz r@ fread drop r> fclose ;
@@ -97,6 +81,22 @@ disk-read  0 blk!
 : load-next ( -- )  blk@ 1+ blk! blk-data t1 >in ! ;
 
 ( everything from here on could be moved to blocks )
+
+: a+    a@+ drop  ; inline
+: a-    a@- drop  ; inline
+: @a    a@  @     ; inline
+: c@a-  a@- c@    ; inline
+: c!a   a@  c!    ; inline
+: c!a+  a@+ c!    ; inline
+: c!a-  a@- c!    ; inline
+: adrop a> drop   ; inline
+
+: b+    b@+ drop  ; inline
+: b-    b@- drop  ; inline
+: c@b+  b@+ c@    ; inline
+: c!b   b@  c!    ; inline
+: bdrop b> drop   ; inline
+: abdrop adrop bdrop ;
 
 : source-loc memory 100000 + ;
 : rb ( reboot )
