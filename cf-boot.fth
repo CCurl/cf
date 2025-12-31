@@ -8,7 +8,7 @@
 : const ( n-- ) addword lit, (exit) , ;
 
 ( these are used by "rb" )
-const -la-    const -ha-
+const -last-    const -here-
 
 : vhere ( --a ) (vha) @ ;
 : last  ( --a ) (la)  @ ;
@@ -82,42 +82,39 @@ disk-read  0 blk!
 
 ( everything from here on could be moved to blocks )
 
+: rb ( reboot )
+   z" cf-boot.fth" fopen-r -if dup then if a!
+      memory 100000 + t!
+      -last- (la) !  -here- (ha) !
+      t@ b! 50000 for 0 c!b+ next
+      t@ 50000 a@ fread drop a@ fclose
+      t@ >in !  0 (dsp) !
+   then ;
+
 : a+    a@+ drop  ; inline
-: a-    a@- drop  ; inline
 : @a    a@  @     ; inline
 : c@a-  a@- c@    ; inline
 : c!a   a@  c!    ; inline
 : c!a+  a@+ c!    ; inline
-: c!a-  a@- c!    ; inline
 : adrop a> drop   ; inline
 
 : b+    b@+ drop  ; inline
-: b-    b@- drop  ; inline
 : c@b+  b@+ c@    ; inline
-: c!b   b@  c!    ; inline
+: c!b-  b@- c!    ; inline
 : bdrop b> drop   ; inline
 : abdrop adrop bdrop ;
 
-: source-loc memory 100000 + ;
-: rb ( reboot )
-   0 (vha) !  -la- (la) !  -ha- (ha) !
-   z" cf-boot.fth" fopen-r -if dup then if a!
-      source-loc b! 50000 for 0 c!b+ next
-      source-loc 50000 a@ fread drop a@ fclose
-      source-loc >in !  0 (dsp) !
-   then ;
-
 ( number format / print )
-: #neg 0 >a dup 0 < if com 1+ a+ then ;
-: <#   ( n--n' ) #neg last 32 - >b 0 c!b ;
-: hold ( c--n )  b- c!b ;
+: #neg ( n--n' ) 0 >a dup 0 < if com 1+ a+ then ;
+: hold ( c-- )   c!b- ; inline
+: <#   ( n--n' ) #neg last 32 - >b 0 hold ;
 : #n   ( n-- )   '0' + dup '9' > if 7 + then hold ;
 : #.   ( -- )    '.' hold ;
 : #    ( n--n' ) base @ /mod swap #n ;
 : #s   ( n-- )   begin # -while drop ;
-: #>   ( --a )   a> if '-' hold then b> ;
-: (.) ( n-- ) <# #s #> ztype ;
-: .   ( n-- ) (.) : space 32 emit ;
+: #>   ( --a )   a> if '-' hold then b> 1+ ;
+: (.)  ( n-- )   <# #s #> ztype ;
+: .    ( n-- )   (.) : space 32 emit ;
 
 cell var t0    cell var t1    cell var t2
 : marker here t0 ! last t1 ! vhere t2 ! ;
@@ -126,12 +123,9 @@ cell var t0    cell var t1    cell var t2
 ( T reg/stack words )
 : t+    t@+ drop  ; inline
 : t-    t@- drop  ; inline
-: c@t   t@  c@    ; inline
 : c@t+  t@+ c@    ; inline
-: c@t-  t@- c@    ; inline
 : c!t   t@  c!    ; inline
 : c!t+  t@+ c!    ; inline
-: c!t-  t@- c!    ; inline
 : t@+c  t@ dup cell + t! ;
 : @t+   t@+c @ ;
 : tdrop t> drop   ; inline
