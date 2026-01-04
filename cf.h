@@ -8,7 +8,7 @@
 #include <string.h>
 #include <time.h>
 
-#define VERSION         20251229
+#define VERSION         20260104
 #define BOOT_FN1        "cf-boot.fth"
 
 #ifdef _MSC_VER
@@ -59,9 +59,12 @@ typedef struct { cell xt; byte flags, len; char name[NAME_MAX+1]; } DE_T;
 typedef struct { cell op; const char* name; byte fl; } PRIM_T;
 
 // These are defined by cf.c
-extern void cfOuter(const char *src);
 extern void cfInit();
-extern cell state, outputFp;
+extern DE_T *addWord(char *w);
+extern void compileNumber(cell val);
+extern void comma(cell n);
+extern void cfOuter(const char *src);
+extern cell state, outputFp, exitOp;
 extern byte mem[];
 
 // cf.c needs these to be defined
