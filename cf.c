@@ -16,7 +16,7 @@ byte mem[MEM_SZ];
 cell dsp, dstk[STK_SZ+1],  rsp, rstk[STK_SZ+1],  lsp, lstk[LSTK_SZ+1];
 cell asp, astk[TSTK_SZ+1], bsp, bstk[TSTK_SZ+1], tsp, tstk[TSTK_SZ+1];
 cell base, state, dictEnd, outputFp;
-cell *code, here, vhere, last;
+cell *code, here, vhere, last, exitOp;
 char *toIn, wd[128];
 DE_T tmpWords[10];
 
@@ -100,9 +100,9 @@ static void push(cell x) { if (dsp < STK_SZ) { dstk[++dsp] = x; } }
 static cell pop() { return (0<dsp) ? dstk[dsp--] : 0; }
 static void rpush(cell x) { if (rsp < STK_SZ) { rstk[++rsp] = x; } }
 static cell rpop() { return (0<rsp) ? rstk[rsp--] : 0; }
-static void comma(cell n) { code[here++] = n; }
 static int  changeState(int newState) { state = newState; return newState; }
 static void checkWS(char c) { if (btwi(c,DEFINE,COMMENT)) { changeState(c); } }
+void comma(cell n) { code[here++] = n; }
 
 static int nextWord() {
 	int len = 0;
@@ -112,7 +112,7 @@ static int nextWord() {
 	return len;
 }
 
-static DE_T *addWord(char *w) {
+DE_T *addWord(char *w) {
 	if (!w) { nextWord(); w = wd; }
 	if (isTemp(w)) {
 		tmpWords[w[1]-'0'].xt = (cell)here;
@@ -142,7 +142,7 @@ static DE_T *findWord(const char *w) {
 	return (DE_T*)0;
 }
 
-static void compileNumber(cell n) {
+void compileNumber(cell n) {
 		if (btwi(n, 0, NUM_MASK)) { comma(n | NUM_BITS); }
 		else { comma(LIT); comma(n); }
 }
@@ -242,6 +242,7 @@ void cfInit() {
 	here  = BYE+1;
 	base  = 10;
 	state = INTERP;
+	exitOp = EXIT;
 	last  = (cell)&mem[MEM_SZ-1];
 	while (last & (CELL_SZ-1)) { --last; }
 	dictEnd = last;
