@@ -12,14 +12,6 @@
 #define X2(op, name, code) NCASE op: code
 #define X3(op, name, code) { op, name, 0 },
 
-byte mem[MEM_SZ];
-cell dsp, dstk[STK_SZ+1],  rsp, rstk[STK_SZ+1],  lsp, lstk[LSTK_SZ+1];
-cell asp, astk[TSTK_SZ+1], bsp, bstk[TSTK_SZ+1], tsp, tstk[TSTK_SZ+1];
-cell base, state, dictEnd, outputFp;
-cell *code, here, vhere, last, exitOp;
-char *toIn, wd[128];
-DE_T tmpWords[10];
-
 #define PRIMS(X) \
 	X(DUP,     "dup",     t=TOS; push(t); ) \
 	X(SWAP,    "swap",    t=TOS; TOS=NOS; NOS=t; ) \
@@ -95,6 +87,14 @@ DE_T tmpWords[10];
 	X(BYE,     "bye",     ttyMode(0); exit(0); )
 
 enum { STOP, LIT, JMP, JMPZ, NJMPZ, JMPNZ, NJMPNZ, PRIMS(X1) };
+
+byte mem[MEM_SZ];
+cell dsp, dstk[STK_SZ+1],  rsp, rstk[STK_SZ+1],  lsp, lstk[LSTK_SZ+1];
+cell asp, astk[TSTK_SZ+1], bsp, bstk[TSTK_SZ+1], tsp, tstk[TSTK_SZ+1];
+cell base=10, state=INTERP, dictEnd, outputFp;
+cell *code=(cell*)&mem[0], here=BYE+1, vhere, last, exitOp = EXIT;
+char *toIn, wd[128];
+DE_T tmpWords[10];
 
 static void push(cell x) { if (dsp < STK_SZ) { dstk[++dsp] = x; } }
 static cell pop() { return (0<dsp) ? dstk[dsp--] : 0; }
@@ -238,11 +238,6 @@ void cfOuter(const char *src) {
 }
 
 void cfInit() {
-	code  = (cell*)&mem[0];
-	here  = BYE+1;
-	base  = 10;
-	state = INTERP;
-	exitOp = EXIT;
 	last  = (cell)&mem[MEM_SZ-1];
 	while (last & (CELL_SZ-1)) { --last; }
 	dictEnd = last;
