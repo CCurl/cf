@@ -93,14 +93,19 @@ void boot(const char *fn) {
 	}
 }
 
+void def(char *name, cell val) {
+	DE_T *dp = addWord(name);
+	compileNumber((cell)val);
+	comma(exitOp);
+}
+
 int main(int argc, char *argv[]) {
 	cfInit();
+	def("argc", (cell)argc);
+	strcpy(tib, "argX");
 	for (int i=0; (i<argc) && (i<10); i++) {
-		strcpy(tib, "argX");
 		tib[3] = '0' + i;
-		addWord(tib);
-		compileNumber((cell)argv[i]);
-		comma(exitOp);
+		def(tib, (cell)argv[i]);
 	}
 	boot((1<argc) ? argv[1] : 0);
 	while (1) { repl(); }
