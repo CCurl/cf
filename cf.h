@@ -60,11 +60,9 @@ typedef struct { cell op; const char* name; byte fl; } PRIM_T;
 
 // These are defined by cf.c
 extern void cfInit();
-extern DE_T *addWord(char *w);
-extern void compileNumber(cell val);
-extern void comma(cell n);
 extern void cfOuter(const char *src);
-extern cell state, outputFp, exitOp;
+extern void addLit(char *nm, cell val);
+extern cell state, outputFp;
 extern byte mem[];
 
 // cf.c needs these to be defined

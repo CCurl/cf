@@ -103,7 +103,6 @@ static cell rpop() { return (0<rsp) ? rstk[rsp--] : 0; }
 static int  changeState(int newState) { state = newState; return newState; }
 static void checkWS(char c) { if (btwi(c,DEFINE,COMMENT)) { changeState(c); } }
 void comma(cell n) { code[here++] = n; }
-
 static int nextWord() {
 	int len = 0;
 	while (btwi(*toIn, 1, 32)) { checkWS(*(toIn++)); }
@@ -147,9 +146,16 @@ void compileNumber(cell n) {
 		else { comma(LIT); comma(n); }
 }
 
+void addLit(char *name, cell val) {
+	DE_T *dp = addWord(name);
+	compileNumber(val);
+	if (btwi(val, 0, NUM_MASK)) { dp->flags = _INLINE; }
+	comma(EXIT);
+}
+
 static void cfInner(cell pc) {
 	cell t, n, ir;
-	next: ir = code[pc++];
+next: ir = code[pc++];
 	switch(ir) {
 		case  STOP:   return;
 		NCASE LIT:    push(code[pc++]);
@@ -262,13 +268,7 @@ void cfInit() {
 		{ "cell",    CELL_SZ },        { "word",  (cell)&wd[0]},
 		{ 0 ,0 }
 	};
-	for (int i = 0; nvp[i].nm; i++) {
-		DE_T *dp = addWord(nvp[i].nm);
-		compileNumber(nvp[i].val);
-		if (btwi(nvp[i].val, 0, NUM_MASK)) { dp->flags = _INLINE; }
-		comma(EXIT);
-	}
-
+	for (int i = 0; nvp[i].nm; i++) { addLit(nvp[i].nm, nvp[i].val); }
 	PRIM_T prims[] = { PRIMS(X3) {0, 0, 0} };
 	for (int i = 0; prims[i].name; i++) {
 		addWord((char*)prims[i].name)->xt = prims[i].op;
