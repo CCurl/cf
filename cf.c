@@ -17,6 +17,7 @@
 	X(SWAP,    "swap",    t=TOS; TOS=NOS; NOS=t; ) \
 	X(DROP,    "drop",    pop(); ) \
 	X(OVER,    "over",    t=NOS; push(t); ) \
+	X(LITC,    "lit,",    compileNumber(pop()); ) \
 	X(FET,     "@",       TOS = *(cell*)TOS; ) \
 	X(STO,     "!",       t=pop(); n=pop(); *(cell*)t = n; ) \
 	X(CFET,    "c@",      TOS = *(byte*)TOS; ) \
@@ -40,7 +41,6 @@
 	X(COM,     "com",     TOS = ~TOS; ) \
 	X(FOR,     "for",     lsp+=3; L0=0; L1=pop(); L2=pc; ) \
 	X(NDX_I,   "i",       push(L0); ) \
-	X(LITC,    "lit,",    compileNumber(pop()); ) \
 	X(NEXT,    "next",    if (++L0<L1) { pc=L2; } else { lsp=(2<lsp)?(lsp-3):0; } ) \
 	X(TOR,     ">r",      rpush(pop()); ) \
 	X(RAT,     "r@",      push(rstk[rsp]); ) \
