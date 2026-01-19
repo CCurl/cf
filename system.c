@@ -68,8 +68,8 @@ cell fRead(cell buf, cell sz, cell fh) { return (cell)fread((char*)buf, 1, sz, (
 cell fWrite(cell buf, cell sz, cell fh) { return (cell)fwrite((char*)buf, 1, sz, (FILE*)fh); }
 cell fSeek(cell fh, cell offset) { return (cell)fseek((FILE*)fh, (long)offset, SEEK_SET); }
 
+char tib[256];
 void repl() {
-	char tib[256];
 	ttyMode(0);
 	if (state == COMMENT) { state = INTERP; }
 	zType((state == COMPILE) ? " ... "  : " ok\n");
@@ -95,6 +95,12 @@ void boot(const char *fn) {
 
 int main(int argc, char *argv[]) {
 	cfInit();
+	addLit("argc", (cell)argc);
+	strcpy(tib, "argX");
+	for (int i=0; (i<argc) && (i<10); i++) {
+		tib[3] = '0' + i;
+		addLit(tib, (cell)argv[i]);
+	}
 	boot((1<argc) ? argv[1] : 0);
 	while (1) { repl(); }
 	return 0;

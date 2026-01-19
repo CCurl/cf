@@ -12,19 +12,12 @@
 #define X2(op, name, code) NCASE op: code
 #define X3(op, name, code) { op, name, 0 },
 
-byte mem[MEM_SZ];
-cell dsp, dstk[STK_SZ+1],  rsp, rstk[STK_SZ+1],  lsp, lstk[LSTK_SZ+1];
-cell asp, astk[TSTK_SZ+1], bsp, bstk[TSTK_SZ+1], tsp, tstk[TSTK_SZ+1];
-cell base, state, dictEnd, outputFp;
-cell *code, here, vhere, last;
-char *toIn, wd[128];
-DE_T tmpWords[10];
-
 #define PRIMS(X) \
 	X(DUP,     "dup",     t=TOS; push(t); ) \
 	X(SWAP,    "swap",    t=TOS; TOS=NOS; NOS=t; ) \
 	X(DROP,    "drop",    pop(); ) \
 	X(OVER,    "over",    t=NOS; push(t); ) \
+	X(LITC,    "lit,",    compileNumber(pop()); ) \
 	X(FET,     "@",       TOS = *(cell*)TOS; ) \
 	X(STO,     "!",       t=pop(); n=pop(); *(cell*)t = n; ) \
 	X(CFET,    "c@",      TOS = *(byte*)TOS; ) \
@@ -48,7 +41,6 @@ DE_T tmpWords[10];
 	X(COM,     "com",     TOS = ~TOS; ) \
 	X(FOR,     "for",     lsp+=3; L0=0; L1=pop(); L2=pc; ) \
 	X(NDX_I,   "i",       push(L0); ) \
-	X(LITC,    "lit,",    compileNumber(pop()); ) \
 	X(NEXT,    "next",    if (++L0<L1) { pc=L2; } else { lsp=(2<lsp)?(lsp-3):0; } ) \
 	X(TOR,     ">r",      rpush(pop()); ) \
 	X(RAT,     "r@",      push(rstk[rsp]); ) \
@@ -95,6 +87,14 @@ DE_T tmpWords[10];
 	X(BYE,     "bye",     ttyMode(0); exit(0); )
 
 enum { STOP, LIT, JMP, JMPZ, NJMPZ, JMPNZ, NJMPNZ, PRIMS(X1) };
+
+byte mem[MEM_SZ];
+cell dsp, dstk[STK_SZ+1],  rsp, rstk[STK_SZ+1],  lsp, lstk[LSTK_SZ+1];
+cell asp, astk[TSTK_SZ+1], bsp, bstk[TSTK_SZ+1], tsp, tstk[TSTK_SZ+1];
+cell base=10, state=INTERP, dictEnd, outputFp;
+cell *code=(cell*)&mem[0], here=BYE+1, vhere, last, exitOp = EXIT;
+char *toIn, wd[128];
+DE_T tmpWords[10];
 
 static void push(cell x) { if (dsp < STK_SZ) { dstk[++dsp] = x; } }
 static cell pop() { return (0<dsp) ? dstk[dsp--] : 0; }
@@ -147,9 +147,16 @@ static void compileNumber(cell n) {
 		else { comma(LIT); comma(n); }
 }
 
+void addLit(char *name, cell val) {
+	DE_T *dp = addWord(name);
+	compileNumber(val);
+	if (btwi(val, 0, NUM_MASK)) { dp->flags = _INLINE; }
+	comma(EXIT);
+}
+
 static void cfInner(cell pc) {
 	cell t, n, ir;
-	next: ir = code[pc++];
+next: ir = code[pc++];
 	switch(ir) {
 		case  STOP:   return;
 		NCASE LIT:    push(code[pc++]);
@@ -238,10 +245,6 @@ void cfOuter(const char *src) {
 }
 
 void cfInit() {
-	code  = (cell*)&mem[0];
-	here  = BYE+1;
-	base  = 10;
-	state = INTERP;
 	last  = (cell)&mem[MEM_SZ-1];
 	while (last & (CELL_SZ-1)) { --last; }
 	dictEnd = last;
@@ -266,13 +269,7 @@ void cfInit() {
 		{ "cell",    CELL_SZ },        { "word",  (cell)&wd[0]},
 		{ 0 ,0 }
 	};
-	for (int i = 0; nvp[i].nm; i++) {
-		DE_T *dp = addWord(nvp[i].nm);
-		compileNumber(nvp[i].val);
-		if (btwi(nvp[i].val, 0, NUM_MASK)) { dp->flags = _INLINE; }
-		comma(EXIT);
-	}
-
+	for (int i = 0; nvp[i].nm; i++) { addLit(nvp[i].nm, nvp[i].val); }
 	PRIM_T prims[] = { PRIMS(X3) {0, 0, 0} };
 	for (int i = 0; prims[i].name; i++) {
 		addWord((char*)prims[i].name)->xt = prims[i].op;
