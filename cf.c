@@ -102,7 +102,7 @@ static void rpush(cell x) { if (rsp < STK_SZ) { rstk[++rsp] = x; } }
 static cell rpop() { return (0<rsp) ? rstk[rsp--] : 0; }
 static int  changeState(int newState) { state = newState; return newState; }
 static void checkWS(char c) { if (btwi(c,DEFINE,COMMENT)) { changeState(c); } }
-void comma(cell n) { code[here++] = n; }
+static void comma(cell n) { code[here++] = n; }
 static int nextWord() {
 	int len = 0;
 	while (btwi(*toIn, 1, 32)) { checkWS(*(toIn++)); }
@@ -111,7 +111,7 @@ static int nextWord() {
 	return len;
 }
 
-DE_T *addWord(char *w) {
+static DE_T *addWord(char *w) {
 	if (!w) { nextWord(); w = wd; }
 	if (isTemp(w)) {
 		tmpWords[w[1]-'0'].xt = (cell)here;
@@ -141,7 +141,7 @@ static DE_T *findWord(const char *w) {
 	return (DE_T*)0;
 }
 
-void compileNumber(cell n) {
+static void compileNumber(cell n) {
 		if (btwi(n, 0, NUM_MASK)) { comma(n | NUM_BITS); }
 		else { comma(LIT); comma(n); }
 }

@@ -8,7 +8,7 @@
 #include <string.h>
 #include <time.h>
 
-#define VERSION         20260104
+#define VERSION         20260118
 #define BOOT_FN1        "cf-boot.fth"
 
 #ifdef _MSC_VER
@@ -56,7 +56,7 @@ typedef UCELL_T ucell;
 typedef unsigned short ushort;
 typedef unsigned char byte;
 typedef struct { cell xt; byte flags, len; char name[NAME_MAX+1]; } DE_T;
-typedef struct { cell op; const char* name; byte fl; } PRIM_T;
+typedef struct { cell op; const char *name; byte fl; } PRIM_T;
 
 // These are defined by cf.c
 extern void cfInit();
