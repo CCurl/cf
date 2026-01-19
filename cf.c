@@ -100,9 +100,9 @@ static void push(cell x) { if (dsp < STK_SZ) { dstk[++dsp] = x; } }
 static cell pop() { return (0<dsp) ? dstk[dsp--] : 0; }
 static void rpush(cell x) { if (rsp < STK_SZ) { rstk[++rsp] = x; } }
 static cell rpop() { return (0<rsp) ? rstk[rsp--] : 0; }
+static void comma(cell n) { code[here++] = n; }
 static int  changeState(int newState) { state = newState; return newState; }
 static void checkWS(char c) { if (btwi(c,DEFINE,COMMENT)) { changeState(c); } }
-static void comma(cell n) { code[here++] = n; }
 static int nextWord() {
 	int len = 0;
 	while (btwi(*toIn, 1, 32)) { checkWS(*(toIn++)); }
