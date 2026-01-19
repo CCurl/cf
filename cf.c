@@ -103,6 +103,7 @@ static cell rpop() { return (0<rsp) ? rstk[rsp--] : 0; }
 static void comma(cell n) { code[here++] = n; }
 static int  changeState(int newState) { state = newState; return newState; }
 static void checkWS(char c) { if (btwi(c,DEFINE,COMMENT)) { changeState(c); } }
+
 static int nextWord() {
 	int len = 0;
 	while (btwi(*toIn, 1, 32)) { checkWS(*(toIn++)); }
