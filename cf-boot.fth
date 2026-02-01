@@ -93,6 +93,7 @@ disk-read  0 blk!
 
 : a+    ( -- ) a@+ drop  ; inline
 : @a    ( --n ) a@  @     ; inline
+: a@+cell ( --a ) a@ cell+ ; inline
 : c@a-  ( --c ) a@- c@    ; inline
 : c!a   ( c-- ) a@  c!    ; inline
 : c!a+  ( c-- ) a@+ c!    ; inline
@@ -100,6 +101,7 @@ disk-read  0 blk!
 
 : b+    ( -- ) b@+ drop  ; inline
 : b-    ( -- ) b@- drop  ; inline
+: @b    ( --n ) b@  @     ; inline
 : c@b   ( --c ) b@  c@    ; inline
 : c@b+  ( --c ) b@+ c@    ; inline
 : c!b-  ( c-- ) b@- c!    ; inline
@@ -495,3 +497,31 @@ yellow ."    Code: " white here . ." opcodes used" cr
 yellow ."    Dict: " white dict-end last - de-sz / . ." words defined" cr
 
 marker
+
+( sorting )
+: bubble-pass ( a n-- )
+   swap >a for
+      @a a@+cell @ > if
+         @a >r a@+cell @ >r
+         r> a@ !
+         r> a@+cell !
+      then
+      a@+cell a!
+   next
+   adrop ;
+
+: bubble-sort ( a n-- )
+   dup 2 < if 2drop exit then
+   swap >a 1- >t t@ for
+      a@ t@- bubble-pass
+   next
+   adrop tdrop ;
+
+10 cells var xxx
+: t1 ( a n --a' ) over ! cell + ; inline
+: test-sort ( -- )
+   xxx 5 t1 3 t1 8 t1 1 t1 4 t1
+       6 t1 9 t1 2 t1 7 t1 9 t1 drop
+   10 for i cells xxx + @ . next cr
+   xxx 10 bubble-sort
+   10 for i cells xxx + @ . next cr ;

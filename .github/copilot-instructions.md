@@ -41,12 +41,32 @@ State is stored in the global `state` variable. The `cfOuter()` function in `cf.
 - Helper words in `cf-boot.fth`: `a+` (`a@+ drop`), `b+` (`b@+ drop`), `b-` (`b@- drop`) - increment/decrement without stack effects
 - Compound operations: `c@a` (`a@ c@`), `c!a` (`a@ c!`), `c!a+` (`a@+ c!`), `c!b-` (`b@- c!`)
 
+**Register Stack Naming Convention** (critical for readability):
+- **Prefix `@`** = fetch the value (dereference)
+- **Infix register** = which register (a, b, t)
+- **Suffix modifiers** = then do this (nothing, `+`, `-`, `+cell`, etc.)
+- Examples: `@a` (fetch at A), `@a+` (fetch at A, increment A), `@a+cell` (fetch at A, increment A by cell), `a@+cell` (fetch A, increment A by cell)
+- `a@+` reads as: "fetch A, then increment A"
+- `c@a+` reads as: "character-fetch through A, then increment A"
+- `a@+cell` reads as: "fetch A, then increment A by cell"
+- `@a+cell` reads as: "fetch through A, then increment A by cell"
+
 **Register Stack Patterns**:
 - **Pointer manipulation**: Store addresses in A/B, use `a@+`/`b@-` for auto-increment/decrement during loops
 - **Stack effect awareness**: `c!a+` does `a@+ c!` - pushes A to stack, increments A, then stores TOS at that address
 - **Natural swap**: `c@a c@b c!a+ c!b-` swaps bytes at A and B without explicit `swap` - stack order does it automatically
 - **Comparison direction**: When A increments upward and B decrements downward, use `a@ b@ >=` to detect when pointers meet/cross
 - **Prefer register operations over data stack juggling** - reduces `dup`, `over`, `swap` overhead
+
+**CRITICAL: Register Stack Balance Rule**:
+**Every `>a`/`>b`/`>t` MUST have a corresponding `a>`/`b>`/`t>` or `adrop`/`bdrop`/`tdrop` before the word exits.** This applies to ALL exit paths (including early `exit` in conditionals). Register stack imbalance is a bug, just like data stack imbalance. When generating CF code, maintain strict register stack discipline - what goes on must come off within each word definition.
+
+**Idiomatic Register Usage** (beyond balance):
+Balance is necessary but not sufficient. Write *idiomatic* CF by leveraging register semantics:
+- **Let registers do their job**: Operations like `a@+`, `b@-`, `t@-` are designed to modify state. Use them naturally rather than fighting against them with calculations.
+- **Non-destructive vs. destructive operations matter**: `a@` leaves A unchanged; `a@+` increments A. Choose based on intent, not just stack effects.
+- **Natural loops over computed indices**: When you need decreasing values in a loop, use `1- >t for ... t@- ... next` to let T naturally decrement, rather than trying to keep T constant and computing differences with loop indices.
+- **Example - bubble sort**: Instead of `t@ i -` (fetch constant T and compute with index), use `t@-` in each iteration to naturally decrement T. This is cleaner and more aligned with CF's design.
 
 **Temporary words**: `t0` through `t9` are special dictionary entries stored in `tmpWords[]` array, not in main dictionary. Used for transient definitions.
 
