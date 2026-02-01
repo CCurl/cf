@@ -17,28 +17,28 @@ const -last-    const -here-
 : immediate ( -- ) 1 last cell + c! ;
 : inline    ( -- ) 2 last cell + c! ;
 
-: begin here ;  immediate
-: while  (jmpnz)  , , ;  immediate
-: -while (njmpnz) , , ;  immediate
-:  until (jmpz)   , , ;  immediate
-: -until (njmpz)  , , ;  immediate
-: again  (jmp)    , , ;  immediate
+: begin ( --a ) here ;  immediate
+: while ( a-- ) (jmpnz)  , , ;  immediate
+: -while ( a-- ) (njmpnz) , , ;  immediate
+:  until ( a-- ) (jmpz)   , , ;  immediate
+: -until ( a-- ) (njmpz)  , , ;  immediate
+: again ( a-- ) (jmp)    , , ;  immediate
 
-: if (jmpz)   , here 0 , ;  immediate
-: -if (njmpz) , here 0 , ;  immediate
-: if0 (jmpnz) , here 0 , ;  immediate
-: then here swap code!   ;  immediate
+: if ( --a ) (jmpz)   , here 0 , ;  immediate
+: -if ( --a ) (njmpz) , here 0 , ;  immediate
+: if0 ( --a ) (jmpnz) , here 0 , ;  immediate
+: then ( a-- ) here swap code!   ;  immediate
 
 : c@a   ( --n ) a@  c@ ;  inline
 : c@a+  ( --n ) a@+ c@ ;  inline
 : c!b+  ( n-- ) b@+ c! ;  inline
 
 ( STATES/MODES )
-: define  1 ;  inline
-: compile 2 ;  inline
-: interp  3 ;  inline
-: comment 4 ;  inline
-: comp? state @ compile = ;
+: define ( --n ) 1 ;  inline
+: compile ( --n ) 2 ;  inline
+: interp ( --n ) 3 ;  inline
+: comment ( --n ) 4 ;  inline
+: comp? ( --f ) state @ compile = ;
 
 ( quote subroutine )
 : t4 ( --a ) vhere dup >b  >in @ 1+ >a
@@ -50,17 +50,17 @@ const -last-    const -here-
       then c@a+ c!b+
    again ;
 
-: z"  t4 ;  immediate
-: ."  t4 comp? if (ztype) , exit then ztype ;  immediate
+: z" ( --a ) t4 ;  immediate
+: ." ( -- ) t4 comp? if (ztype) , exit then ztype ;  immediate
 
 ( Files )
 : fopen-r  ( fn--fh ) z" rb" fopen ;
 : fopen-w  ( fn--fh ) z" wb" fopen ;
 
 ( Blocks )
-: blk-sz  2048 ;  inline
-: num-blks 128 ;  inline
-: blk-max  127 ;  inline
+: blk-sz ( --n ) 2048 ;  inline
+: num-blks ( --n ) 128 ;  inline
+: blk-max ( --n ) 127 ;  inline
 num-blks blk-sz *         const disk-sz
 memory mem-sz + 2000000 - const blks
 cell var t0
@@ -76,13 +76,13 @@ cell var t0
 disk-read  0 blk!
 
 ( load )
-: t1  0 blk-end c! ;
+: t1 ( -- ) 0 blk-end c! ;
 : load ( n-- )  blk! blk-data t1 outer ;
 : load-next ( -- )  blk@ 1+ blk! blk-data t1 >in ! ;
 
 ( everything from here on could be moved to blocks )
 
-: rb ( reboot )
+: rb ( -- ) ( reboot )
    z" cf-boot.fth" fopen-r -if dup then if a!
       memory 100000 + t!
       -last- (la) !  -here- (ha) !
@@ -91,18 +91,20 @@ disk-read  0 blk!
       t@ >in !  0 (dsp) !
    then ;
 
-: a+    a@+ drop  ; inline
-: @a    a@  @     ; inline
-: c@a-  a@- c@    ; inline
-: c!a   a@  c!    ; inline
-: c!a+  a@+ c!    ; inline
-: adrop a> drop   ; inline
+: a+    ( -- ) a@+ drop  ; inline
+: @a    ( --n ) a@  @     ; inline
+: c@a-  ( --c ) a@- c@    ; inline
+: c!a   ( c-- ) a@  c!    ; inline
+: c!a+  ( c-- ) a@+ c!    ; inline
+: adrop ( -- ) a> drop   ; inline
 
-: b+    b@+ drop  ; inline
-: c@b+  b@+ c@    ; inline
-: c!b-  b@- c!    ; inline
-: bdrop b> drop   ; inline
-: abdrop adrop bdrop ;
+: b+    ( -- ) b@+ drop  ; inline
+: b-    ( -- ) b@- drop  ; inline
+: c@b   ( --c ) b@  c@    ; inline
+: c@b+  ( --c ) b@+ c@    ; inline
+: c!b-  ( c-- ) b@- c!    ; inline
+: bdrop ( -- ) b> drop   ; inline
+: abdrop ( -- ) adrop bdrop ;
 
 ( number format / print )
 : #neg ( n--n' ) 0 >a dup 0 < if com 1+ a+ then ;
@@ -111,47 +113,47 @@ disk-read  0 blk!
 : #n   ( n-- )   '0' + dup '9' > if 7 + then hold ;
 : #.   ( -- )    '.' hold ;
 : #    ( n--n' ) base @ /mod swap #n ;
-: #s   ( n-- )   begin # -while drop ;
-: #>   ( --a )   a> if '-' hold then b> 1+ ;
-: (.)  ( n-- )   <# #s #> ztype ;
-: .    ( n-- )   (.) : space 32 emit ;
+: #s ( n-- ) begin # -while drop ;
+: #> ( --a ) a> if '-' hold then b> 1+ ;
+: (.) ( n-- ) <# #s #> ztype ;
+: . ( n-- ) (.) : space ( -- ) 32 emit ;
 
 cell var t0    cell var t1    cell var t2
-: marker here t0 ! last t1 ! vhere t2 ! ;
-: forget t0 @ (ha) ! t1 @ (la) ! t2 @ (vha) ! ;
+: marker ( -- ) here t0 ! last t1 ! vhere t2 ! ;
+: forget ( -- ) t0 @ (ha) ! t1 @ (la) ! t2 @ (vha) ! ;
 
 ( T reg/stack words )
-: t+    t@+ drop  ; inline
-: t-    t@- drop  ; inline
-: c@t+  t@+ c@    ; inline
-: c!t   t@  c!    ; inline
-: c!t+  t@+ c!    ; inline
-: t@+c  t@ dup cell + t! ;
-: @t+   t@+c @ ;
-: tdrop t> drop   ; inline
-: atdrop adrop tdrop ;
+: t+    ( -- ) t@+ drop  ; inline
+: t-    ( -- ) t@- drop  ; inline
+: c@t+  ( --c ) t@+ c@    ; inline
+: c!t   ( c-- ) t@  c!    ; inline
+: c!t+  ( c-- ) t@+ c!    ; inline
+: t@+c  ( -- ) t@ dup cell + t! ;
+: @t+   ( --n ) t@+c @ ;
+: tdrop ( -- ) t> drop   ; inline
+: atdrop ( -- ) adrop tdrop ;
 
 : val   ( -- )  addword (lit) , 0 , (exit) , ;
 : (val) ( -- )  here 2 - ->code const ;
-: ?dup  -if dup then ;
-: bl 32 ; inline
-: tab 9 emit ; inline
-: cr 13 emit 10 emit ;
-: spaces for space next ;
-: negate com 1+ ; inline
-: abs dup 0 < if negate then ;
+: ?dup ( n--n n | 0 ) -if dup then ;
+: bl ( --n ) 32 ; inline
+: tab ( -- ) 9 emit ; inline
+: cr ( -- ) 13 emit 10 emit ;
+: spaces ( n-- ) for space next ;
+: negate ( n--n' ) com 1+ ; inline
+: abs ( n--n' ) dup 0 < if negate then ;
 : ->file ( fh-- ) (output-fp) ! ;
-: ->stdout 0 ->file ;
-: ->stdout! (output-fp) @ ?dup if fclose then ->stdout ;
+: ->stdout ( -- ) 0 ->file ;
+: ->stdout! ( -- ) (output-fp) @ ?dup if fclose then ->stdout ;
 
 : .nw  ( n w-- ) >r <# r> ?dup if 1- for # next then #s #> ztype ;
 : .nwb ( n w b-- ) base @ >b base ! .nw b> base ! ;
 : .2 ( n-- ) 2 .nw ;
 : .3 ( n-- ) 3 .nw ;
 : .4 ( n-- ) 4 .nw ;
-: hex     $10 base ! ;
-: decimal #10 base ! ;
-: binary  %10 base ! ;
+: hex ( -- ) $10 base ! ;
+: decimal ( -- ) #10 base ! ;
+: binary ( -- ) %10 base ! ;
 : .hex  ( n-- ) base @ >t hex .2 t> base ! ;
 : .dec  ( n-- ) base @ >t decimal .3 t> base ! ;
 : .bin  ( n-- ) base @ >t binary . t> base ! ;
@@ -160,34 +162,34 @@ cell var t0    cell var t1    cell var t2
 : .%bin ( n-- ) base @ >t '%' emit binary (.) t> base ! ;
 
 : execute ( xt-- ) >r ;
-: :noname here compile state ! ;
-: cells cell * ; inline
-: cell+ cell + ; inline
-: 2+ 1+ 1+ ; inline
-: 2* dup + ; inline
-: 2/ 2 / ; inline
-: 2dup  over over ; inline
-: 2drop drop drop ; inline
+: :noname ( --a ) here compile state ! ;
+: cells ( n--n' ) cell * ; inline
+: cell+ ( n--n' ) cell + ; inline
+: 2+ ( n--n' ) 1+ 1+ ; inline
+: 2* ( n--n' ) dup + ; inline
+: 2/ ( n--n' ) 2 / ; inline
+: 2dup ( a b--a b a b ) over over ; inline
+: 2drop ( a b-- ) drop drop ; inline
 : min   ( n m--n|m ) 2dup > if swap then drop ;
 : max   ( n m--n|m ) 2dup < if swap then drop ;
-: mod /mod drop ; inline
+: mod ( n m--r ) /mod drop ; inline
 : */ ( n x y--n' ) >r * r> / ;
-: ? @ . ;
-: nip  swap drop ; inline
-: tuck swap over ; inline
+: ? ( a-- ) @ . ;
+: nip ( a b--b ) swap drop ; inline
+: tuck ( a b--b a b ) swap over ; inline
 : <= ( a b--f ) > 0= ;
 : >= ( a b--f ) < 0= ;
 : btw  ( n l h--f ) >a over <  swap a> <  and ;
 : btwi ( n l h--f ) >a over <= swap a> <= and ;
-: vc, vhere c! 1 allot ;
-: v, vhere ! cell allot ;
+: vc, ( c-- ) vhere c! 1 allot ;
+: v, ( n-- ) vhere ! cell allot ;
 
-: 0sp 0 (dsp) ! ;
-: unloop (lsp) @ 3 - 0 max (lsp) ! ;
-: depth (dsp) @ 1- ;
-: lpar '(' emit ; inline
-: rpar ')' emit ; inline
-: .s lpar space depth ?dup if
+: 0sp ( -- ) 0 (dsp) ! ;
+: unloop ( -- ) (lsp) @ 3 - 0 max (lsp) ! ;
+: depth ( --n ) (dsp) @ 1- ;
+: lpar ( -- ) '(' emit ; inline
+: rpar ( -- ) ')' emit ; inline
+: .s ( -- ) lpar space depth ?dup if
       for i 1+ cells dstk + @ . next
    then rpar ;
 
@@ -202,46 +204,50 @@ cell var t0    cell var t1    cell var t2
       a@ b@ < if 0 b> c! adrop exit then
       c@a- bl > if 0 a> 2+ c! bdrop exit then
    again ;
+: s-rev ( str--str ) dup >a a@ s-end 1- >b begin
+      a@ b@ >= if abdrop exit then
+      c@a c@b c!a+ c!b-
+   again ;
 : pad  ( --a ) vhere $100 + ;
 : pad2 ( --a ) vhere $200 + ;
 : pad3 ( --a ) vhere $300 + ;
 
 ( words )
-: de>xt    @ ; inline
-: de>flags cell + c@ ;
-: de>len   cell + 1+ c@ ;
-: de>name  cell + 2+ ;
-: .word de>name ztype ;
-: .de-word .word t@+ 9 > if 0 t! cr exit then tab ;
+: de>xt ( de--xt ) @ ; inline
+: de>flags ( de--f ) cell + c@ ;
+: de>len ( de--n ) cell + 1+ c@ ;
+: de>name ( de--a ) cell + 2+ ;
+: .word ( de-- ) de>name ztype ;
+: .de-word ( -- ) .word t@+ 9 > if 0 t! cr exit then tab ;
 memory mem-sz + 1- 7 com and  const dict-end
 
-: words last >a 1 >t 0 >b begin
+: words ( -- ) last >a 1 >t 0 >b begin
    a@ de>len  7 > if t+ then
    a@ de>len 12 > if t+ then
    a@ .de-word a@ de-sz + a! b+
    a@ dict-end < while
    lpar b> . ." words)" adrop ;
-: words-n last >t for i 8 mod if0 cr then t@ .word tab t@ de-sz + t! next tdrop ;
+: words-n ( -- ) last >t for i 8 mod if0 cr then t@ .word tab t@ de-sz + t! next tdrop ;
 
 ( Screen )
-: csi          27 emit '[' emit ;
+: csi ( -- ) 27 emit '[' emit ;
 : ->cr      ( c r-- ) csi (.) ';' emit (.) 'H' emit ;
 : ->rc      ( r c-- ) swap ->cr ;
-: cls          csi ." 2J" 1 dup ->cr ;
-: clr-eol      csi ." 0K" ;
-: cur-on       csi ." ?25h" ;
-: cur-off      csi ." ?25l" ;
-: cur-block    csi ." 2 q" ;
-: cur-bar      csi ." 5 q" ;
+: cls ( -- ) csi ." 2J" 1 dup ->cr ;
+: clr-eol ( -- ) csi ." 0K" ;
+: cur-on ( -- ) csi ." ?25h" ;
+: cur-off ( -- ) csi ." ?25l" ;
+: cur-block ( -- ) csi ." 2 q" ;
+: cur-bar ( -- ) csi ." 5 q" ;
 
 : color ( bg fg-- ) csi (.) ';' emit (.) 'm' emit ;
 : bg    ( color-- ) csi ." 48;5;" (.) 'm' emit ;
 : fg    ( color-- ) csi ." 38;5;" (.) 'm' emit ;
-: black   0 fg ;      : red    203 fg ;
-: green  40 fg ;      : yellow 226 fg ;
-: blue   63 fg ;      : purple 201 fg ;
-: cyan  117 fg ;      : grey   246 fg ;
-: white 255 fg ;
+: black ( -- ) 0 fg ;      : red ( -- ) 203 fg ;
+: green ( -- ) 40 fg ;      : yellow ( -- ) 226 fg ;
+: blue ( -- ) 63 fg ;      : purple ( -- ) 201 fg ;
+: cyan ( -- ) 117 fg ;      : grey ( -- ) 246 fg ;
+: white ( -- ) 255 fg ;
 : colors ( s n-- ) swap >a for a@ fg ." color #" a@+ . cr next white adrop ;
 
 ( Keys )
@@ -276,7 +282,7 @@ memory mem-sz + 1- 7 com and  const dict-end
 
 ( Accept )
 : printable? ( c--f ) 31 127 btw ;
-: bs 8 emit ; inline
+: bs ( -- ) 8 emit ; inline
 : accept ( dst-- ) dup >r >t 0 >a
   begin key a!
       a@   3 =  a@ 27 = or if 0 r> c! atdrop exit then
@@ -287,8 +293,8 @@ memory mem-sz + 1- 7 com and  const dict-end
   again ;
 
 ( Editor )
-: rows 23 ; inline       : cols 89 ; inline
-: last-row 22 ; inline   : last-col 88 ; inline
+: rows ( --n ) 23 ; inline       : cols ( --n ) 89 ; inline
+: last-row ( --n ) 22 ; inline   : last-col ( --n ) 88 ; inline
 vhere const ed-colors
 219   vc, ( 0: default - purple )
 203   vc, ( 1: define  - red )
@@ -296,22 +302,22 @@ vhere const ed-colors
 226   vc, ( 3: interp  - yellow )
 255   vc, ( 4: comment - white )
 
-: ed-color@ ( n-- )    ed-colors + c@ ;
+: ed-color@ ( n--c ) ed-colors + c@ ;
 : ed-color! ( fg n-- ) ed-colors + c! ;
 
-cell var (r)  : row! (r) ! ;    : row@ (r) @ ;
-cell var (c)  : col! (c) ! ;    : col@ (c) @ ;
+cell var (r)  : row! ( n-- ) (r) ! ;    : row@ ( --n ) (r) @ ;
+cell var (c)  : col! ( n-- ) (c) ! ;    : col@ ( --n ) (c) @ ;
 blk-sz var ed-blk
 ed-blk rows cols * + 1- const ed-eob
-: norm-pos ( pos--new ) ed-blk max ed-eob min ;
+: norm-pos ( pos--pos' ) ed-blk max ed-eob min ;
 : pos->rc ( pos-- ) norm-pos ed-blk - cols /mod row! col! ;
 : cr->pos ( col row--pos ) cols * + ed-blk + ed-eob min ;
 : rc->pos ( --pos ) col@ row@ cr->pos ;
 : r->pos ( r--pos ) last-row min 0 max  0 swap  cr->pos ;
 : ed-eol  ( --pos ) last-col row@ cr->pos ;
-1 var t1  : mode!  t1 c! ;  : mode@  t1 c@ ;
-1 var t1  : show?  t1 c@ ;  : shown  0 t1 c! ;  : show!  1 t1 c! ;
-1 var t2  : dirty? t2 c@ ;  : clean! 0 t2 c! ;  : dirty! 1 t2 c! show! ;
+1 var t1  : mode! ( n-- ) t1 c! ;  : mode@ ( --n ) t1 c@ ;
+1 var t1  : show? ( --f ) t1 c@ ;  : shown ( -- ) 0 t1 c! ;  : show! ( -- ) 1 t1 c! ;
+1 var t2  : dirty? ( --f ) t2 c@ ;  : clean! ( -- ) 0 t2 c! ;  : dirty! ( -- ) 1 t2 c! show! ;
 : mv ( r c-- )  (c) +! (r) +!  rc->pos  pos->rc ;
 : ed-c! ( ch col row-- ) cr->pos c! dirty! ;
 : ed-ch! ( c-- ) col@ row@ ed-c! ;
@@ -319,72 +325,72 @@ ed-blk rows cols * + 1- const ed-eob
 : ed-bl ( -- ) ed-blk >a blk-sz for c@a if0 bl c!a then a+ next adrop ;
 : blk->ed ( -- ) blk-data ed-blk blk-sz cmove ed-bl ;
 : ed-load ( -- ) ( blk-rd ) blk->ed clean! show! 0 0 row! col! ;
-: ->norm  0 mode! ;    : norm?  mode@  0 = ;
-: ->repl  1 mode! ;    : repl?  mode@  1 = ;
-: ->ins   2 mode! ;    : ins?   mode@  2 = ;
-: q!     99 mode! ;    : quit?  mode@ 99 = ;  
+: ->norm ( -- ) 0 mode! ;    : norm? ( --f ) mode@  0 = ;
+: ->repl ( -- ) 1 mode! ;    : repl? ( --f ) mode@  1 = ;
+: ->ins ( -- ) 2 mode! ;    : ins? ( --f ) mode@  2 = ;
+: q! ( -- ) 99 mode! ;    : quit? ( --f ) mode@ 99 = ;  
 : ed-emit ( ch-- )
    dup 31 > if emit exit then ( regular char )
    dup  0 5 btw if dup ed-color@ fg then ( change color )
    drop space ;
-: .scr 1 dup ->rc white ed-blk >a rows for
+: .scr ( -- ) 1 dup ->rc white ed-blk >a rows for
       cols for c@a+ ed-emit next cr
    next adrop ;
-: ->cur  col@ 1+ row@ 1+ ->cr ;
-: ->foot 1 rows 1+ ->cr ;
-: ->cmd ->foot cr ;
-: .foot ->foot cyan ." Block #" blk@ .
+: ->cur ( -- ) col@ 1+ row@ 1+ ->cr ;
+: ->foot ( -- ) 1 rows 1+ ->cr ;
+: ->cmd ( -- ) ->foot cr ;
+: .foot ( -- ) ->foot cyan ." Block #" blk@ .
    bl dirty? if drop '*' then emit space
    norm? if green  ."  -norm- "    then
    repl? if yellow ."  -replace- " then
    ins?  if purple ."  -insert- "  then white
    lpar row@ 1+ (.) ',' emit col@ 1+ . '-' emit space
    rc->pos c@ dup .#dec '/' emit .$hex rpar clr-eol ;
-: show cur-off show? if .scr shown then .foot ->cur cur-on ;
-: mv-left  col@ 1- 0 max col! ;
-: mv-right col@ 1+ last-col min col! ;
-: mv-up    row@ 1- 0 max row! ;
-: mv-down  row@ 1+ last-row min row! ;
-: mv-end   last-col col! begin
+: show ( -- ) cur-off show? if .scr shown then .foot ->cur cur-on ;
+: mv-left ( -- ) col@ 1- 0 max col! ;
+: mv-right ( -- ) col@ 1+ last-col min col! ;
+: mv-up ( -- ) row@ 1- 0 max row! ;
+: mv-down ( -- ) row@ 1+ last-row min row! ;
+: mv-end ( -- ) last-col col! begin
       col@ 0= ed-ch@ bl > or if exit then mv-left
    again ;
-: ins-bl  rc->pos dup 1+ last-col col@ - cmove bl ed-ch! ;
-: ins-bl2 rc->pos dup 1+ ed-eob over - 1+ cmove bl ed-ch! ;
-: replace-char a@ printable? if a@ ed-ch! mv-right then ;
-: insert-char  a@ printable? if ins-bl a@ ed-ch! mv-right then ;
-: del-c rc->pos >a a@ 1+ a> cols col@ - cmove dirty! 32 ed-eol c! ;
-: del-z rc->pos >a a@ 1+ a@ ed-eob a> - cmove dirty! 32 ed-eob c! ;
-: clr-line  row@ r->pos cols bl fill dirty! ;
-: clr-toend rc->pos cols col@ - bl fill dirty! ;
+: ins-bl ( -- ) rc->pos dup 1+ last-col col@ - cmove bl ed-ch! ;
+: ins-bl2 ( -- ) rc->pos dup 1+ ed-eob over - 1+ cmove bl ed-ch! ;
+: replace-char ( -- ) a@ printable? if a@ ed-ch! mv-right then ;
+: insert-char ( -- ) a@ printable? if ins-bl a@ ed-ch! mv-right then ;
+: del-c ( -- ) rc->pos >a a@ 1+ a> cols col@ - cmove dirty! 32 ed-eol c! ;
+: del-z ( -- ) rc->pos >a a@ 1+ a@ ed-eob a> - cmove dirty! 32 ed-eob c! ;
+: clr-line ( -- ) row@ r->pos cols bl fill dirty! ;
+: clr-toend ( -- ) rc->pos cols col@ - bl fill dirty! ;
 : ed-goto ( blk-- ) blk! ed-load ;
-: insert-line  row@ r->pos >a  a@ row@ 1+ r->pos  last-row r->pos a> - cmove  clr-line ;
-: ?insert-line ins? if0 mv-down 0 col! exit then
+: insert-line ( -- ) row@ r->pos >a  a@ row@ 1+ r->pos  last-row r->pos a> - cmove  clr-line ;
+: ?insert-line ( -- ) ins? if0 mv-down 0 col! exit then
    mv-down insert-line mv-up
    rc->pos pad3 cols cmove clr-toend
    mv-down 0 col! pad3 rc->pos cols cmove ;
-: yanked pad2 ;
-: yank-line  row@ r->pos yanked cols cmove ;
-: put-line   yanked row@ r->pos cols cmove ;
-: del-line yank-line row@ rows < if
+: yanked ( --a ) pad2 ;
+: yank-line ( -- ) row@ r->pos yanked cols cmove ;
+: put-line ( -- ) yanked row@ r->pos cols cmove ;
+: del-line ( -- ) yank-line row@ rows < if
       row@ r->pos >b  b@ cols + >a  ed-eob >r
       begin c@a+ c!b+  a@ r@ > until abdrop rdrop
    then row@  last-row row!  clr-line  row! ;
-: join-lines row@ last-row < if
+: join-lines ( -- ) row@ last-row < if
       col@ >t mv-down del-line mv-up
       yanked >b mv-end begin
          mv-right c@b+ ed-ch! col@ last-col <
       while bdrop t> col!
    then ;
-: rl blk@ ed-goto ;
-: w ed-blk blk-data blk-sz cmove clean! ;
-: w!! w disk-write ;
-: wq w q! ;
-: q  dirty? if0 q! exit then ." use 'w q' or 'q!'" ;
-: ed! w blk! ed-load ;
-: do-cmd ->cmd ':' emit clr-eol pad accept
+: rl ( -- ) blk@ ed-goto ;
+: w ( -- ) ed-blk blk-data blk-sz cmove clean! ;
+: w!! ( -- ) w disk-write ;
+: wq ( -- ) w q! ;
+: q ( -- ) dirty? if0 q! exit then ." use 'w q' or 'q!'" ;
+: ed! ( n-- ) w blk! ed-load ;
+: do-cmd ( -- ) ->cmd ':' emit clr-eol pad accept
    space pad outer show! ;
-: next-pg w blk@ 1+ ed-goto ;
-: prev-pg w blk@ 1- 0 max ed-goto ;
+: next-pg ( -- ) w blk@ 1+ ed-goto ;
+: prev-pg ( -- ) w blk@ 1- 0 max ed-goto ;
 
 ( switch: case-table process )
 : case   ( ch-- )  v, find drop v, ;   ( case-table entry - single word )
@@ -467,22 +473,22 @@ vhere const ed-cases
 '#'  case!  cls show! ;
 0 v, 0 v, ( end )
 
-: process-key ( --, key is in a )
+: process-key ( -- ) ( , key is in a )
    a@ bl < a@ 126 > or if ed-ctrl-cases switch exit then
    ins?  if insert-char exit then
    repl? if replace-char exit then
    ed-cases switch ;
-: ed-loop begin show vkey >a process-key adrop quit? until ;
-: ed-init cls 0 mode! 0 dup row! col! blk@ ed-goto ;
+: ed-loop ( -- ) begin show vkey >a process-key adrop quit? until ;
+: ed-init ( -- ) cls 0 mode! 0 dup row! col! blk@ ed-goto ;
 : ed  ( -- ) ed-init ed-loop ->cmd interp state ! ;
 : edit ( n-- )  blk! ed ;
 
 ( fgl: forget the last word )
-: fgl last dup de-sz + (la) ! de>xt (ha) ! ;  
+: fgl ( -- ) last dup de-sz + (la) ! de>xt (ha) ! ;  
 
 1 load
 
-: .version ." cf v" version <# # # #. # # #. #s #> ztype ;
+: .version ( -- ) ." cf v" version <# # # #. # # #. #s #> ztype ;
 green .version white ."  - Chris Curl " cr
 yellow ."  Memory: " white mem-sz . ." bytes" cr
 yellow ."    Code: " white here . ." opcodes used" cr
