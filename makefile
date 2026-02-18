@@ -1,14 +1,18 @@
-ARCH ?= 64
-CFLAGS = -O3 -m$(ARCH)
+CXX := clang
+CFLAGS := -m32 -Oz
 
-cf: cf.c cf.h system.c
-	$(CC) $(CFLAGS) cf.c system.c -o $@
-
-run: cf
-	./cf
+cf: *.c *.h
+	$(CXX) $(CFLAGS) -o cf *.c
+	ls -l cf
 
 clean:
 	rm -f cf
+
+test: cf
+	./cf boot.fth
+
+run: cf
+	./cf
 
 bin: cf
 	cp -u -p cf ~/bin/
