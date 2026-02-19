@@ -4,11 +4,8 @@
 
 : last (l) @ ;
 : here (h) @ ;
-: inline    ( -- ) $40 last 5 + c! ;
-: immediate ( -- ) $80 last 5 + c! ;
-: cell   ( --n )  4 ; inline
-: 2cells ( --n )  8 ; inline
-: 3cells ( --n ) 12 ; inline
+: inline    ( -- ) $40 last cell 1+ + c! ;
+: immediate ( -- ) $80 last cell 1+ + c! ;
 : cells  ( n--n' ) cell * ; inline
 : ->code ( off--addr ) cells mem + ;
 : code@  ( off--dw )  ->code @ ;

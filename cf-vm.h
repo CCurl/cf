@@ -18,18 +18,27 @@
 #include <string.h>
 #include <time.h>
 
+#if INTPTR_MAX > INT32_MAX
+    #define LIT_MASK      0x4000000000000000
+    #define LIT_BITS      0x3FFFFFFFFFFFFFFF
+    #define CELL_SZ                8
+    #define cell             int64_t
+    #define ucell           uint64_t
+#else
+    #define LIT_MASK      0x40000000
+    #define LIT_BITS      0x3FFFFFFF
+    #define CELL_SZ                4
+    #define cell             int32_t
+    #define ucell           uint32_t
+#endif
+
 #define VERSION         20260218
+#define byte             uint8_t
 #define MEM_SZ         0x1000000
 #define STK_SZ                63
 #define NAME_LEN              25
 #define IMMED               0x80
 #define INLINE              0x40
-#define LIT_MASK      0x40000000
-#define LIT_BITS      0x3FFFFFFF
-#define CELL_SZ                4
-#define byte             uint8_t
-#define cell             int32_t
-#define ucell           uint32_t
 #define btwi(n,l,h)   ((l<=n) && (n<=h))
 #define TOS           dstk[dsp]
 #define NOS           dstk[dsp-1]

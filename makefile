@@ -1,8 +1,8 @@
-CXX := clang
-CFLAGS := -m32 -Oz
+ARCH ?= 32
+CFLAGS = -m$(ARCH) -O3
 
 cf: *.c *.h
-	$(CXX) $(CFLAGS) -o cf *.c
+	$(CC) $(CFLAGS) -o cf *.c
 	ls -l cf
 
 clean:
