@@ -1,4 +1,4 @@
-ARCH ?= 32
+ARCH ?= 64
 CFLAGS = -m$(ARCH) -O3
 
 cf: *.c *.h

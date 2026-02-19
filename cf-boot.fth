@@ -95,12 +95,12 @@ vars (vh) !
 : t4 50000 ;
 : t5 vars t4 + ;
 : rb ( -- )
-    z" boot.fth" fopen-r -if0 drop ." -nf-" exit then
+    z" cf-boot.fth" fopen-r -if0 drop ." -nf-" exit then
     z! t5 x! t4 for 0 c!x+ next
     t5 t4 z@ fread drop z@ fclose
     -here- (h) !  -last- (l) ! 
     t5 >in ! ;
-: vi z" vi boot.fth" system ;
+: vi z" vi cf-boot.fth" system ;
 
 ( More core words )
 : [ ( -- ) 0 state ! ; immediate  ( 0 = INTERPRET )
