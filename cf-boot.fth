@@ -51,7 +51,7 @@ vars (vh) !
 : allot ( n-- ) (vh) +! ;
 : var   ( n-- ) vhere const allot ;
 
-( TSTK is a stack for 3 locals - x,y,z )
+( A stack for 3 locals - x,y,z )
 : +L1 ( x -- )    +L x! ;
 : +L2 ( x y-- )   +L y! x! ;
 : +L3 ( x y z-- ) +L z! y! x! ;
@@ -184,9 +184,7 @@ cell var t4   cell var t5
 : s-cat  ( dst src--dst ) over s-end  over s-len 1+  cmove ;
 : s-catc ( dst ch--dst )  over s-end  +L1  c!x+  0 c!x+  -L ;
 : s-catn ( dst num--dst ) <# #s #> s-cat ;
-: s-eqn  ( s1 s2 n--f ) +L3 z@ for
-	   c@x+ c@y+ = if0 -L 0 unloop exit then
-	next -L 1 ;
+: s-eqn  ( s1 s2 n--f ) +L3 z@ for c@x+ c@y+ = if0 -L 0 unloop exit then next -L 1 ;
 : s-eq   ( s1 s2--f ) dup s-len 1+ s-eqn ;
   
 ( Disk: 32 blocks, 32K bytes each )
@@ -200,7 +198,7 @@ val blk@   (val) t0
 : blk-addr  ( --a )   blk@ blk-sz * disk + ;
 : blk-clr   ( -- )    blk-addr blk-sz 0 fill ;
 : t2        ( fh-- )  >r  blk-clr  blk-addr blk-sz r@ fread drop  r> fclose ;
-: blk-read  ( -- )    blk-fn fopen-r ?dup if0 ." -nf-" drop exit then t2 ;
+: blk-read  ( -- )    blk-fn fopen-r ?dup if0 blk-fn ztype ."  not found" drop exit then t2 ;
 : t1        ( fh-- )  >r  blk-addr blk-sz r@ fwrite drop  r> fclose ;
 : blk-write ( -- )    blk-fn fopen-w ?dup if0 ." -err-" drop exit then t1 ;
 : blk-nullt ( -- )    0 blk-addr blk-sz + 1- c! ;

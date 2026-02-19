@@ -16,3 +16,4 @@ run: cf
 
 bin: cf
 	cp -u -p cf ~/bin/
+	cp -u -p cf-boot.fth ~/bin/

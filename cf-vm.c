@@ -24,8 +24,8 @@
 	X(RTO,    ">r",       rpush(pop()); ) \
 	X(RAT,    "r@",       push(rstk[rsp]); ) \
 	X(RFROM,  "r>",       push(rpop()); ) \
-	X(ITSP,   "+L",       if (tsp < (STK_SZ-3)) { tsp += 3; } ) \
-	X(DTSP,   "-L",       if (2 < tsp) { tsp -= 3; } ) \
+	X(TSPI,   "+L",       if (tsp < (STK_SZ-3)) { tsp += 3; } ) \
+	X(TSPD,   "-L",       if (2 < tsp) { tsp -= 3; } ) \
 	X(XSTO,   "x!",       tstk[tsp] = pop(); ) \
 	X(YSTO,   "y!",       tstk[tsp+1] = pop(); ) \
 	X(ZSTO,   "z!",       tstk[tsp+2] = pop(); ) \
@@ -86,11 +86,9 @@ void addLit(const char *name, cell val) { addToDict(name); compileNum(val); comm
 void doInline(ucell xt) { while (code[xt] != EXIT) { comma(code[xt++]); } }
 void doInterp(ucell xt) { code[10]=xt; code[11]=EXIT; inner(10); }
 char *checkWord(char *w) { return w ? w : (nextWord() ? &wd[0] : NULL); }
-
-void compileNum(cell n) {
-	if (btwi(n,0,LIT_BITS)) { comma((ucell)(n | LIT_MASK)); }
-	else { comma(LIT); comma(n); }
-}
+void lit1(cell n) {	comma((ucell)(n | LIT_MASK)); }
+void lit2(cell n) {	comma(LIT); comma(n); }
+void compileNum(cell n) { btwi(n,0,LIT_BITS) ? lit1(n) : lit2(n); }
 
 int nextWord() {
 	int ln = 0;
@@ -192,7 +190,7 @@ void cfInit() {
 		{ "(sp)",    (cell)&dsp },     { "stk",       (cell)&dstk[0] },
 		{ "state",   (cell)&state },   { "base",      (cell)&base },
 		{ "mem",     (cell)&mem[0] },  { "mem-sz",    (cell)MEM_SZ },
-		{ ">in",     (cell)&toIn},     { "cell",      CELL_SZ }, { 0, 0 }
+		{ ">in",     (cell)&toIn},     { "cell",      (cell)CELL_SZ }, { 0, 0 }
 	};
 	for (int i = 0; nv[i].name; i++) { addLit(nv[i].name, nv[i].value); }
 	for (int i = 0; prims[i].name; i++) { addPrim(prims[i].name, prims[i].value); }

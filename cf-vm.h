@@ -32,7 +32,7 @@
     #define ucell           uint32_t
 #endif
 
-#define VERSION         20260218
+#define VERSION         20260219
 #define byte             uint8_t
 #define MEM_SZ         0x1000000
 #define STK_SZ                63

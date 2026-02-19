@@ -42,27 +42,27 @@ pad z" hi " s-cpy z" there" s-cat '-' s-catc 123 s-catn '!' s-catc ztype cr
 : f- ( a b--c ) - ; inline
 
 \ A stack
-\ 16 cells var tstk      \ the stack start
-\ vhere cell - const t9  \ t9 is the stack end
-\ val tsp@   (val) t1    \ the stack pointer
-\ : tsp! ( n-- ) t1 ! ;  \ set the stack pointer
-\ tstk tsp!              \ Initialize
+16 cells var tstk      \ the stack start
+vhere cell - const t9  \ t9 is the stack end
+val tsp@   (val) t1    \ the stack pointer
+: tsp! ( n-- ) t1 ! ;  \ set the stack pointer
+tstk tsp!              \ Initialize
 \ for a normal stack, use these definitions
-\ : tsp++ ( -- ) tsp@ cell + t9   min tsp! ;
-\ : tsp-- ( -- ) tsp@ cell - tstk max tsp! ;
+: tsp++ ( -- ) tsp@ cell + t9   min tsp! ;
+: tsp-- ( -- ) tsp@ cell - tstk max tsp! ;
 \ for a circular stack, use these definitions
-\ : tsp++ ( -- )  tsp@ cell +  dup t9   > if drop tstk then tsp! ;
-\ : tsp-- ( -- )  tsp@ cell -  dup tstk < if drop t9   then tsp! ;
-\ : t!    ( n-- ) tsp@ ! ;
-\ : t@    ( --n ) tsp@ @ ;
-\ : >t    ( n-- ) tsp++ t! ;
-\ : t>    ( --n ) tsp@ @  tsp-- ;
-\ : t6    ( -- )  dup tsp@ = if ." sp:" then dup @ . cell + ;
-\ : .tstk ( -- )  '(' emit space tstk 16 for t6 next drop ')' emit ;
-\ ( some stack tests )
-\ 16 [[ tsp-- for i >t next .tstk cr ]]
-\ 32 [[ for tsp++ t@ . next cr .tstk cr ]] 
-\ 32 [[ for t> . next cr .tstk cr ]]
+: tsp++ ( -- )  tsp@ cell +  dup t9   > if drop tstk then tsp! ;
+: tsp-- ( -- )  tsp@ cell -  dup tstk < if drop t9   then tsp! ;
+: t!    ( n-- ) tsp@ ! ;
+: t@    ( --n ) tsp@ @ ;
+: >t    ( n-- ) tsp++ t! ;
+: t>    ( --n ) tsp@ @  tsp-- ;
+: t6    ( -- )  dup tsp@ = if ." sp:" then dup @ . cell + ;
+: .tstk ( -- )  '(' emit space tstk 16 for t6 next drop ')' emit ;
+( some stack tests )
+16 [[ tsp-- for i >t next .tstk cr ]]
+32 [[ for tsp++ t@ . next cr .tstk cr ]] 
+32 [[ for t> . next cr .tstk cr ]]
 
 ( ANSI color codes )
 : csi  27 emit '[' emit ;

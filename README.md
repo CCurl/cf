@@ -1,18 +1,14 @@
-# CF: a minimal DWORD-Code Forth
+# CF: a minimal Forth
 
-CF is an extremely minimal Forth system that can run stand-alone or be embedded into another program.
+CF is a minimal Forth system that can run stand-alone or be embedded into another program.
 
-CF has 32 base primitives, 14 system primitives.<br/>
+CF has 56 base primitives.<br/>
 CF is implemented in 3 files: (cf-vm.c, cf-vm.h, system.c). <br/>
 The VM itself is under 200 lines of code.
 
-On Windows, a 32-bit Release build compiles to a 17k executable. <br/>
-On a Linux box, it is about 21k.
-
-**CF** stands for "DWord-Code". This is inspired by Tachyon. <br/>
-In a CF program, each instruction is a DWORD (32-bits). <br/>
-- If <= the last primitive (45), then it is a primitive.
-- Else, if the top 3 bits are set, then it is a literal ANDed with $3FFFFFFF.
+In a CF program, each instruction is a CELL (32- or 64-bits). <br/>
+- If <= the last primitive (system), then it is a primitive.
+- Else, if the top 3 bits are set, then it is a literal.
 - Else, it is the XT (code address) of a word in the dictionary.
 
 ### CF hard-codes the following IMMEDIATE state-change words:
@@ -22,9 +18,9 @@ In a CF program, each instruction is a DWORD (32-bits). <br/>
 |  :   | Add the next word to the dictionary, set STATE to COMPILE. |
 |  ;   | Compile EXIT and change state to INTERPRET. |
 
-**NOTE**: '(' skip words until the next ')' word.<br/>
-**NOTE**: '\\' skip words until the end of the line.<br/>
-**NOTE**: State '999' signals CF to exit.<br/>
+**NOTE**: '(' skips words until the next ')' word.<br/>
+**NOTE**: '\\' skips words until the end of the line.<br/>
+**NOTE**: Setting state to 999 signals CF to exit.<br/>
 
 ## INLINE words
 
@@ -45,13 +41,16 @@ On startup, CF does the following:
 - For each argument, create 'argX' with the address of the argument string
 - E.G. "arg0 ztype" will print `cf`
 - If arg1 exists and names a file that can be opened, load that file.
-- Else, try to load file 'boot.fth'
+- Else, try to load file 'cf-boot.fth' in the local folder '.'.
+- Else, try to load file '`BIN_DIR`cf-boot.fth' in the "bin" folder.
+- On Linux, `BIN_DIR` is "/home/chris/bin/".
+- On Windows, `BIN_DIR` is "D:\\bin\\".
+- `BIN_DIR` is defined in cf-vm.h. Change it as appropriate for your system.
 
 ## The VM Primitives
 
 | Primitive | Op/Word  | Stack        | Description |
 |:--        |:--       |:--           |:-- |
-|           |          |              | --- **CF primitives** --- |
 |   0       | exit     | (--)         | PC = R-TOS. Discard R-TOS. If (PC=0) then stop. |
 |   1       | lit      | (--)         | Push code[PC]. Increment PC. |
 |   2       | jmp      | (--)         | PC = code[PC]. |
@@ -70,35 +69,45 @@ On startup, CF does the following:
 |  15       | >r       | (n--)        | Push TOS onto the return stack. Discard TOS. |
 |  16       | r@       | (--n)        | Push R-TOS. |
 |  17       | r>       | (--n)        | Push R-TOS. Discard R-TOS. |
-|  18       | *        | (a b--c)     | TOS = NOS*TOS. Discard NOS. |
-|  19       | +        | (a b--c)     | TOS = NOS+TOS. Discard NOS. |
-|  20       | -        | (a b--c)     | TOS = NOS-TOS. Discard NOS. |
-|  21       | /mod     | (a b--r q)   | TOS = NOS/TOS. NOS = NOS modulo TOS. |
-|  22       | <        | (a b--f)     | If (NOS<TOS) then TOS = 1 else TOS = 0. Discard NOS. |
-|  23       | =        | (a b--f)     | If (NOS=TOS) then TOS = 1 else TOS = 0. Discard NOS. |
-|  24       | >        | (a b--f)     | If (NOS<TOS) then TOS = 1 else TOS = 0. Discard NOS. |
-|  25       | +!       | (n a--)      | Add NOS to the cell at TOS. Discard TOS and NOS. |
-|  26       | for      | (C--)        | Start a FOR loop starting at 0. Upper limit is C. |
-|  27       | i        | (--I)        | Push current loop index. |
-|  28       | next     | (--)         | Increment I. If I < C then jump to loop start. |
-|  29       | and      | (a b--c)     | TOS = NOS and TOS. Discard NOS. |
-|  30       | or       | (a b--c)     | TOS = NOS or  TOS. Discard NOS. |
-|  31       | xor      | (a b--c)     | TOS = NOS xor TOS. Discard NOS. |
-|           |          |              | --- **System primitives** --- |
-|  32       | ztype    | (a--)        | Output null-terminated string TOS. Discard TOS. |
-|  33       | find     | (--a)        | Push the dictionary address of the next word. |
-|  34       | key      | (--n)        | Push the next keypress. Wait if necessary. |
-|  35       | key?     | (--f)        | Push 1 if a keypress is available, else 0. |
-|  36       | emit     | (c--)        | Output char TOS. Discard TOS. |
-|  37       | fopen    | (nm md--fh)  | Open file NOS using mode TOS (h=0 if error). |
-|  38       | fclose   | (fh--)       | Close file TOS. Discard TOS. |
-|  39       | fread    | (a sz fh--n) | Read NOS chars from file TOS to a. |
-|  40       | fwrite   | (a sz fh--n) | Write NOS chars from file TOS from a. |
-|  41       | ms       | (n--)        | Wait/sleep for TOS milliseconds |
-|  42       | timer    | (--n)        | Push the current system time. |
-|  43       | add-word | (--)         | Add the next word to the dictionary. |
-|  44       | outer    | (a--)        | Run the outer interpreter on TOS. Discard TOS. |
-|  45       | system   | (a--)        | Execute system(TOS). Discard TOS. |
+|  18       | +L       | (--)         | Allocate 3 locals (x,y,z). |
+|  19       | -L       | (--)         | De-allocate last set of locals. |
+|  20       | x!       | (n--)        | Set local variable X to n. |
+|  21       | y!       | (n--)        | Set local variable Y to n. |
+|  22       | z!       | (n--)        | Set local variable Z to n. |
+|  23       | x@       | (--n)        | Push local variable X. |
+|  24       | y@       | (--n)        | Push local variable Y. |
+|  25       | z@       | (--n)        | Push local variable Z. |
+|  26       | *        | (a b--c)     | TOS = NOS*TOS. Discard NOS. |
+|  27       | +        | (a b--c)     | TOS = NOS+TOS. Discard NOS. |
+|  28       | -        | (a b--c)     | TOS = NOS-TOS. Discard NOS. |
+|  29       | /mod     | (a b--r q)   | TOS = NOS/TOS. NOS = NOS modulo TOS. |
+|  30       | 1+       | (a--b)       | TOS = TOS+1. |
+|  31       | 1-       | (a--b)       | TOS = TOS-1. |
+|  32       | <        | (a b--f)     | If (NOS<TOS) then TOS = 1 else TOS = 0. Discard NOS. |
+|  33       | =        | (a b--f)     | If (NOS=TOS) then TOS = 1 else TOS = 0. Discard NOS. |
+|  34       | >        | (a b--f)     | If (NOS<TOS) then TOS = 1 else TOS = 0. Discard NOS. |
+|  35       | 0=       | (n--f)       | If (TOS==1) then TOS = 1 else TOS = 0. |
+|  36       | +!       | (n a--)      | Add NOS to the cell at TOS. Discard TOS and NOS. |
+|  37       | for      | (C--)        | Start a FOR loop starting at 0. Upper limit is C. |
+|  38       | i        | (--I)        | Push current loop index. |
+|  39       | next     | (--)         | Increment I. If I < C then jump to loop start. |
+|  40       | and      | (a b--c)     | TOS = NOS and TOS. Discard NOS. |
+|  41       | or       | (a b--c)     | TOS = NOS or  TOS. Discard NOS. |
+|  42       | xor      | (a b--c)     | TOS = NOS xor TOS. Discard NOS. |
+|  43       | ztype    | (a--)        | Output null-terminated string TOS. Discard TOS. |
+|  44       | find     | (--a)        | Push the dictionary address of the next word. |
+|  45       | key      | (--n)        | Push the next keypress. Wait if necessary. |
+|  46       | key?     | (--f)        | Push 1 if a keypress is available, else 0. |
+|  47       | emit     | (c--)        | Output char TOS. Discard TOS. |
+|  48       | fopen    | (nm md--fh)  | Open file NOS using mode TOS (h=0 if error). |
+|  49       | fclose   | (fh--)       | Close file TOS. Discard TOS. |
+|  50       | fread    | (a sz fh--n) | Read NOS chars from file TOS to a. |
+|  51       | fwrite   | (a sz fh--n) | Write NOS chars from file TOS from a. |
+|  52       | ms       | (n--)        | Wait/sleep for TOS milliseconds |
+|  53       | timer    | (--n)        | Push the current system time. |
+|  54       | add-word | (--)         | Add the next word to the dictionary. |
+|  55       | outer    | (a--)        | Run the outer interpreter on TOS. Discard TOS. |
+|  56       | system   | (a--)        | Execute system(TOS). Discard TOS. |
 
 ## Other built-in words
 
@@ -119,6 +128,7 @@ On startup, CF does the following:
 | mem       | (--a) | Address of the beginning of the memory area. |
 | mem-sz    | (--n) | The number of BYTEs in the memory area. |
 | >in       | (--a) | Address of the text input buffer pointer. |
+| cell      | (--n) | The size of a CELL in bytes (4 or 8). |
 
 ##   Embedding CF in your C or C++ project
 
