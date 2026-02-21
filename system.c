@@ -1,6 +1,6 @@
-// A ColorForth and Tachyon inspired system, MIT license.
+// A Tachyon inspired system, MIT license, (c) 2025 Chris Curl
 
-#include "cf.h"
+#include "cf-vm.h"
 
 #ifdef IS_WINDOWS
 	#include <windows.h>
@@ -44,13 +44,11 @@
 		FD_SET(STDIN_FILENO, &rdfs);
 		select(STDIN_FILENO+1, &rdfs, NULL, NULL, &tv);
 		int x = FD_ISSET(STDIN_FILENO, &rdfs);
-		// ttyMode(0);
 		return x;
 	}
 	int key() {
 		ttyMode(1);
 		int x = fgetc(stdin);
-		// ttyMode(0);
 		return x;
 	}
 	void ms(cell sleepForMS) {
@@ -58,38 +56,39 @@
 	}
 #endif // Linux, OpenBSD, FreeBSD
 
+char tib[128], fn[32];
 cell timer() { return (cell)clock(); }
-void zType(const char* str) { fputs(str, outputFp ? (FILE*)outputFp : stdout); }
+void zType(const char *str) { fputs(str, outputFp ? (FILE*)outputFp : stdout); }
 void emit(const char ch) { fputc(ch, outputFp ? (FILE*)outputFp : stdout); }
+char *bootFn(char *f) { sprintf(fn, "%scf-boot.fth", f); return fn; }
 
 cell fOpen(cell name, cell mode) { return (cell)fopen((char*)name, (char*)mode); }
 void fClose(cell fh) { fclose((FILE*)fh); }
 cell fRead(cell buf, cell sz, cell fh) { return (cell)fread((char*)buf, 1, sz, (FILE*)fh); }
 cell fWrite(cell buf, cell sz, cell fh) { return (cell)fwrite((char*)buf, 1, sz, (FILE*)fh); }
-cell fSeek(cell fh, cell offset) { return (cell)fseek((FILE*)fh, (long)offset, SEEK_SET); }
 
-char tib[256];
 void repl() {
 	ttyMode(0);
-	if (state == COMMENT) { state = INTERP; }
+	if (state != COMPILE) { state = INTERPRET; }
 	zType((state == COMPILE) ? " ... "  : " ok\n");
-	if (fgets(tib, 256, stdin) != tib) { exit(0); }
-	cfOuter(tib);
+	if (fgets(tib, 128, stdin) == tib) { outer(tib); }
+	else { state = BYE; }
 }
 
+
 void boot(const char *fn) {
-	if (!fn) { fn = BOOT_FN1; }
+	if (!fn) { fn = "boot.fth"; }
 	cell fp = fOpen((cell)fn, (cell)"rb");
-	if (!fp) { fp = fOpen((cell)BOOT_FN2, (cell)"rb"); }
+	if (!fp) { fp = fOpen((cell)bootFn(""), (cell)"rb"); }
+	if (!fp) { fp = fOpen((cell)bootFn(BIN_DIR), (cell)"rb"); }
 	if (fp) {
-		fRead((cell)&mem[100000], 99999, fp);
+		char *tib = (char*)&mem[100000];
+		fRead((cell)tib, 99999, fp);
 		fClose(fp);
-		cfOuter((char*)&mem[100000]);
+		outer(tib);
 	} else {
 		zType("WARNING: unable to open source file!\n");
-		zType("When no boot file specified, cf tries to use '");
-		zType(BOOT_FN1); zType("' or '");
-		zType(BOOT_FN2); zType("'.\n");
+		zType("If no filename is provided, the default is 'boot.fth'\n");
 	}
 }
 
@@ -102,6 +101,7 @@ int main(int argc, char *argv[]) {
 		addLit(tib, (cell)argv[i]);
 	}
 	boot((1<argc) ? argv[1] : 0);
-	while (1) { repl(); }
+	while (state != BYE) { repl(); }
+	ttyMode(0);
 	return 0;
 }
