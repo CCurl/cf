@@ -95,7 +95,7 @@ vars (vh) !
 : t4 50000 ;
 : t5 vars t4 + ;
 : rb ( -- )
-    z" cf-boot.fth" fopen-r -if0 drop ." -nf-" exit then
+    z" cf-boot.fth" fopen-r -if0 drop ." cf-boot.fth not found" exit then
     z! t5 x! t4 for 0 c!x+ next
     t5 t4 z@ fread drop z@ fclose
     -here- (h) !  -last- (l) ! 
@@ -176,9 +176,6 @@ cell var t4   cell var t5
 ( Strings / Memory )
 : pad    ( --a ) vhere $100 + ;
 : fill   ( a num ch-- ) -rot for 2dup c! 1+ next 2drop ;
-: cmove  ( f t n-- )  +L3  z@ if  z@ for c@x+ c!y+ next then -L ;
-: cmove> ( f t n-- )  +L3  y@ z@ + 1- y!  x@ z@ + 1- x!  z@ for c@x- c!y- next -L ;
-: s-len  ( str--len ) +L1 0 begin c@x+ if0 -L exit then 1+ again ;
 : s-end  ( str--end ) dup s-len + ;   \ end: address of the null
 : s-cpy  ( dst src--dst ) 2dup s-len 1+ cmove ;
 : s-cat  ( dst src--dst ) over s-end  over s-len 1+  cmove ;
@@ -187,23 +184,28 @@ cell var t4   cell var t5
 : s-eqn  ( s1 s2 n--f ) +L3 z@ for c@x+ c@y+ = if0 -L 0 unloop exit then next -L 1 ;
 : s-eq   ( s1 s2--f ) dup s-len 1+ s-eqn ;
   
-( Disk: 32 blocks, 32K bytes each )
-mem 14 1024 1024 * * + const disk
+( Disk: 64 blocks, 16KB bytes each )
+: kb ( n--m ) 1024 * ;
+: mb ( n--m ) kb kb ;
+mem 14 mb + const disk
 32 var fn
 val blk@   (val) t0
-: #blks     ( --n )   32 ;
-: blk-sz    ( --n )   32768 ;
+: #blks     ( --n )   64 ;
+: blk-sz    ( --n )   16 kb ;
 : blk!      ( n-- )   0 max #blks 1- min t0 ! ;
 : blk-fn    ( --a )   fn z" block-" s-cpy blk@ <# # #s #> s-cat z" .fth" s-cat ;
 : blk-addr  ( --a )   blk@ blk-sz * disk + ;
 : blk-clr   ( -- )    blk-addr blk-sz 0 fill ;
 : t2        ( fh-- )  >r  blk-clr  blk-addr blk-sz r@ fread drop  r> fclose ;
-: blk-read  ( -- )    blk-fn fopen-r ?dup if0 blk-fn ztype ."  not found" drop exit then t2 ;
+: blk-read  ( -- )    blk-fn fopen-r ?dup if0 fn ztype ."  not found" drop exit then t2 ;
 : t1        ( fh-- )  >r  blk-addr blk-sz r@ fwrite drop  r> fclose ;
 : blk-write ( -- )    blk-fn fopen-w ?dup if0 ." -err-" drop exit then t1 ;
 : blk-nullt ( -- )    0 blk-addr blk-sz + 1- c! ;
 : load      ( n-- )   blk! blk-read blk-nullt blk-addr outer ;
 : load-next ( n-- )   blk! blk-read blk-nullt blk-addr >in ! ;
+
+: fn-blk ( n-- )  blk@ >r  blk! blk-fn  r> blk! ;
+: ed ( n-- ) pad z" vi " s-cpy swap fn-blk s-cat system ;
 
 ( *** App code - starts in block-001 *** )
 1 load

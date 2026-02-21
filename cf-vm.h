@@ -2,6 +2,7 @@
 
 #ifndef __CF_H__
 
+#define VERSION         20260221
 #ifdef _MSC_VER
     #define _CRT_SECURE_NO_WARNINGS
     #define IS_WINDOWS 1
@@ -32,7 +33,6 @@
     #define ucell           uint32_t
 #endif
 
-#define VERSION         20260219
 #define byte             uint8_t
 #define MEM_SZ         0x1000000
 #define STK_SZ                63

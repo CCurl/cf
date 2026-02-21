@@ -62,6 +62,8 @@
 	X(TIMER,  "timer",    push(timer()); ) \
 	X(ADDW,   "add-word", addToDict(0); ) \
 	X(OUTER,  "outer",    t = pop(); outer((char*)t); ) \
+	X(MOVE,   "cmove",    t = pop(); n = pop(); memmove((void*)n, (void*)pop(), t); ) \
+	X(SLEN,   "s-len",    TOS = strlen((char*)TOS); ) \
 	X(LASTOP, "system",   system((char*)pop()); )
 
 enum { PRIMS(X1) };
@@ -107,10 +109,10 @@ int isNum(const char *w, cell b) {
 	if ((b == 10) && (w[0] == '-')) { isNeg = 1; ++w; }
 	if (w[0] == 0) { return 0; }
 	while (*w) {
-		char x = *(w++), c = btwi(x,'A','Z') ? x+32 : x;
-		if ((btwi(c,'0','9')) && btwi(c,'0','0'+b-1)) { n = (n*b)+(c-'0'); }
-		else if (btwi(c,'a','a'+b-11)) { n = (n*b)+(c-'a'+10); }
-		else return 0;
+		char c = *w++; if (c >= 'A' && c <= 'Z') c += 32;
+		int val = btwi(c,'0','9') ? c-'0' : btwi(c,'a','f') ? c-'a'+10 : -1;
+		if (val < 0 || val >= b) return 0;
+		n = (n*b) + val;
 	}
 	push(isNeg ? -n : n);
 	return 1;
@@ -152,7 +154,7 @@ next: ir = code[pc++];
 		PRIMS(X2)
 	default:
 		if ((ir & LIT_MASK) == LIT_MASK) { push(ir & LIT_BITS); goto next; }
-		if (code[pc] != EXIT) { rpush(pc); }
+		if (code[pc] != EXIT) { rpush(pc); } // tail-call optimization
 		pc = ir;
 		goto next;
 	}

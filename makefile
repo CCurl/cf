@@ -8,12 +8,9 @@ cf: *.c *.h
 clean:
 	rm -f cf
 
-test: cf
-	./cf boot.fth
-
 run: cf
 	./cf
 
-bin: cf
+bin: cf cf-boot.fth
 	cp -u -p cf ~/bin/
 	cp -u -p cf-boot.fth ~/bin/
