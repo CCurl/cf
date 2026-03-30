@@ -93,7 +93,7 @@ disk-read  0 blk!
 
 : a+    ( -- ) a@+ drop  ; inline
 : @a    ( --n ) a@  @     ; inline
-: a@+cell ( --a ) a@ cell+ ; inline
+: a@+cell ( --a ) a@ cell + ; inline
 : c@a-  ( --c ) a@- c@    ; inline
 : c!a   ( c-- ) a@  c!    ; inline
 : c!a+  ( c-- ) a@+ c!    ; inline
